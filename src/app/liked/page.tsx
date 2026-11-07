@@ -3,6 +3,7 @@
 import React from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { CURATED_TRACKS } from "@/music/curated-data";
 import { TrackRow } from "@/components/music/TrackRow";
 import { Heart, Play } from "lucide-react";
@@ -10,8 +11,11 @@ import { Heart, Play } from "lucide-react";
 export default function LikedSongsPage() {
   const { likedTrackIds } = useAuthStore();
   const { playTrack } = usePlayerStore();
+  const mounted = useMounted();
 
-  const likedTracks = CURATED_TRACKS.filter((t) => likedTrackIds.includes(t.id));
+  const likedTracks = mounted
+    ? CURATED_TRACKS.filter((t) => likedTrackIds.includes(t.id))
+    : [];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">

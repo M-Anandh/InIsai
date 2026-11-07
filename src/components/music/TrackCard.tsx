@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Track } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { Play, Pause, Heart, Plus, Music } from "lucide-react";
 
 interface TrackCardProps {
@@ -19,9 +20,10 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     usePlayerStore();
   const { isLiked, toggleLikeTrack } = useAuthStore();
   const [imgError, setImgError] = useState(false);
+  const mounted = useMounted();
 
-  const isCurrent = currentTrack?.id === track.id;
-  const liked = isLiked(track.id);
+  const isCurrent = mounted && currentTrack?.id === track.id;
+  const liked = mounted && isLiked(track.id);
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();

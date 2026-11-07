@@ -3,6 +3,7 @@
 import React from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { formatDuration } from "@/lib/utils";
 import {
   ChevronDown,
@@ -50,12 +51,13 @@ export const FullScreenPlayer: React.FC = () => {
   } = usePlayerStore();
 
   const { isLiked, toggleLikeTrack } = useAuthStore();
+  const mounted = useMounted();
+  const [imgError, setImgError] = React.useState(false);
 
-  if (!isFullScreenOpen || !currentTrack) return null;
+  if (!mounted || !isFullScreenOpen || !currentTrack) return null;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const liked = isLiked(currentTrack.id);
-  const [imgError, setImgError] = React.useState(false);
 
   const artworkSrc =
     !imgError && currentTrack.artworkUrl

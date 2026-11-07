@@ -37,7 +37,7 @@ export const Header: React.FC = () => {
             {greeting}
           </p>
           <h2 className="text-lg font-bold text-white tracking-tight">
-            {user?.displayName ? `${user.displayName}` : "InIsai Music"}
+            {mounted && user?.displayName ? user.displayName : "InIsai Music"}
           </h2>
         </div>
       </div>
@@ -55,7 +55,7 @@ export const Header: React.FC = () => {
       <div className="flex items-center space-x-3">
         <PWAInstaller />
 
-        {isAuthenticated && user ? (
+        {mounted && isAuthenticated && user ? (
           <Link
             href="/profile"
             className="flex items-center space-x-2 p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"

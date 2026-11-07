@@ -2,11 +2,15 @@
 
 import React from "react";
 import { usePlayerStore } from "@/stores/player-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { TrackRow } from "@/components/music/TrackRow";
 import { History, Play } from "lucide-react";
 
 export default function HistoryPage() {
   const { history, playTrack } = usePlayerStore();
+  const mounted = useMounted();
+
+  const displayHistory = mounted ? history : [];
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -20,14 +24,14 @@ export default function HistoryPage() {
               Recently Played
             </h1>
             <p className="text-xs text-inisai-muted">
-              {history.length} songs in playback memory
+              {displayHistory.length} songs in playback memory
             </p>
           </div>
         </div>
 
-        {history.length > 0 && (
+        {displayHistory.length > 0 && (
           <button
-            onClick={() => playTrack(history[0], history)}
+            onClick={() => playTrack(displayHistory[0], displayHistory)}
             className="flex items-center space-x-2 px-5 py-2.5 rounded-full bg-white text-black font-bold text-xs hover:scale-105 active:scale-95 transition-transform"
           >
             <Play className="w-3.5 h-3.5 fill-black" />
@@ -36,14 +40,14 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {history.length > 0 ? (
+      {displayHistory.length > 0 ? (
         <div className="space-y-2">
-          {history.map((track, idx) => (
+          {displayHistory.map((track, idx) => (
             <TrackRow
               key={`${track.id}-${idx}`}
               track={track}
               index={idx}
-              playlistContext={history}
+              playlistContext={displayHistory}
             />
           ))}
         </div>

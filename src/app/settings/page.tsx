@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { useMounted } from "@/hooks/use-mounted";
 import {
   Settings,
   Moon,
@@ -20,6 +21,7 @@ export default function SettingsPage() {
   const { settings, setCrossfade, setPlaybackRate, toggleEqualizer } =
     usePlayerStore();
   const { user, isAuthenticated, signOut, updateProfile } = useAuthStore();
+  const mounted = useMounted();
 
   const [cacheCleared, setCacheCleared] = useState(false);
 

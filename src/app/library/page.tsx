@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { CURATED_TRACKS } from "@/music/curated-data";
 import { TrackRow } from "@/components/music/TrackRow";
 import { PlaylistCard } from "@/components/music/PlaylistCard";
@@ -20,11 +21,16 @@ import {
 export default function LibraryPage() {
   const { likedTrackIds, userPlaylists, createPlaylist } = useAuthStore();
   const { history, playTrack } = usePlayerStore();
+  const mounted = useMounted();
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Match liked tracks
-  const likedTracks = CURATED_TRACKS.filter((t) => likedTrackIds.includes(t.id));
+  // Match liked tracks guarded by mounted state
+  const likedTracks = mounted
+    ? CURATED_TRACKS.filter((t) => likedTrackIds.includes(t.id))
+    : [];
+  const displayHistory = mounted ? history : [];
+  const displayPlaylists = mounted ? userPlaylists : [];
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +94,7 @@ export default function LibraryPage() {
               <History className="w-5 h-5" />
             </div>
             <span className="text-xs font-mono text-inisai-teal font-semibold">
-              {history.length} played
+              {displayHistory.length} played
             </span>
           </div>
           <div>
@@ -124,9 +130,9 @@ export default function LibraryPage() {
           <span>Your Playlists</span>
         </h2>
 
-        {userPlaylists.length > 0 ? (
+        {displayPlaylists.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {userPlaylists.map((pl) => (
+            {displayPlaylists.map((pl) => (
               <PlaylistCard key={pl.id} playlist={pl} />
             ))}
           </div>

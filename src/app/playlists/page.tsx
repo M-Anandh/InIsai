@@ -2,15 +2,19 @@
 
 import React, { useState } from "react";
 import { useAuthStore } from "@/stores/auth-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { FEATURED_PLAYLISTS, CURATED_TRACKS } from "@/music/curated-data";
 import { PlaylistCard } from "@/components/music/PlaylistCard";
 import { ListMusic, Plus, Trash2 } from "lucide-react";
 
 export default function PlaylistsPage() {
   const { userPlaylists, createPlaylist, deletePlaylist } = useAuthStore();
+  const mounted = useMounted();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  const displayUserPlaylists = mounted ? userPlaylists : [];
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,9 +65,9 @@ export default function PlaylistsPage() {
       {/* Custom User Playlists */}
       <section className="space-y-4 pt-4">
         <h2 className="text-lg font-bold text-white">Your Custom Playlists</h2>
-        {userPlaylists.length > 0 ? (
+        {displayUserPlaylists.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {userPlaylists.map((pl) => (
+            {displayUserPlaylists.map((pl) => (
               <div key={pl.id} className="relative group">
                 <PlaylistCard playlist={pl} />
                 <button

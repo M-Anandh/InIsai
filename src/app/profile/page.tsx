@@ -1,17 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { User, Check, Heart, History, ListMusic, Save } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, updateProfile, likedTrackIds, userPlaylists } = useAuthStore();
   const { history } = usePlayerStore();
+  const mounted = useMounted();
 
-  const [name, setName] = useState(user?.displayName || "InIsai Listener");
-  const [lang, setLang] = useState(user?.preferredLanguage || "Tamil");
+  const [name, setName] = useState("InIsai Listener");
+  const [lang, setLang] = useState("Tamil");
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    if (user?.displayName) setName(user.displayName);
+    if (user?.preferredLanguage) setLang(user.preferredLanguage);
+  }, [user]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,17 +54,17 @@ export default function ProfilePage() {
       <div className="grid grid-cols-3 gap-3">
         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
           <Heart className="w-5 h-5 mx-auto text-rose-500 mb-1" />
-          <span className="text-lg font-bold text-white font-mono">{likedTrackIds.length}</span>
+          <span className="text-lg font-bold text-white font-mono">{mounted ? likedTrackIds.length : 0}</span>
           <p className="text-[11px] text-inisai-muted">Liked Songs</p>
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
           <ListMusic className="w-5 h-5 mx-auto text-inisai-accent mb-1" />
-          <span className="text-lg font-bold text-white font-mono">{userPlaylists.length}</span>
+          <span className="text-lg font-bold text-white font-mono">{mounted ? userPlaylists.length : 0}</span>
           <p className="text-[11px] text-inisai-muted">Playlists</p>
         </div>
         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
           <History className="w-5 h-5 mx-auto text-inisai-teal mb-1" />
-          <span className="text-lg font-bold text-white font-mono">{history.length}</span>
+          <span className="text-lg font-bold text-white font-mono">{mounted ? history.length : 0}</span>
           <p className="text-[11px] text-inisai-muted">History</p>
         </div>
       </div>
