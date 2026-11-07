@@ -1,6 +1,6 @@
 # InIsai (இனிசை) — Project Status
 
-*Last updated: Direct CDN Images, Queue Traversal & Clean English UI*
+*Last updated: SSR Hydration Mismatch Resolution & Direct CDN Images*
 
 ---
 
@@ -14,27 +14,26 @@
 
 ## 2. Recent Critical Fixes & Enhancements
 
-1. **Direct CDN Image Rendering & Fix for Broken Thumbnails:**
-   - Eliminated Next.js `next/image` proxy overhead across all components (`TrackRow`, `TrackCard`, `PlaylistCard`, `MiniPlayer`, `FullScreenPlayer`, `QueueView`, `HomePage`).
-   - Standardized on native `<img ... loading="lazy" referrerPolicy="no-referrer" />` with `onError` fallbacks.
+1. **Hydration Mismatch Fix (`useMounted` guard):**
+   - **Root Cause:** React 19 / Next.js 15 fatal hydration error occurred when Zustand's `persist` middleware hydrated client properties (such as `likedTrackIds`, `currentTrack`, `user.displayName`) from `localStorage` immediately upon client load. This caused SSR HTML (e.g. `title="Like"`) to mismatch Client properties (e.g. `title="Unlike"`), triggering:
+     `"A tree hydrated but some attributes of the server rendered HTML didn't match the client properties... Application error: a client-side exception has occurred"`.
+   - **Fix Applied:** Implemented a unified `useMounted()` hook (`src/hooks/use-mounted.ts`) and guarded all dynamic local-storage attributes in `TrackCard`, `TrackRow`, `Header`, `MiniPlayer`, `FullScreenPlayer`, `LikedSongsPage`, `HistoryPage`, `LibraryPage`, `PlaylistsPage`, and `ProfilePage`. Server rendering and initial client hydration now match 100%, and dynamic state updates smoothly post-mount.
+
+2. **Direct CDN Image Rendering & Fix for Broken Thumbnails:**
+   - Standardized on native `<img ... loading="lazy" referrerPolicy="no-referrer" />` with `onError` fallbacks across the entire application.
    - Bypasses hotlink and proxy issues completely, allowing remote album art from CDNs (`c.saavncdn.com`, Unsplash, etc.) to load instantly without broken image icons or alt text overflow.
 
-2. **Sequential Search Queue Playback (Next/Previous Navigation):**
-   - Verified that selecting any song in the search results sets the entire search list as the active playback queue.
+3. **Sequential Search Queue Playback (Next/Previous Navigation):**
+   - When any song is clicked in the search results, the entire result list becomes the active queue (`playlistContext={results}`).
    - Clicking **Next** (`⏭`) plays the next search result sequentially.
    - Clicking **Previous** (`⏮`) returns to the previous song (or seeks to start if > 3s).
-   - If the queue reaches the end, auto-radio recommendations are fetched and queued so music never halts.
+   - Once the search list finishes, auto-radio recommendations are queued automatically so music never halts.
 
-3. **Clean English UI & Removal of Parenthesized Tamil Labels:**
+4. **Clean English UI & Removal of Parenthesized Tamil Labels:**
    - Removed all bracketed translations across navigation, header, sidebar, installer, lyrics, and settings (`Home`, `Explore`, `Search`, `Your Library`, `Local Music`, `Install App`, `Good Evening`, `InIsai Listener`).
 
-4. **Live Synchronized Lyrics Engine (`/api/music/lyrics`):**
-   - Integrated LRCLIB for live synchronized LRC and plain lyrics.
-   - Real-time lyrics scrolling and calibration support in `LyricsView.tsx`.
-
-5. **Audio Streaming & Decryption:**
-   - DES stream decryption with 320kbps `.mp4` audio output.
-   - Native HTML5 Audio engine ensuring flawless background and lock-screen playback.
+5. **Live Synchronized Lyrics Engine (`/api/music/lyrics`):**
+   - Integrated LRCLIB for live synchronized LRC and plain lyrics with dynamic line-by-line scrolling and calibration.
 
 ---
 
