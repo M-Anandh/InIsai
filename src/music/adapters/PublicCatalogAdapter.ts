@@ -40,3 +40,4 @@ export class PublicCatalogAdapter implements IMusicSourceAdapter {
     return true;
   }
 }
+

@@ -17,7 +17,7 @@ export default function HistoryPage() {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-              Recently Played (அண்மையில் கேட்டவை)
+              Recently Played
             </h1>
             <p className="text-xs text-inisai-muted">
               {history.length} songs in playback memory

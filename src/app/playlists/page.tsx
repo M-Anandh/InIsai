@@ -32,7 +32,7 @@ export default function PlaylistsPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">
             <ListMusic className="w-8 h-8 text-inisai-teal" />
-            <span>Playlists (பாடல்தொகுப்புகள்)</span>
+            <span>Playlists</span>
           </h1>
           <p className="text-xs sm:text-sm text-inisai-muted mt-1">
             Curated and custom user-created music sets.

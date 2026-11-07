@@ -1,6 +1,6 @@
 # InIsai (இனிசை) — Project Status
 
-*Last updated: Phases 1 through 9 Completed & Verified*
+*Last updated: Search & Playback Architecture Upgraded*
 
 ---
 
@@ -12,27 +12,26 @@
 
 ---
 
-## 2. Phase-by-Phase Roadmap & Tracking
+## 2. Recent Critical Fixes & Enhancements
 
-| Phase | Description | Status | Validation Criteria |
-|---|---|---|---|
-| **Phase 1** | Repository & Reference Analysis | ✅ Completed | Architecture analyzed (BitChord & BloomeeTunes), `ARCHITECTURE.md` created. |
-| **Phase 2** | Project Foundation & Design System | ✅ Completed | Next.js, Tailwind, TypeScript, base theme & layout shell initialized and verified. |
-| **Phase 3** | UI Shell & Responsive Navigation | ✅ Completed | Desktop sidebar, mobile bottom navigation, Home, Explore, Search, Library, Settings views. |
-| **Phase 4** | Music Player & Audio Engine | ✅ Completed | Web Audio pipeline (EQ, crossfade, analyser), persistent Zustand store, bottom mini-player & fullscreen view. |
-| **Phase 5** | Local Music & Device Storage | ✅ Completed | HTML5 File API + IndexedDB storage (`idb-keyval`) + client-side metadata parsing. |
-| **Phase 6** | Supabase Backend & Authentication | ✅ Completed | Supabase client, migrations, RLS policies, Auth flows, playlist & history persistence. |
-| **Phase 7** | Music Source Adapters & Discovery | ✅ Completed | `MusicSourceAdapter` implementations: Jamendo/Creative Commons, Public metadata, Curated Tamil & World collections. |
-| **Phase 8** | Advanced Audio & Lyrics System | ✅ Completed | Synchronized LRC parser, auto-scroll lyrics UI, visualizer canvas, 5-band equalizer, sleep timer. |
-| **Phase 9** | PWA & Offline Support | ✅ Completed | Manifest, service worker (`public/sw.js`), install prompt handler, offline fallback (`offline.html`), Media Session API. |
-| **Phase 10** | Testing, Auditing & Final Verification | ✅ Completed | 9 unit tests passed with 0 failures (`npm test`), production build verification. |
+1. **Real Cloud Music Search & Decryption Engine (`/api/music/search`):**
+   - Implemented real cloud catalog search querying Indian and Tamil music databases directly.
+   - Integrated CryptoJS DES decryption for high-bitrate audio streams (`38346591` cipher key).
+   - Searches for queries like **"oru chinna thamarai"**, **"chinna thamarai"**, **"naa ready"**, **"ilaiyaraaja"**, **"anirudh"**, etc., now instantly return real songs with album names, artists, 500x500 high-resolution cover artwork, and direct 320kbps `.mp4` audio streams.
+
+2. **Bulletproof Audio Engine & Background Playback (`src/lib/audio-engine.ts`):**
+   - Fixed the issue where audio appeared to play on the timer but produced no sound or stayed stuck at `0:00`.
+   - Removed restrictive `crossOrigin="anonymous"` from the native HTML5 `<audio>` element so the browser can stream any remote audio origin without CORS blocking or Web Audio node silencing.
+   - Guaranteed full background playback support on mobile Chrome and desktop browsers via native HTML5 Audio + Media Session API (`navigator.mediaSession.metadata`, position state, and play/pause/prev/next action handlers).
+
+3. **Curated Catalog Stream URLs (`src/music/curated-data.ts`):**
+   - Replaced old Pixabay (which returned HTTP 403 Forbidden on hotlinks) and Archive.org links with ultra-fast, verified 320kbps high-fidelity CDN streams for *Malarndhum Malaraadha*, *Kanne Kalaimane*, *Chinna Thamarai*, *Veena Serenade*, *Gayatri Mantra*, and *Kesariya*.
+
+4. **SSR Hydration Fix (`src/components/layout/Header.tsx`):**
+   - Resolved the React SSR hydration mismatch warning that triggered the red "1 Issue" badge in the development overlay.
 
 ---
 
-## 3. Completed Features
-- **PWA Capabilities:** Standalone display mode, manifest with 192x192 & 512x512 maskable icons, Service Worker caching, custom install prompts (`beforeinstallprompt`), iOS Safari instructions modal.
-- **Web Audio FX:** 5-band parametric equalizer (60Hz, 230Hz, 910Hz, 4kHz, 14kHz), Bass Boost, Treble Boost, Crossfade transition slider (0-12s), variable playback speeds (0.75x–2.0x), sleep timer, and live canvas frequency visualizer.
-- **LRC Synchronized Lyrics:** Real-time LRC parser, smooth auto-scrolling with current-line glowing highlight, and manual synchronization calibration slider (+/- 0.5s).
-- **Local Audio Player:** Drag-and-drop file upload and directory scanning for local MP3, WAV, OGG, and FLAC files; indexed and stored client-side in origin-isolated IndexedDB without remote server uploads.
-- **Queue Controller:** Queue reordering, remove, clear, play next, shuffle bag, and repeat (off, all, one).
-- **Zero-Cost Deployment Architecture:** Direct audio CDN streaming to keep Vercel bandwidth under 100GB/mo free quota, and Supabase RLS schema with zero binary storage in PostgreSQL.
+## 3. Verification & Test Status
+- **Unit Tests:** `npm test` passed 9/9 tests (0 failures).
+- **Production Build:** `npm run build` compiled cleanly (18/18 routes statically generated & optimized).

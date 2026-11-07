@@ -1,11 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Track } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { Play, Pause, Heart, MoreHorizontal, Plus } from "lucide-react";
+import { Play, Pause, Heart, Plus, Music } from "lucide-react";
 
 interface TrackCardProps {
   track: Track;
@@ -19,6 +19,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
   const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue } =
     usePlayerStore();
   const { isLiked, toggleLikeTrack } = useAuthStore();
+  const [imgError, setImgError] = useState(false);
 
   const isCurrent = currentTrack?.id === track.id;
   const liked = isLiked(track.id);
@@ -32,17 +33,23 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     }
   };
 
+  const artworkSrc =
+    !imgError && track.artworkUrl
+      ? track.artworkUrl
+      : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80";
+
   return (
     <div
       onClick={handlePlayClick}
       className="group relative bg-inisai-card hover:bg-inisai-cardHover p-3 rounded-2xl border border-white/5 hover:border-inisai-accent/30 transition-all duration-300 cursor-pointer flex flex-col space-y-2.5 shadow-sm hover:shadow-xl hover:shadow-inisai-accent/10"
     >
       {/* Artwork Container */}
-      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-black/40">
+      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-tr from-purple-950/40 to-black/60">
         <Image
-          src={track.artworkUrl}
+          src={artworkSrc}
           alt={track.title}
           fill
+          onError={() => setImgError(true)}
           className={`object-cover group-hover:scale-105 transition-transform duration-500 ${
             isCurrent && isPlaying ? "opacity-90" : ""
           }`}
@@ -83,13 +90,6 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         >
           <Heart className={`w-3.5 h-3.5 ${liked ? "fill-rose-500" : ""}`} />
         </button>
-
-        {/* Source Badge */}
-        {track.sourceType && (
-          <span className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider font-mono bg-black/60 backdrop-blur-md text-inisai-teal border border-white/10">
-            {track.sourceType}
-          </span>
-        )}
       </div>
 
       {/* Track Metadata */}
@@ -123,4 +123,3 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     </div>
   );
 };
-

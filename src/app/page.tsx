@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CURATED_TRACKS, FEATURED_PLAYLISTS, EXPLORE_CATEGORIES } from "@/music/curated-data";
@@ -8,19 +8,43 @@ import { TrackCard } from "@/components/music/TrackCard";
 import { PlaylistCard } from "@/components/music/PlaylistCard";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
-import { Play, Sparkles, Compass, Disc3, Disc } from "lucide-react";
+import { Track } from "@/types";
+import { Play, Sparkles, Compass, Disc3, HeartHandshake } from "lucide-react";
 
 export default function HomePage() {
   const { playTrack, currentTrack } = usePlayerStore();
   const { initialize, user } = useAuthStore();
+  const [loveSongs, setLoveSongs] = useState<Track[]>([]);
+  const [recommendedTracks, setRecommendedTracks] = useState<Track[]>([]);
 
   useEffect(() => {
     initialize();
+
+    // Fetch popular Tamil Love Songs for quick discovery
+    fetch("/api/music/search?q=tamil+love+songs")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.results && d.results.length > 0) {
+          setLoveSongs(d.results.slice(0, 8));
+        }
+      })
+      .catch(() => {});
+
+    // Fetch general trending recommended songs
+    fetch("/api/music/recommend?artist=Anirudh")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.results && d.results.length > 0) {
+          setRecommendedTracks(d.results.slice(0, 8));
+        }
+      })
+      .catch(() => {});
   }, [initialize]);
 
   const tamilTracks = CURATED_TRACKS.filter((t) => t.language === "Tamil");
-  const instrumentalTracks = CURATED_TRACKS.filter((t) => t.language === "Instrumental" || t.genre?.includes("Classical"));
-  const globalTracks = CURATED_TRACKS.filter((t) => t.language !== "Tamil" && t.language !== "Instrumental");
+  const instrumentalTracks = CURATED_TRACKS.filter(
+    (t) => t.language === "Instrumental" || t.genre?.includes("Classical")
+  );
 
   const heroTrack = CURATED_TRACKS[0];
 
@@ -31,17 +55,17 @@ export default function HomePage() {
         <div className="space-y-3 max-w-xl z-10 text-center md:text-left">
           <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent/20 border border-inisai-accent/30 text-inisai-accent text-xs font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Featured InIsai Special (சிறப்புப் பாடல்)</span>
+            <span>Featured Track</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
-            Malarndhum Malaraadha
+            {heroTrack.title}
           </h1>
           <p className="text-sm sm:text-base text-inisai-muted font-medium">
-            T. M. Soundararajan, P. Susheela • Pasamalar Classics
+            {heroTrack.artist} • {heroTrack.album}
           </p>
-          <p className="text-xs sm:text-sm text-white/70 max-w-md font-tamil">
-            இனிமையான தமிழ் மெல்லிசைப் பாடல்களை உயர் தரத்தில் கேட்டு மகிழுங்கள்.
+          <p className="text-xs sm:text-sm text-white/70 max-w-md">
+            Stream timeless melodies and latest hits in ultra high quality.
           </p>
 
           <div className="pt-2 flex items-center justify-center md:justify-start space-x-3">
@@ -63,8 +87,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Hero Artwork with Glowing Arc */}
-        <div className="relative w-48 h-48 sm:w-60 sm:h-60 rounded-2xl overflow-hidden shadow-2xl shadow-inisai-accent/30 border border-white/15 flex-shrink-0 group">
+        {/* Hero Artwork */}
+        <div className="relative w-48 h-48 sm:w-60 sm:h-60 rounded-2xl overflow-hidden shadow-2xl shadow-inisai-accent/30 border border-white/15 flex-shrink-0 group bg-black/40">
           <Image
             src={heroTrack.artworkUrl}
             alt={heroTrack.title}
@@ -76,7 +100,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Quick Category Shortcuts */}
+      {/* Quick Category Shortcuts (Clean English) */}
       <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
         {EXPLORE_CATEGORIES.slice(0, 7).map((cat) => (
           <Link
@@ -96,15 +120,72 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* Section 1: Tamil Classics & Melodies */}
+      {/* Section 1: Tamil Love Songs & Melodies (Dynamic) */}
+      {loveSongs.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+                <HeartHandshake className="w-6 h-6 text-rose-500" />
+                <span>Tamil Love Songs</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-inisai-muted">
+                Heartwarming romantic melodies, duets, and evergreen love hits
+              </p>
+            </div>
+            <Link
+              href="/search?q=tamil+love+songs"
+              className="text-xs font-semibold text-inisai-teal hover:underline"
+            >
+              See all
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {loveSongs.map((track) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                playlistContext={loveSongs}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Section 2: Recommended For You (Auto Radio) */}
+      {recommendedTracks.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-inisai-accent" />
+                <span>Recommended For You</span>
+              </h2>
+              <p className="text-xs sm:text-sm text-inisai-muted">
+                Top charting hits, energetic rhythms, and trending tracks
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
+            {recommendedTracks.map((track) => (
+              <TrackCard
+                key={track.id}
+                track={track}
+                playlistContext={recommendedTracks}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Section 3: Tamil Golden Melodies */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
-              <span>Tamil Golden Melodies</span>
-              <span className="text-xs font-normal text-inisai-accent font-tamil px-2 py-0.5 rounded-md bg-inisai-accent/15">
-                தமிழ் ராகங்கள்
-              </span>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Tamil Golden Melodies
             </h2>
             <p className="text-xs sm:text-sm text-inisai-muted">
               Timeless classics and soothing lyrical masterpieces
@@ -123,18 +204,18 @@ export default function HomePage() {
             <TrackCard
               key={track.id}
               track={track}
-              playlistContext={CURATED_TRACKS}
+              playlistContext={tamilTracks}
             />
           ))}
         </div>
       </section>
 
-      {/* Section 2: Featured Playlists */}
+      {/* Section 4: Featured Playlists */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Featured Collections (தொகுப்புகள்)
+              Featured Collections
             </h2>
             <p className="text-xs sm:text-sm text-inisai-muted">
               Hand-crafted playlists for study, relaxation, and devotion
@@ -157,15 +238,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Classical & Instrumental Acoustics */}
+      {/* Section 5: Classical & Instrumental Acoustics */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
-              <span>Instrumental & Meditation</span>
-              <span className="text-xs font-normal text-inisai-teal font-tamil px-2 py-0.5 rounded-md bg-inisai-teal/15">
-                நாத அலைகள்
-              </span>
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              Instrumental & Meditation
             </h2>
             <p className="text-xs sm:text-sm text-inisai-muted">
               Veena, Carnatic acoustic fusion, and morning ragas
@@ -181,30 +259,6 @@ export default function HomePage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {instrumentalTracks.map((track) => (
-            <TrackCard
-              key={track.id}
-              track={track}
-              playlistContext={CURATED_TRACKS}
-            />
-          ))}
-        </div>
-      </section>
-
-      {/* Section 4: Global Hits & Indie */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-              Global Beats & Ambient
-            </h2>
-            <p className="text-xs sm:text-sm text-inisai-muted">
-              Synthwave, Sufi rhythms, and international melodies
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {globalTracks.map((track) => (
             <TrackCard
               key={track.id}
               track={track}

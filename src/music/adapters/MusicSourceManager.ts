@@ -74,14 +74,30 @@ export class MusicSourceManager {
     if (track.syncedLyrics) return track.syncedLyrics;
     if (track.plainLyrics) return track.plainLyrics;
 
+    // Check adapter lyrics
     const adapter = this.adapters.get(track.sourceType);
     if (adapter && adapter.getLyrics) {
       try {
-        return await adapter.getLyrics(track);
-      } catch {
-        return null;
-      }
+        const lyr = await adapter.getLyrics(track);
+        if (lyr) return lyr;
+      } catch {}
     }
+
+    // Live search on LRCLIB API
+    try {
+      const res = await fetch(
+        `/api/music/lyrics?track=${encodeURIComponent(
+          track.title
+        )}&artist=${encodeURIComponent(track.artist)}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        return data.syncedLyrics || data.plainLyrics || null;
+      }
+    } catch (e) {
+      console.warn("Failed resolving lyrics via API:", e);
+    }
+
     return null;
   }
 }

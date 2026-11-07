@@ -23,9 +23,9 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname();
 
   const primaryNav = [
-    { label: "Home (முகப்பு)", href: "/", icon: Home },
-    { label: "Explore (ஆராய்)", href: "/explore", icon: Compass },
-    { label: "Search (தேடு)", href: "/search", icon: Search },
+    { label: "Home", href: "/", icon: Home },
+    { label: "Explore", href: "/explore", icon: Compass },
+    { label: "Search", href: "/search", icon: Search },
   ];
 
   const libraryNav = [
@@ -33,7 +33,7 @@ export const Sidebar: React.FC = () => {
     { label: "Playlists", href: "/playlists", icon: ListMusic },
     { label: "Liked Songs", href: "/liked", icon: Heart },
     { label: "Recently Played", href: "/history", icon: History },
-    { label: "Local Music (சாதன இசை)", href: "/local", icon: Disc3 },
+    { label: "Local Music", href: "/local", icon: Disc3 },
     { label: "Downloads & Offline", href: "/offline", icon: HardDrive },
   ];
 

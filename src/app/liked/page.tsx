@@ -25,7 +25,7 @@ export default function LikedSongsPage() {
               Playlist
             </span>
             <h1 className="text-2xl sm:text-4xl font-extrabold text-white">
-              Liked Songs (விருப்பப் பாடல்கள்)
+              Liked Songs
             </h1>
             <p className="text-xs sm:text-sm text-inisai-muted mt-1">
               {likedTracks.length} saved songs

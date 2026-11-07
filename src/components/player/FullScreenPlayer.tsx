@@ -56,6 +56,12 @@ export const FullScreenPlayer: React.FC = () => {
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const liked = isLiked(currentTrack.id);
+  const [imgError, setImgError] = React.useState(false);
+
+  const artworkSrc =
+    !imgError && currentTrack.artworkUrl
+      ? currentTrack.artworkUrl
+      : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80";
 
   const cycleRepeat = () => {
     if (repeatMode === "off") setRepeatMode("all");
@@ -155,11 +161,12 @@ export const FullScreenPlayer: React.FC = () => {
         {activeDrawerTab === "nowPlaying" && (
           <div className="flex flex-col items-center justify-center max-w-md w-full mx-auto space-y-6">
             {/* Artwork Card */}
-            <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/20 border border-white/10 group">
+            <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/20 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
               <Image
-                src={currentTrack.artworkUrl}
+                src={artworkSrc}
                 alt={currentTrack.title}
                 fill
+                onError={() => setImgError(true)}
                 className={`object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
                 priority
                 sizes="(max-width: 640px) 256px, 320px"

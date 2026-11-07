@@ -37,7 +37,7 @@ export default function OfflinePage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">
-                {isOnline ? "Network Connected (இணையம் இயங்குகிறது)" : "Offline Mode Active"}
+                {isOnline ? "Network Connected" : "Offline Mode Active"}
               </h1>
               <p className="text-xs text-inisai-muted">
                 {isOnline

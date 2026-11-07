@@ -105,7 +105,7 @@ export default function LoginPage() {
                 : "text-white/60 hover:text-white"
             }`}
           >
-            Register (பதிவு)
+            Register
           </button>
         </div>
 
@@ -203,7 +203,7 @@ export default function LoginPage() {
             onClick={handleGuest}
             className="text-xs text-inisai-muted hover:text-white transition-colors"
           >
-            Continue as Guest (விருந்தினராக தொடரவும்)
+            Continue as Guest
           </button>
         </div>
       </div>

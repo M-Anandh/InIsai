@@ -32,7 +32,7 @@ export default function ProfilePage() {
         </div>
         <div>
           <span className="text-xs uppercase font-mono tracking-wider text-inisai-teal font-bold">
-            Listener Profile (ரசிகர் சுயவிவரம்)
+            Listener Profile
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
             {name}
@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
         <div className="space-y-2">
           <label className="text-xs text-inisai-muted font-medium block">
-            Display Name (பெயர்)
+            Display Name
           </label>
           <input
             type="text"
@@ -80,18 +80,18 @@ export default function ProfilePage() {
 
         <div className="space-y-2">
           <label className="text-xs text-inisai-muted font-medium block">
-            Preferred Music Language (விருப்ப மொழி)
+            Preferred Music Language
           </label>
           <select
             value={lang}
             onChange={(e) => setLang(e.target.value)}
             className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-white outline-none focus:border-inisai-accent cursor-pointer"
           >
-            <option value="Tamil">Tamil (தமிழ்)</option>
+            <option value="Tamil">Tamil</option>
             <option value="English">English</option>
-            <option value="Hindi">Hindi (हिंदी)</option>
-            <option value="Telugu">Telugu (తెలుగు)</option>
-            <option value="Malayalam">Malayalam (മലയാളം)</option>
+            <option value="Hindi">Hindi</option>
+            <option value="Telugu">Telugu</option>
+            <option value="Malayalam">Malayalam</option>
           </select>
         </div>
 

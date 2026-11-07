@@ -41,7 +41,7 @@ export default function LibraryPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">
             <Library className="w-8 h-8 text-inisai-accent" />
-            <span>Your Library (உங்கள் தொகுப்பு)</span>
+            <span>Your Library</span>
           </h1>
           <p className="text-xs sm:text-sm text-inisai-muted mt-1">
             Personal playlists, liked tracks, listening history, and local audio.

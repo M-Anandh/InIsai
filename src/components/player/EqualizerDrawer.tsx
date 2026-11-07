@@ -42,7 +42,7 @@ export const EqualizerDrawer: React.FC = () => {
       {/* Presets */}
       <div>
         <label className="text-xs uppercase tracking-wider text-inisai-muted font-medium block mb-2">
-          Sound Profile (முன்னமைவு)
+          Sound Profile
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {Object.entries(EQ_PRESETS).map(([key, preset]) => (
@@ -94,7 +94,7 @@ export const EqualizerDrawer: React.FC = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white/5 p-4 rounded-2xl border border-white/5 flex flex-col space-y-2">
           <div className="flex justify-between items-center text-xs">
-            <span className="text-inisai-muted">Bass Boost (பாஸ்)</span>
+            <span className="text-inisai-muted">Bass Boost</span>
             <span className="font-mono text-inisai-accent">{settings.bassBoost}dB</span>
           </div>
           <input

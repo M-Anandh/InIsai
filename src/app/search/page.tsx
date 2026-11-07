@@ -129,7 +129,7 @@ export default function SearchPage() {
               : "bg-white/5 text-white/60 hover:bg-white/10"
           }`}
         >
-          All Cloud & Tamil Sources
+          All Online Sources
         </button>
 
         <button

@@ -3,7 +3,7 @@ import { Track } from "@/types";
 export const CURATED_TRACKS: Track[] = [
   {
     id: "inisai-tamil-01",
-    title: "Malarndhum Malaraadha (மலர்ந்தும் மலராத)",
+    title: "Malarndhum Malaraadha",
     artist: "T. M. Soundararajan, P. Susheela",
     album: "Paasamalar Classics",
     duration: 214,
@@ -35,7 +35,7 @@ export const CURATED_TRACKS: Track[] = [
   },
   {
     id: "inisai-tamil-02",
-    title: "Kanne Kalaimane (கண்ணே கலைமானே)",
+    title: "Kanne Kalaimane",
     artist: "K. J. Yesudas, Ilaiyaraaja",
     album: "Moondram Pirai Evergreens",
     duration: 242,
@@ -60,7 +60,7 @@ export const CURATED_TRACKS: Track[] = [
   },
   {
     id: "inisai-tamil-03",
-    title: "Chinna Thamarai (சின்ன தாமரை)",
+    title: "Chinna Thamarai",
     artist: "Vijay Antony, Krish, Suchitra",
     album: "Vettaikaaran",
     duration: 258,
@@ -84,7 +84,7 @@ export const CURATED_TRACKS: Track[] = [
   {
     id: "inisai-inst-01",
     title: "Maha Ganapathim — Veena Serenade",
-    artist: "E. Gayathri (Carnatic Strings)",
+    artist: "E. Gayathri",
     album: "Classical Veena Ragas",
     duration: 210,
     artworkUrl: "https://c.saavncdn.com/254/Classical-Veena-Tamil-2015-500x500.jpg",
@@ -98,7 +98,7 @@ export const CURATED_TRACKS: Track[] = [
   },
   {
     id: "inisai-dev-01",
-    title: "Gayatri Mantra (காயத்ரி மந்திரம்)",
+    title: "Gayatri Mantra",
     artist: "Anuradha Paudwal, Divine Choir",
     album: "Sacred Chants & Vibrations",
     duration: 260,
@@ -122,7 +122,7 @@ export const CURATED_TRACKS: Track[] = [
   },
   {
     id: "inisai-hin-01",
-    title: "Kesariya (கேசரியா)",
+    title: "Kesariya",
     artist: "Arijit Singh, Pritam, Amitabh Bhattacharya",
     album: "Brahmastra",
     duration: 268,
@@ -145,7 +145,7 @@ export const CURATED_TRACKS: Track[] = [
   },
   {
     id: "inisai-tamil-04",
-    title: "Vande Mataram (வந்தே மாதரம்)",
+    title: "Vande Mataram",
     artist: "A. R. Rahman",
     album: "Vande Mataram (Maa Tujhe Salaam)",
     duration: 236,
@@ -169,14 +169,14 @@ export const CURATED_TRACKS: Track[] = [
 export const FEATURED_PLAYLISTS = [
   {
     id: "playlist-tamil-golden",
-    name: "Tamil Golden Melodies (இனிசை தமிழ் ராகங்கள்)",
+    name: "Tamil Golden Melodies",
     description: "Timeless Tamil melodies and soothing classics that touch your soul.",
     artworkUrl: "https://c.saavncdn.com/936/Paasamalar-Tamil-1961-20200508133346-500x500.jpg",
     trackIds: ["inisai-tamil-01", "inisai-tamil-02", "inisai-tamil-03"],
   },
   {
     id: "playlist-meditation",
-    name: "Peaceful Meditation & Ragas (அமைதி ராகங்கள்)",
+    name: "Peaceful Meditation & Ragas",
     description: "Acoustic Veena, Carnatic fusion, and devotional chants.",
     artworkUrl: "https://c.saavncdn.com/254/Classical-Veena-Tamil-2015-500x500.jpg",
     trackIds: ["inisai-inst-01", "inisai-dev-01"],
@@ -191,13 +191,13 @@ export const FEATURED_PLAYLISTS = [
 ];
 
 export const EXPLORE_CATEGORIES = [
-  { id: "tamil", label: "Tamil (தமிழ்)", icon: "Music2", count: "100,000+ songs" },
+  { id: "tamil", label: "Tamil", icon: "Music2", count: "100,000+ songs" },
   { id: "english", label: "English", icon: "Radio", count: "Global Hits" },
-  { id: "hindi", label: "Hindi (हिंदी)", icon: "Mic2", count: "Bollywood & Indie" },
-  { id: "telugu", label: "Telugu (తెలుగు)", icon: "Disc3", count: "Tollywood Melodies" },
-  { id: "malayalam", label: "Malayalam (മലയാളം)", icon: "Headphones", count: "Evergreen Mollywood" },
+  { id: "hindi", label: "Hindi", icon: "Mic2", count: "Bollywood & Indie" },
+  { id: "telugu", label: "Telugu", icon: "Disc3", count: "Tollywood Melodies" },
+  { id: "malayalam", label: "Malayalam", icon: "Headphones", count: "Evergreen Mollywood" },
   { id: "instrumental", label: "Instrumental & Veena", icon: "AudioWaveform", count: "Pure Acoustics" },
-  { id: "devotional", label: "Devotional (பக்தி)", icon: "Flame", count: "Spiritual Peace" },
+  { id: "devotional", label: "Devotional", icon: "Flame", count: "Spiritual Peace" },
   { id: "classical", label: "Classical Carnatic", icon: "Sparkles", count: "Traditional Ragas" },
   { id: "lofi", label: "Lo-Fi & Study", icon: "Coffee", count: "Focus & Chill" },
   { id: "workout", label: "Workout & Energy", icon: "Zap", count: "High BPM Beats" },

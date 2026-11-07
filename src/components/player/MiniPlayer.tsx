@@ -42,6 +42,12 @@ export const MiniPlayer: React.FC = () => {
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
   const liked = isLiked(currentTrack.id);
+  const [imgError, setImgError] = React.useState(false);
+
+  const artworkSrc =
+    !imgError && currentTrack.artworkUrl
+      ? currentTrack.artworkUrl
+      : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80";
 
   return (
     <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 bg-inisai-card/95 backdrop-blur-xl border-t border-inisai-border shadow-2xl transition-all duration-300">
@@ -70,11 +76,12 @@ export const MiniPlayer: React.FC = () => {
             setFullScreenOpen(true);
           }}
         >
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-black/40 border border-white/10 group">
+          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/10 group">
             <Image
-              src={currentTrack.artworkUrl}
+              src={artworkSrc}
               alt={currentTrack.title}
               fill
+              onError={() => setImgError(true)}
               className={`object-cover ${isPlaying ? "animate-spin-slow" : ""}`}
               sizes="48px"
             />

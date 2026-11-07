@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { InisaiLogo } from "../ui/InisaiLogo";
 import { PWAInstaller } from "../pwa/PWAInstaller";
-import { Search, User, LogIn } from "lucide-react";
+import { Search, LogIn } from "lucide-react";
 
 export const Header: React.FC = () => {
   const router = useRouter();
@@ -18,11 +18,11 @@ export const Header: React.FC = () => {
   }, []);
 
   const greeting = useMemo(() => {
-    if (!mounted) return "இனிசை வணக்கம் (Welcome to InIsai)";
+    if (!mounted) return "Welcome to InIsai";
     const hour = new Date().getHours();
-    if (hour < 12) return "காலை வணக்கம் (Good Morning)";
-    if (hour < 17) return "மதிய வணக்கம் (Good Afternoon)";
-    return "மாலை வணக்கம் (Good Evening)";
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
   }, [mounted]);
 
   return (
@@ -33,7 +33,7 @@ export const Header: React.FC = () => {
           <InisaiLogo size="sm" />
         </div>
         <div className="hidden md:block">
-          <p className="text-xs font-semibold text-inisai-accent font-tamil">
+          <p className="text-xs font-semibold text-inisai-accent">
             {greeting}
           </p>
           <h2 className="text-lg font-bold text-white tracking-tight">
@@ -48,7 +48,7 @@ export const Header: React.FC = () => {
         className="hidden sm:flex items-center space-x-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-full cursor-pointer text-xs text-inisai-muted max-w-xs w-full transition-all"
       >
         <Search className="w-4 h-4 text-inisai-accent" />
-        <span className="truncate">Search songs, Tamil ragas, artists...</span>
+        <span className="truncate">Search songs, artists, albums...</span>
       </div>
 
       {/* Right Actions: Install & Profile */}
@@ -77,4 +77,3 @@ export const Header: React.FC = () => {
     </header>
   );
 };
-

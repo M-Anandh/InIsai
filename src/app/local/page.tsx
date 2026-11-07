@@ -118,7 +118,7 @@ export default function LocalMusicPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">
             <Disc3 className="w-8 h-8 text-inisai-teal" />
-            <span>Local Music (சாதன இசைப் பாடல்கள்)</span>
+            <span>Local Music</span>
           </h1>
           <p className="text-xs sm:text-sm text-inisai-muted mt-1">
             Play MP3, WAV, FLAC, and M4A audio files directly from your device. Never uploaded to remote servers.

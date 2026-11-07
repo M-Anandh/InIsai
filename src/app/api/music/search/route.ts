@@ -42,10 +42,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // If query is a generic mood/genre term like "love songs", "melody", expand with "tamil" to prioritize native catalogue
+    let formattedQuery = query.trim();
+    if (/^(love songs?|melody( songs?)?|romantic( songs?)?|sad songs?|hits|new songs?|party songs?)$/i.test(formattedQuery)) {
+      formattedQuery = `tamil ${formattedQuery}`;
+    }
+
     // 1. Try search.getResults (comprehensive search)
     const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(
-      query
-    )}&_format=json&_marker=0&api_version=4&n=20`;
+      formattedQuery
+    )}&_format=json&_marker=0&api_version=4&n=25`;
 
     const res = await fetch(searchUrl, {
       headers: {

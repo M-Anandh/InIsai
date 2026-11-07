@@ -13,25 +13,25 @@ export interface EQPresetDefinition {
 
 export const EQ_PRESETS: Record<string, EQPresetDefinition> = {
   flat: {
-    name: "Flat (இயல்பு)",
+    name: "Flat",
     bands: [0, 0, 0, 0, 0],
     bassBoost: 0,
     trebleBoost: 0,
   },
   bass: {
-    name: "Bass Boost (கனத்த பாஸ்)",
+    name: "Bass Boost",
     bands: [6, 4, 1, 0, 0],
     bassBoost: 8,
     trebleBoost: 1,
   },
   vocal: {
-    name: "Vocal Clarity (குரல் இனிமை)",
+    name: "Vocal Clarity",
     bands: [-2, 1, 5, 4, 2],
     bassBoost: -1,
     trebleBoost: 4,
   },
   acoustic: {
-    name: "Acoustic / Veena (நாதம்)",
+    name: "Acoustic / Veena",
     bands: [2, 3, 2, 4, 5],
     bassBoost: 2,
     trebleBoost: 5,
@@ -209,6 +209,28 @@ export const usePlayerStore = create<PlayerState>()(
           // Update history
           const history = [track, ...get().history.filter((t) => t.id !== track.id)].slice(0, 50);
           set({ history });
+
+          // Auto-Radio recommendation: If queue has only 1 or 2 items, fetch recommended tracks
+          if (updatedQueue.length <= 2) {
+            try {
+              const recoRes = await fetch(
+                `/api/music/recommend?id=${encodeURIComponent(
+                  track.sourceId || ""
+                )}&artist=${encodeURIComponent(track.artist || "")}`
+              );
+              if (recoRes.ok) {
+                const recoData = await recoRes.json();
+                const recoTracks: Track[] = (recoData.results || []).filter(
+                  (rt: Track) => rt.id !== track.id
+                );
+                if (recoTracks.length > 0) {
+                  set((s) => ({ queue: [...s.queue, ...recoTracks] }));
+                }
+              }
+            } catch (err) {
+              console.warn("Auto-radio recommendation fetch failed:", err);
+            }
+          }
         },
 
         togglePlay: () => {
@@ -227,8 +249,8 @@ export const usePlayerStore = create<PlayerState>()(
         pause: () => audioEngine.pause(),
         resume: () => audioEngine.play(),
 
-        nextTrack: () => {
-          const { queue, queueIndex, repeatMode } = get();
+        nextTrack: async () => {
+          const { queue, queueIndex, repeatMode, currentTrack } = get();
           if (queue.length === 0) return;
 
           let nextIdx = queueIndex + 1;
@@ -236,6 +258,26 @@ export const usePlayerStore = create<PlayerState>()(
             if (repeatMode === "all") {
               nextIdx = 0;
             } else {
+              // Try to fetch more recommendations seamlessly
+              try {
+                const recoRes = await fetch(
+                  `/api/music/recommend?id=${encodeURIComponent(
+                    currentTrack?.sourceId || ""
+                  )}&artist=${encodeURIComponent(currentTrack?.artist || "")}`
+                );
+                if (recoRes.ok) {
+                  const recoData = await recoRes.json();
+                  const newTracks = (recoData.results || []).filter(
+                    (rt: Track) => !queue.some((q) => q.id === rt.id)
+                  );
+                  if (newTracks.length > 0) {
+                    const expandedQueue = [...queue, ...newTracks];
+                    set({ queue: expandedQueue });
+                    get().playTrack(expandedQueue[nextIdx]);
+                    return;
+                  }
+                }
+              } catch {}
               audioEngine.pause();
               return;
             }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Track } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
@@ -24,6 +24,7 @@ export const TrackRow: React.FC<TrackRowProps> = ({
   const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue } =
     usePlayerStore();
   const { isLiked, toggleLikeTrack } = useAuthStore();
+  const [imgError, setImgError] = useState(false);
 
   const isCurrent = currentTrack?.id === track.id;
   const liked = isLiked(track.id);
@@ -35,6 +36,11 @@ export const TrackRow: React.FC<TrackRowProps> = ({
       playTrack(track, playlistContext);
     }
   };
+
+  const artworkSrc =
+    !imgError && track.artworkUrl
+      ? track.artworkUrl
+      : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80";
 
   return (
     <div
@@ -53,11 +59,12 @@ export const TrackRow: React.FC<TrackRowProps> = ({
         )}
 
         {/* Thumbnail with overlay play */}
-        <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-black/40 border border-white/5">
+        <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/5">
           <Image
-            src={track.artworkUrl}
+            src={artworkSrc}
             alt={track.title}
             fill
+            onError={() => setImgError(true)}
             className="object-cover"
             sizes="48px"
           />
@@ -144,4 +151,3 @@ export const TrackRow: React.FC<TrackRowProps> = ({
     </div>
   );
 };
-

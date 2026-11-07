@@ -38,7 +38,7 @@ export default function SettingsPage() {
       <div className="pb-4 border-b border-white/5">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">
           <Settings className="w-8 h-8 text-inisai-accent" />
-          <span>Settings (அமைப்புகள்)</span>
+          <span>Settings</span>
         </h1>
         <p className="text-xs sm:text-sm text-inisai-muted mt-1">
           Customize playback, equalizer preferences, account, and local storage.

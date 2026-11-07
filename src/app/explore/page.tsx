@@ -38,7 +38,7 @@ function ExploreContent() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">
             <Compass className="w-7 h-7 text-inisai-accent" />
-            <span>Explore & Discover (ஆராய்ந்து அறி)</span>
+            <span>Explore & Discover</span>
           </h1>
           <p className="text-xs sm:text-sm text-inisai-muted mt-1">
             Browse by language, mood, genre, or regional classical traditions.
@@ -78,7 +78,7 @@ function ExploreContent() {
               : "bg-white/5 hover:bg-white/10 text-white/70"
           }`}
         >
-          All Genres (அனைத்தும்)
+          All Genres
         </button>
 
         {EXPLORE_CATEGORIES.map((cat) => (
@@ -99,9 +99,7 @@ function ExploreContent() {
       {/* Results Header */}
       <div className="flex items-center justify-between text-xs text-inisai-muted">
         <span>Showing {filteredTracks.length} tracks</span>
-        <span className="font-tamil">
-          {selectedCategory === "tamil" ? "தூய தமிழ் ராகங்கள்" : "InIsai Collection"}
-        </span>
+        <span>InIsai Curated Collection</span>
       </div>
 
       {/* Track Grid / List */}

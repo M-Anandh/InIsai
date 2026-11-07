@@ -83,7 +83,7 @@ export const PWAInstaller: React.FC<{ variant?: "button" | "banner" }> = ({
         title="Install InIsai app on your device"
       >
         <Download className="w-3.5 h-3.5" />
-        <span>Install App (நிறுவு)</span>
+        <span>Install App</span>
       </button>
 
       {/* iOS Safari Guide Modal */}
