@@ -65,3 +65,4 @@ export interface PlayerSettings {
   selectedEqPreset: string;
   sleepTimerMinutes: number | null; // null or minutes remaining
 }
+

@@ -82,3 +82,4 @@ export class LocalMusicAdapter implements IMusicSourceAdapter {
     return typeof window !== "undefined" && typeof window.indexedDB !== "undefined";
   }
 }
+

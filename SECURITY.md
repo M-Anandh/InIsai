@@ -9,3 +9,4 @@ InIsai is designed with defense-in-depth principles:
 
 ## 2. Reporting Vulnerabilities
 If you discover a security vulnerability in InIsai, please open a private report or contact the maintainer directly.
+

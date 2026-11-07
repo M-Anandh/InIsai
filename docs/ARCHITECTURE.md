@@ -154,3 +154,4 @@ All tables are secured with Row Level Security (RLS) guaranteeing users can only
 1. **Zero Recurring Infrastructure**: Vercel Hobby ($0) + Supabase Free ($0) + GitHub ($0).
 2. **Audio Bandwidth Protection**: Never proxy heavy audio streams through Next.js server functions; client connects directly to authorized audio origins or plays local device files.
 3. **Storage Protection**: Audio files are never stored in PostgreSQL or Supabase Storage (which have strict free-tier quotas). User audio remains on client devices via IndexedDB.
+

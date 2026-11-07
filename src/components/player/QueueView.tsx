@@ -132,3 +132,4 @@ export const QueueView: React.FC = () => {
     </div>
   );
 };
+

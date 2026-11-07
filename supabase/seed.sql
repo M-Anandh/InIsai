@@ -41,3 +41,4 @@ VALUES
   'Classical'
 )
 ON CONFLICT (id) DO NOTHING;
+

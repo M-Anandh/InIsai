@@ -86,3 +86,4 @@ export const InisaiLogo: React.FC<LogoProps> = ({
     </div>
   );
 };
+

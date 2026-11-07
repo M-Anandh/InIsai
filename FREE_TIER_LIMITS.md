@@ -39,3 +39,4 @@ If the application expands beyond personal/non-commercial use:
 1. **Commercial Usage:** Vercel Pro ($20/seat/month) is required for commercial products.
 2. **Database Scale:** If active users exceed 50k MAU or database size approaches 500 MB, upgrade to Supabase Pro ($25/month).
 3. **Custom Domain:** Optional $10–$15/year purchase from a registrar.
+

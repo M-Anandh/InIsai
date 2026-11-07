@@ -62,3 +62,4 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist }) => {
     </div>
   );
 };
+

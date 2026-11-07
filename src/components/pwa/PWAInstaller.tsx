@@ -111,3 +111,4 @@ export const PWAInstaller: React.FC<{ variant?: "button" | "banner" }> = ({
     </>
   );
 };
+

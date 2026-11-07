@@ -17,3 +17,4 @@ export interface IMusicSourceAdapter {
   getLyrics?(track: Track): Promise<string | null>;
   isAvailable(): Promise<boolean>;
 }
+

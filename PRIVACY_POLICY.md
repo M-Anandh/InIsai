@@ -14,3 +14,4 @@ We use your information solely to:
 
 ## 3. Data Retention and Deletion
 You can delete your playlists, history, or your entire account directly through the Settings page at any time.
+

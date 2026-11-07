@@ -1,6 +1,7 @@
 import { IMusicSourceAdapter, SearchOptions } from "../types";
 import { Track } from "@/types";
 import { CuratedCatalogAdapter } from "./CuratedCatalogAdapter";
+import { PublicCatalogAdapter } from "./PublicCatalogAdapter";
 import { JamendoAdapter } from "./JamendoAdapter";
 import { LocalMusicAdapter } from "./LocalMusicAdapter";
 
@@ -9,6 +10,7 @@ export class MusicSourceManager {
   private adapters: Map<string, IMusicSourceAdapter> = new Map();
 
   private constructor() {
+    this.registerAdapter(new PublicCatalogAdapter());
     this.registerAdapter(new CuratedCatalogAdapter());
     this.registerAdapter(new JamendoAdapter());
     this.registerAdapter(new LocalMusicAdapter());
@@ -35,11 +37,18 @@ export class MusicSourceManager {
 
   public async searchAll(query: string, options?: SearchOptions): Promise<Track[]> {
     const results: Track[] = [];
+    const seenIds = new Set<string>();
+
     for (const adapter of this.adapters.values()) {
       try {
         if (await adapter.isAvailable()) {
           const tracks = await adapter.search(query, options);
-          results.push(...tracks);
+          for (const t of tracks) {
+            if (!seenIds.has(t.id)) {
+              seenIds.add(t.id);
+              results.push(t);
+            }
+          }
         }
       } catch (err) {
         console.warn(`Error searching in adapter ${adapter.id}:`, err);
@@ -52,7 +61,8 @@ export class MusicSourceManager {
     const adapter = this.adapters.get(track.sourceType);
     if (adapter) {
       try {
-        return await adapter.getStreamUrl(track);
+        const resolved = await adapter.getStreamUrl(track);
+        if (resolved) return resolved;
       } catch (err) {
         console.warn(`Error resolving stream for ${track.id}:`, err);
       }

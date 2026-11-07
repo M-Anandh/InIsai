@@ -80,3 +80,4 @@ export class JamendoAdapter implements IMusicSourceAdapter {
     return true;
   }
 }
+

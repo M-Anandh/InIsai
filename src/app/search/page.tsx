@@ -24,8 +24,12 @@ export default function SearchPage() {
   }, []);
 
   const saveRecentSearch = (term: string) => {
-    if (!term.trim()) return;
-    const updated = [term.trim(), ...recentSearches.filter((s) => s.toLowerCase() !== term.toLowerCase())].slice(0, 8);
+    if (!term || term.trim().length < 2) return;
+    const clean = term.trim();
+    const updated = [
+      clean,
+      ...recentSearches.filter((s) => s.toLowerCase() !== clean.toLowerCase()),
+    ].slice(0, 8);
     setRecentSearches(updated);
     try {
       localStorage.setItem("inisai_recent_searches", JSON.stringify(updated));
@@ -39,6 +43,30 @@ export default function SearchPage() {
     } catch {}
   };
 
+  const performSearch = async (searchTerm: string) => {
+    const q = searchTerm.trim();
+    if (!q) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let tracks: Track[] = [];
+      if (activeFilter === "local") {
+        tracks = await musicSourceManager.getLocalAdapter().search(q);
+      } else {
+        tracks = await musicSourceManager.searchAll(q);
+      }
+      setResults(tracks);
+    } catch (e) {
+      console.error("Search failure:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Debounced search
   useEffect(() => {
     if (!query.trim()) {
@@ -48,25 +76,22 @@ export default function SearchPage() {
     }
 
     setIsLoading(true);
-    const timer = setTimeout(async () => {
-      try {
-        let tracks: Track[] = [];
-        if (activeFilter === "local") {
-          tracks = await musicSourceManager.getLocalAdapter().search(query);
-        } else {
-          tracks = await musicSourceManager.searchAll(query);
-        }
-        setResults(tracks);
-        saveRecentSearch(query);
-      } catch (e) {
-        console.error("Search failure:", e);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300);
+    const timer = setTimeout(() => {
+      performSearch(query);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [query, activeFilter]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (query.trim()) {
+        saveRecentSearch(query);
+        performSearch(query);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -78,7 +103,8 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Tamil classics, songs, artists, albums, or local files..."
+            onKeyDown={handleKeyDown}
+            placeholder="Search Tamil songs (e.g. Chinna Thamarai, Naa Ready, Ilaiyaraaja, Anirudh)..."
             className="w-full bg-transparent px-3 text-white placeholder-inisai-muted/60 text-sm sm:text-base outline-none"
             autoFocus
           />
@@ -103,7 +129,7 @@ export default function SearchPage() {
               : "bg-white/5 text-white/60 hover:bg-white/10"
           }`}
         >
-          All Sources
+          All Cloud & Tamil Sources
         </button>
 
         <button
@@ -138,7 +164,10 @@ export default function SearchPage() {
             {recentSearches.map((term) => (
               <button
                 key={term}
-                onClick={() => setQuery(term)}
+                onClick={() => {
+                  setQuery(term);
+                  saveRecentSearch(term);
+                }}
                 className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs text-white/80 transition-colors"
               >
                 {term}
@@ -152,13 +181,13 @@ export default function SearchPage() {
       {isLoading ? (
         <div className="py-12 flex flex-col items-center justify-center text-inisai-muted space-y-2">
           <div className="w-8 h-8 rounded-full border-2 border-inisai-accent border-t-transparent animate-spin" />
-          <p className="text-xs">Searching InIsai & local libraries...</p>
+          <p className="text-xs">Searching InIsai & Tamil music catalogs...</p>
         </div>
       ) : query && results.length === 0 ? (
         <div className="py-16 text-center text-inisai-muted space-y-2">
           <p className="text-base text-white/80 font-medium">No results found for &ldquo;{query}&rdquo;</p>
           <p className="text-xs">
-            Try searching for &ldquo;Pasamalar&rdquo;, &ldquo;Malarndhum&rdquo;, &ldquo;Veena&rdquo;, or load files via Local Music.
+            Try searching for &ldquo;Chinna Thamarai&rdquo;, &ldquo;Vettaikaaran&rdquo;, &ldquo;Naa Ready&rdquo;, &ldquo;Ilaiyaraaja&rdquo;, or &ldquo;Anirudh&rdquo;.
           </p>
         </div>
       ) : results.length > 0 ? (
@@ -168,12 +197,16 @@ export default function SearchPage() {
             <span>Click to play</span>
           </div>
           {results.map((track, idx) => (
-            <TrackRow
-              key={track.id}
-              track={track}
-              index={idx}
-              playlistContext={results}
-            />
+            <div
+              key={`${track.id}-${idx}`}
+              onClick={() => saveRecentSearch(track.title)}
+            >
+              <TrackRow
+                track={track}
+                index={idx}
+                playlistContext={results}
+              />
+            </div>
           ))}
         </div>
       ) : (
@@ -182,8 +215,29 @@ export default function SearchPage() {
           <Sparkles className="w-8 h-8 mx-auto text-inisai-accent opacity-50" />
           <h3 className="text-sm font-semibold text-white/80">Explore Tamil & World Music</h3>
           <p className="text-xs max-w-sm mx-auto leading-relaxed">
-            Search for classic Tamil singers like T. M. Soundararajan, P. Susheela, Ilaiyaraaja, or meditative Veena ragas.
+            Search for any song or artist: &ldquo;Chinna Thamarai&rdquo;, &ldquo;Anirudh&rdquo;, &ldquo;A.R. Rahman&rdquo;, &ldquo;Yuvan&rdquo;, &ldquo;Ilaiyaraaja&rdquo;, &ldquo;Harris Jayaraj&rdquo;, or load your device files.
           </p>
+          <div className="flex flex-wrap justify-center gap-2 pt-2">
+            {[
+              "Chinna Thamarai",
+              "Naa Ready",
+              "Arabic Kuthu",
+              "Malarndhum Malaraadha",
+              "Ilaiyaraaja Hits",
+              "Kanne Kalaimane",
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => {
+                  setQuery(suggestion);
+                  saveRecentSearch(suggestion);
+                }}
+                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/70 hover:text-white transition-all"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -292,3 +292,4 @@ export const FullScreenPlayer: React.FC = () => {
     </div>
   );
 };
+

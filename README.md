@@ -89,3 +89,4 @@ InIsai strictly adheres to intellectual property standards:
 
 ## 📄 License
 This project is licensed under the MIT License.
+

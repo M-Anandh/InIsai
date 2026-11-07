@@ -143,3 +143,4 @@ export const LyricsView: React.FC = () => {
     </div>
   );
 };
+

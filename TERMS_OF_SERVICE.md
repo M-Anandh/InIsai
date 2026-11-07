@@ -12,3 +12,4 @@ By accessing or using InIsai ("the Service"), you agree to be bound by these Ter
 
 ## 3. Disclaimers
 The Service is provided "as is" without warranty of any kind, express or implied.
+

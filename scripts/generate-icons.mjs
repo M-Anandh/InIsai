@@ -111,3 +111,4 @@ fs.writeFileSync(path.join(iconsDir, "icon-512.png"), createPNG(512, 512));
 fs.writeFileSync(path.join(iconsDir, "icon-maskable.png"), createPNG(512, 512));
 
 console.log("Successfully generated InIsai PWA icons (192, 512, maskable)!");
+

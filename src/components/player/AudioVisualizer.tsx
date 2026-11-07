@@ -87,3 +87,4 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     />
   );
 };
+

@@ -192,3 +192,4 @@ export const EqualizerDrawer: React.FC = () => {
     </div>
   );
 };
+

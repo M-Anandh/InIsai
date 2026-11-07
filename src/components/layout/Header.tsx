@@ -11,13 +11,19 @@ import { Search, User, LogIn } from "lucide-react";
 export const Header: React.FC = () => {
   const router = useRouter();
   const { user, isAuthenticated } = useAuthStore();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const greeting = useMemo(() => {
+    if (!mounted) return "இனிசை வணக்கம் (Welcome to InIsai)";
     const hour = new Date().getHours();
     if (hour < 12) return "காலை வணக்கம் (Good Morning)";
     if (hour < 17) return "மதிய வணக்கம் (Good Afternoon)";
     return "மாலை வணக்கம் (Good Evening)";
-  }, []);
+  }, [mounted]);
 
   return (
     <header className="sticky top-0 z-20 bg-inisai-dark/80 backdrop-blur-md border-b border-white/5 px-4 sm:px-8 py-3.5 flex items-center justify-between">
@@ -71,3 +77,4 @@ export const Header: React.FC = () => {
     </header>
   );
 };
+

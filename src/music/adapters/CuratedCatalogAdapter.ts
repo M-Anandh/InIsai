@@ -38,3 +38,4 @@ export class CuratedCatalogAdapter implements IMusicSourceAdapter {
     return true;
   }
 }
+
