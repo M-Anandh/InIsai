@@ -3,6 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { InisaiLogo } from "../ui/InisaiLogo";
 import { PWAInstaller } from "../pwa/PWAInstaller";
 import {
@@ -17,10 +19,13 @@ import {
   Disc3,
   Settings,
   User,
+  LogOut,
 } from "lucide-react";
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
+  const { isAuthenticated, signOut } = useAuthStore();
+  const mounted = useMounted();
 
   const primaryNav = [
     { label: "Home", href: "/", icon: Home },
@@ -121,6 +126,16 @@ export const Sidebar: React.FC = () => {
               </Link>
             );
           })}
+
+          {mounted && isAuthenticated && (
+            <button
+              onClick={() => signOut()}
+              className="flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium text-rose-400/90 hover:text-rose-300 hover:bg-rose-500/10 w-full transition-all cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          )}
         </div>
 
         {/* Creator Attribution */}

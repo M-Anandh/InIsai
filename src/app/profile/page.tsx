@@ -4,10 +4,34 @@ import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
 import { useMounted } from "@/hooks/use-mounted";
-import { User, Check, Heart, History, ListMusic, Save } from "lucide-react";
+import {
+  User,
+  Check,
+  Heart,
+  History,
+  ListMusic,
+  Save,
+  LogOut,
+  KeyRound,
+  ShieldCheck,
+  Moon,
+  Sun,
+  Lock,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 
 export default function ProfilePage() {
-  const { user, updateProfile, likedTrackIds, userPlaylists } = useAuthStore();
+  const {
+    user,
+    isAuthenticated,
+    signOut,
+    updateProfile,
+    changePassword,
+    toggleTheme,
+    likedTrackIds,
+    userPlaylists,
+  } = useAuthStore();
   const { history } = usePlayerStore();
   const mounted = useMounted();
 
@@ -15,12 +39,22 @@ export default function ProfilePage() {
   const [lang, setLang] = useState("Tamil");
   const [isSaved, setIsSaved] = useState(false);
 
+  // Change Password state
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordStatus, setPasswordStatus] = useState<{
+    success?: boolean;
+    message?: string;
+  } | null>(null);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
   useEffect(() => {
     if (user?.displayName) setName(user.displayName);
     if (user?.preferredLanguage) setLang(user.preferredLanguage);
   }, [user]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     await updateProfile({
       displayName: name.trim(),
@@ -30,24 +64,74 @@ export default function ProfilePage() {
     setTimeout(() => setIsSaved(false), 2500);
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordStatus(null);
+
+    if (newPassword.length < 6) {
+      setPasswordStatus({
+        success: false,
+        message: "Password must be at least 6 characters long.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordStatus({
+        success: false,
+        message: "Passwords do not match.",
+      });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    const res = await changePassword(newPassword);
+    setIsUpdatingPassword(false);
+
+    if (res.error) {
+      setPasswordStatus({ success: false, message: res.error });
+    } else {
+      setPasswordStatus({
+        success: true,
+        message: "Password updated successfully!",
+      });
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
+
+  const isLight = mounted && user?.theme === "light";
+
   return (
-    <div className="space-y-8 max-w-3xl mx-auto">
-      {/* Profile Header Card */}
-      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-inisai-card via-[#1c1836] to-inisai-card border border-white/10 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6 text-center sm:text-left">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-inisai-accent via-inisai-teal to-inisai-emerald flex items-center justify-center font-extrabold text-white text-3xl shadow-xl shadow-inisai-accent/30 uppercase">
-          {name.charAt(0)}
+    <div className="space-y-8 max-w-3xl mx-auto pb-12">
+      {/* Profile Header Card with Sign Out */}
+      <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-inisai-card via-[#1c1836] to-inisai-card border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
+          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-inisai-accent via-inisai-teal to-inisai-emerald flex items-center justify-center font-extrabold text-white text-3xl shadow-xl shadow-inisai-accent/30 uppercase flex-shrink-0">
+            {name.charAt(0)}
+          </div>
+          <div>
+            <span className="text-xs uppercase font-mono tracking-wider text-inisai-teal font-bold">
+              {mounted && isAuthenticated ? "Verified Account" : "Guest Profile"}
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+              {name}
+            </h1>
+            <p className="text-xs text-inisai-muted mt-0.5">
+              {user?.email || "Listening in Guest Mode"} • Preferred: <span className="text-white font-semibold">{lang}</span>
+            </p>
+          </div>
         </div>
-        <div>
-          <span className="text-xs uppercase font-mono tracking-wider text-inisai-teal font-bold">
-            Listener Profile
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
-            {name}
-          </h1>
-          <p className="text-xs text-inisai-muted mt-0.5">
-            Preferred Language: <span className="text-white font-semibold">{lang}</span>
-          </p>
-        </div>
+
+        {/* Sign Out Button */}
+        <button
+          onClick={() => signOut()}
+          className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all shadow-sm flex-shrink-0"
+          title="Sign out of InIsai"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Sign Out</span>
+        </button>
       </div>
 
       {/* Stats Counter */}
@@ -69,9 +153,41 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Edit Form */}
-      <form onSubmit={handleSave} className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5">
-        <h2 className="text-base font-bold text-white">Edit Your Preferences</h2>
+      {/* Theme Selection Section */}
+      <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
+        <h2 className="text-base font-bold text-white flex items-center space-x-2">
+          {isLight ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-inisai-accent" />}
+          <span>Appearance & Theme</span>
+        </h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-white font-semibold">
+              Current Mode: <span className="text-inisai-accent">{isLight ? "Light Mode" : "Dark Mode"}</span>
+            </p>
+            <p className="text-xs text-inisai-muted mt-0.5">
+              Switch between midnight dark and modern light music listening interface.
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              isLight
+                ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20"
+                : "bg-white/10 border-white/10 text-white hover:bg-white/20"
+            }`}
+          >
+            {isLight ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            <span>{isLight ? "Switch to Dark" : "Switch to Light"}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Preferences Form */}
+      <form onSubmit={handleSaveProfile} className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5">
+        <h2 className="text-base font-bold text-white flex items-center space-x-2">
+          <User className="w-5 h-5 text-inisai-teal" />
+          <span>Edit Profile & Preferences</span>
+        </h2>
 
         <div className="space-y-2">
           <label className="text-xs text-inisai-muted font-medium block">
@@ -104,13 +220,88 @@ export default function ProfilePage() {
 
         <button
           type="submit"
-          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-inisai-accent text-white text-xs font-bold shadow-lg shadow-inisai-accent/30 hover:opacity-90 transition-all"
+          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-inisai-accent text-white text-xs font-bold shadow-lg shadow-inisai-accent/30 hover:opacity-90 transition-all cursor-pointer"
         >
           {isSaved ? <Check className="w-4 h-4 text-inisai-emerald" /> : <Save className="w-4 h-4" />}
           <span>{isSaved ? "Saved Successfully!" : "Save Changes"}</span>
         </button>
       </form>
+
+      {/* Change Password Section */}
+      <form onSubmit={handlePasswordChange} className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5">
+        <div>
+          <h2 className="text-base font-bold text-white flex items-center space-x-2">
+            <KeyRound className="w-5 h-5 text-rose-400" />
+            <span>Security & Change Password</span>
+          </h2>
+          <p className="text-xs text-inisai-muted mt-1">
+            Update your account login password. Passwords must be at least 6 characters.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs text-inisai-muted font-medium block">
+              New Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter new password (min. 6 chars)"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/10 text-sm text-white placeholder-inisai-muted/50 outline-none focus:border-inisai-accent"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs text-inisai-muted font-medium block">
+              Confirm New Password
+            </label>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-white placeholder-inisai-muted/50 outline-none focus:border-inisai-accent"
+            />
+          </div>
+        </div>
+
+        {passwordStatus && (
+          <div
+            className={`p-3 rounded-xl text-xs font-semibold flex items-center space-x-2 ${
+              passwordStatus.success
+                ? "bg-inisai-emerald/15 text-inisai-emerald border border-inisai-emerald/30"
+                : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+            }`}
+          >
+            {passwordStatus.success ? (
+              <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+            ) : (
+              <Lock className="w-4 h-4 flex-shrink-0" />
+            )}
+            <span>{passwordStatus.message}</span>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={isUpdatingPassword}
+          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-inisai-accent text-white text-xs font-bold shadow-lg shadow-rose-500/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
+        >
+          <Lock className="w-4 h-4" />
+          <span>{isUpdatingPassword ? "Updating Password..." : "Update Password"}</span>
+        </button>
+      </form>
     </div>
   );
 }
-

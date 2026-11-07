@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { InisaiLogo } from "../ui/InisaiLogo";
 import { PWAInstaller } from "../pwa/PWAInstaller";
-import { Search, LogIn } from "lucide-react";
+import { ThemeToggle } from "../ui/ThemeToggle";
+import { Search, LogIn, LogOut } from "lucide-react";
 
 export const Header: React.FC = () => {
   const router = useRouter();
-  const { user, isAuthenticated } = useAuthStore();
+  const { user, isAuthenticated, signOut } = useAuthStore();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -51,19 +52,32 @@ export const Header: React.FC = () => {
         <span className="truncate">Search songs, artists, albums...</span>
       </div>
 
-      {/* Right Actions: Install & Profile */}
-      <div className="flex items-center space-x-3">
+      {/* Right Actions: Theme Toggle, Install & Profile / Sign Out */}
+      <div className="flex items-center space-x-2 sm:space-x-3">
+        <ThemeToggle />
         <PWAInstaller />
 
         {mounted && isAuthenticated && user ? (
-          <Link
-            href="/profile"
-            className="flex items-center space-x-2 p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
-          >
-            <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-inisai-accent to-inisai-teal flex items-center justify-center text-xs font-bold text-white uppercase">
-              {user.displayName.charAt(0)}
-            </div>
-          </Link>
+          <div className="flex items-center space-x-2">
+            <Link
+              href="/profile"
+              className="flex items-center space-x-2 p-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+              title="Open Profile"
+            >
+              <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-inisai-accent to-inisai-teal flex items-center justify-center text-xs font-bold text-white uppercase">
+                {user.displayName.charAt(0)}
+              </div>
+            </Link>
+
+            <button
+              onClick={() => signOut()}
+              className="p-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-medium flex items-center space-x-1 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
+          </div>
         ) : (
           <Link
             href="/login"

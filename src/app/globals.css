@@ -7,12 +7,75 @@
   --foreground: #f8fafc;
 }
 
+html.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Tamil', sans-serif;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light Mode Overrides */
+html.light body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+html.light .bg-inisai-dark {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-inisai-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-inisai-cardHover:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .border-inisai-border {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-inisai-muted {
+  color: #64748b !important;
+}
+
+html.light .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.05) !important;
+}
+
+html.light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+html.light .border-white\/5,
+html.light .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Completely suppress Next.js developer tools indicator badge overlay */
+nextjs-portal,
+[data-nextjs-dev-indicator],
+[data-nextjs-toast] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* Custom smooth dark scrollbar */
@@ -38,4 +101,3 @@ body {
 input[type="range"] {
   accent-color: #8b5cf6;
 }
-

@@ -25,6 +25,10 @@ interface AuthState {
   deletePlaylist: (playlistId: string) => Promise<void>;
   addTrackToPlaylist: (playlistId: string, track: Track) => Promise<void>;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => Promise<void>;
+
+  // Security & Preferences
+  changePassword: (newPassword: string) => Promise<{ error?: string }>;
+  toggleTheme: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -37,6 +41,18 @@ export const useAuthStore = create<AuthState>()(
       userPlaylists: [],
 
       initialize: async () => {
+        const savedTheme = get().user?.theme || "dark";
+        if (typeof document !== "undefined") {
+          const root = document.documentElement;
+          if (savedTheme === "light") {
+            root.classList.add("light");
+            root.classList.remove("dark");
+          } else {
+            root.classList.add("dark");
+            root.classList.remove("light");
+          }
+        }
+
         if (!isSupabaseConfigured()) {
           // If no Supabase, retain guest user profile if exists
           if (!get().user) {
@@ -283,6 +299,40 @@ export const useAuthStore = create<AuthState>()(
             };
           }),
         }));
+      },
+
+      toggleTheme: () => {
+        const currentTheme = get().user?.theme || "dark";
+        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        const currentUser = get().user;
+        if (currentUser) {
+          set({ user: { ...currentUser, theme: nextTheme } });
+        }
+        if (typeof document !== "undefined") {
+          const root = document.documentElement;
+          if (nextTheme === "light") {
+            root.classList.add("light");
+            root.classList.remove("dark");
+          } else {
+            root.classList.add("dark");
+            root.classList.remove("light");
+          }
+        }
+      },
+
+      changePassword: async (newPassword: string) => {
+        if (!newPassword || newPassword.length < 6) {
+          return { error: "Password must be at least 6 characters." };
+        }
+        if (isSupabaseConfigured() && get().isAuthenticated) {
+          try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) return { error: error.message };
+          } catch (err: any) {
+            return { error: err.message || "Failed to update password." };
+          }
+        }
+        return {};
       },
     }),
     {
