@@ -68,7 +68,7 @@ export const LyricsView: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center text-inisai-muted">
         <Mic2 className="w-12 h-12 mb-3 stroke-1 text-inisai-accent opacity-50" />
-        <p className="font-medium text-white/80">Lyrics Unavailable (வரிகள் கிடைக்கவில்லை)</p>
+        <p className="font-medium text-white/80">Lyrics Unavailable</p>
         <p className="text-xs text-inisai-muted mt-1 max-w-xs">
           Lyrics for &ldquo;{currentTrack.title}&rdquo; are not currently indexed or licensed for display.
         </p>

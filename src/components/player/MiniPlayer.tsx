@@ -17,7 +17,6 @@ import {
   Maximize2,
   Sliders,
 } from "lucide-react";
-import Image from "next/image";
 
 export const MiniPlayer: React.FC = () => {
   const {
@@ -77,13 +76,12 @@ export const MiniPlayer: React.FC = () => {
           }}
         >
           <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/10 group">
-            <Image
+            <img
               src={artworkSrc}
               alt={currentTrack.title}
-              fill
               onError={() => setImgError(true)}
-              className={`object-cover ${isPlaying ? "animate-spin-slow" : ""}`}
-              sizes="48px"
+              className={`w-full h-full object-cover ${isPlaying ? "animate-spin-slow" : ""}`}
+              referrerPolicy="no-referrer"
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
               <Maximize2 className="w-4 h-4 text-white" />

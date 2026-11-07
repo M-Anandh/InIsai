@@ -46,3 +46,4 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ syncedLyrics: null, plainLyrics: null });
   }
 }
+

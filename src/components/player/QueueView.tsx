@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { formatDuration } from "@/lib/utils";
 import { Play, Trash2, ArrowUp, ArrowDown, ListMusic, Plus, Sparkles } from "lucide-react";
-import Image from "next/image";
 import { Track } from "@/types";
 
 export const QueueView: React.FC = () => {
@@ -79,12 +78,12 @@ export const QueueView: React.FC = () => {
                   onClick={() => playTrack(track)}
                 >
                   <div className="relative w-11 h-11 rounded-lg overflow-hidden flex-shrink-0 bg-black/40">
-                    <Image
+                    <img
                       src={track.artworkUrl}
                       alt={track.title}
-                      fill
-                      className="object-cover"
-                      sizes="44px"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
                     />
                     {isCurrent && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
@@ -184,12 +183,12 @@ export const QueueView: React.FC = () => {
                   onClick={() => playTrack(track)}
                 >
                   <div className="relative w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-black/40">
-                    <Image
+                    <img
                       src={track.artworkUrl}
                       alt={track.title}
-                      fill
-                      className="object-cover"
-                      sizes="36px"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
                     />
                   </div>
                   <div className="flex-1 min-w-0">

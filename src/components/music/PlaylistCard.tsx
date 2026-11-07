@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import Image from "next/image";
+import React, { useState } from "react";
 import { Playlist, Track } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { Play, ListMusic } from "lucide-react";
@@ -27,12 +26,12 @@ export const PlaylistCard: React.FC<PlaylistCardProps> = ({ playlist }) => {
     >
       <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-black/40">
         {playlist.artworkUrl ? (
-          <Image
+          <img
             src={playlist.artworkUrl}
             alt={playlist.name}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-            sizes="(max-width: 640px) 160px, 220px"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-inisai-accent/30 to-inisai-teal/30">

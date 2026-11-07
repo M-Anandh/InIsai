@@ -21,7 +21,6 @@ import {
   Sliders,
   Radio,
 } from "lucide-react";
-import Image from "next/image";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { LyricsView } from "./LyricsView";
 import { QueueView } from "./QueueView";
@@ -162,14 +161,12 @@ export const FullScreenPlayer: React.FC = () => {
           <div className="flex flex-col items-center justify-center max-w-md w-full mx-auto space-y-6">
             {/* Artwork Card */}
             <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/20 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
-              <Image
+              <img
                 src={artworkSrc}
                 alt={currentTrack.title}
-                fill
                 onError={() => setImgError(true)}
-                className={`object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
-                priority
-                sizes="(max-width: 640px) 256px, 320px"
+                className={`w-full h-full object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
+                referrerPolicy="no-referrer"
               />
               <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] uppercase font-mono tracking-wider text-inisai-teal border border-white/10">
                 {currentTrack.sourceType}

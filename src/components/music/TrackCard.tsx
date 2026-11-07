@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { Track } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
@@ -45,15 +44,15 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     >
       {/* Artwork Container */}
       <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-tr from-purple-950/40 to-black/60">
-        <Image
+        <img
           src={artworkSrc}
           alt={track.title}
-          fill
           onError={() => setImgError(true)}
-          className={`object-cover group-hover:scale-105 transition-transform duration-500 ${
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
             isCurrent && isPlaying ? "opacity-90" : ""
           }`}
-          sizes="(max-width: 640px) 150px, (max-width: 1024px) 200px, 240px"
+          loading="lazy"
+          referrerPolicy="no-referrer"
         />
 
         {/* Hover/Active Play Overlay */}

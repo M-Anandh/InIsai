@@ -9,7 +9,7 @@ export default function ProfilePage() {
   const { user, updateProfile, likedTrackIds, userPlaylists } = useAuthStore();
   const { history } = usePlayerStore();
 
-  const [name, setName] = useState(user?.displayName || "InIsai Rasigan (ரசிகன்)");
+  const [name, setName] = useState(user?.displayName || "InIsai Listener");
   const [lang, setLang] = useState(user?.preferredLanguage || "Tamil");
   const [isSaved, setIsSaved] = useState(false);
 

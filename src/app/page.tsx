@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { CURATED_TRACKS, FEATURED_PLAYLISTS, EXPLORE_CATEGORIES } from "@/music/curated-data";
 import { TrackCard } from "@/components/music/TrackCard";
@@ -89,13 +88,11 @@ export default function HomePage() {
 
         {/* Hero Artwork */}
         <div className="relative w-48 h-48 sm:w-60 sm:h-60 rounded-2xl overflow-hidden shadow-2xl shadow-inisai-accent/30 border border-white/15 flex-shrink-0 group bg-black/40">
-          <Image
+          <img
             src={heroTrack.artworkUrl}
             alt={heroTrack.title}
-            fill
-            className="object-cover group-hover:scale-105 transition-transform duration-700"
-            priority
-            sizes="240px"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            referrerPolicy="no-referrer"
           />
         </div>
       </div>

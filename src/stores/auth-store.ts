@@ -43,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: {
                 id: "guest-user",
-                displayName: "InIsai Rasigan (ரசிகன்)",
+                displayName: "InIsai Listener",
                 preferredLanguage: "Tamil",
                 theme: "dark",
               },
@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: {
             id: "guest-user",
-            displayName: "InIsai Rasigan (ரசிகன்)",
+            displayName: "InIsai Listener",
             preferredLanguage: "Tamil",
             theme: "dark",
           },

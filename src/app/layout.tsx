@@ -7,7 +7,7 @@ import { MiniPlayer } from "@/components/player/MiniPlayer";
 import { FullScreenPlayer } from "@/components/player/FullScreenPlayer";
 
 export const metadata: Metadata = {
-  title: "InIsai (இனிசை) — Every Beat, Your World",
+  title: "InIsai — Every Beat, Your World",
   description:
     "Every Beat, Your World. Modern, installable PWA music streaming and personal music player with Tamil melodies and local music playback.",
   manifest: "/manifest.webmanifest",
@@ -38,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <meta name="referrer" content="no-referrer" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
