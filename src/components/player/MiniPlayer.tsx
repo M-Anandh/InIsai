@@ -69,16 +69,16 @@ export const MiniPlayer: React.FC = () => {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2">
         {/* Track Info & Artwork */}
         <div
-          className="flex items-center space-x-3 min-w-0 flex-1 max-w-xs sm:max-w-sm cursor-pointer select-none"
+          className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1 max-w-[150px] xs:max-w-xs sm:max-w-sm cursor-pointer select-none"
           onClick={() => {
             setActiveDrawerTab("nowPlaying");
             setFullScreenOpen(true);
           }}
         >
-          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/10 group">
+          <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/10 group">
             <img
               src={artworkSrc}
               alt={currentTrack.title}
@@ -92,10 +92,10 @@ export const MiniPlayer: React.FC = () => {
           </div>
 
           <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-semibold text-white truncate hover:underline">
+            <h4 className="text-xs sm:text-sm font-semibold text-white truncate hover:underline">
               {currentTrack.title}
             </h4>
-            <p className="text-xs text-inisai-muted truncate">
+            <p className="text-[11px] sm:text-xs text-inisai-muted truncate">
               {currentTrack.artist}
             </p>
           </div>
@@ -105,7 +105,7 @@ export const MiniPlayer: React.FC = () => {
               e.stopPropagation();
               toggleLikeTrack(currentTrack);
             }}
-            className="p-1 text-white/50 hover:text-rose-500 transition-colors"
+            className="hidden sm:block p-1 text-white/50 hover:text-rose-500 transition-colors"
             title={liked ? "Unlike" : "Like"}
           >
             <Heart

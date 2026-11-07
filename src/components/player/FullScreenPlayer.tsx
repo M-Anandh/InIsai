@@ -156,7 +156,7 @@ export const FullScreenPlayer: React.FC = () => {
       </div>
 
       {/* Main Tab Views */}
-      <div className="flex-1 overflow-hidden flex flex-col items-center justify-center p-4">
+      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 scrollbar-none">
         {activeDrawerTab === "lyrics" && <LyricsView />}
         {activeDrawerTab === "queue" && <QueueView />}
         {activeDrawerTab === "equalizer" && <EqualizerDrawer />}
