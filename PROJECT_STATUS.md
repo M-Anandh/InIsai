@@ -1,6 +1,6 @@
 # InIsai (இனிசை) — Project Status
 
-*Last updated: SSR Hydration Mismatch Resolution & Direct CDN Images*
+*Last updated: Dev Overlay Suppressed, Change Password, Sign Out Everywhere & Dark/Light Theme*
 
 ---
 
@@ -12,28 +12,33 @@
 
 ---
 
-## 2. Recent Critical Fixes & Enhancements
+## 2. Latest Enhancements & Features Completed
 
-1. **Hydration Mismatch Fix (`useMounted` guard):**
-   - **Root Cause:** React 19 / Next.js 15 fatal hydration error occurred when Zustand's `persist` middleware hydrated client properties (such as `likedTrackIds`, `currentTrack`, `user.displayName`) from `localStorage` immediately upon client load. This caused SSR HTML (e.g. `title="Like"`) to mismatch Client properties (e.g. `title="Unlike"`), triggering:
-     `"A tree hydrated but some attributes of the server rendered HTML didn't match the client properties... Application error: a client-side exception has occurred"`.
-   - **Fix Applied:** Implemented a unified `useMounted()` hook (`src/hooks/use-mounted.ts`) and guarded all dynamic local-storage attributes in `TrackCard`, `TrackRow`, `Header`, `MiniPlayer`, `FullScreenPlayer`, `LikedSongsPage`, `HistoryPage`, `LibraryPage`, `PlaylistsPage`, and `ProfilePage`. Server rendering and initial client hydration now match 100%, and dynamic state updates smoothly post-mount.
+1. **Suppressed Next.js Developer Tools Overlay:**
+   - Disabled `devIndicators: false` in `next.config.ts`.
+   - Injected global CSS override to suppress `nextjs-portal`, `[data-nextjs-dev-indicator]`, and dev toasts in `globals.css`.
+   - The black "N" badge in the bottom-left corner is completely removed for a clean experience.
 
-2. **Direct CDN Image Rendering & Fix for Broken Thumbnails:**
-   - Standardized on native `<img ... loading="lazy" referrerPolicy="no-referrer" />` with `onError` fallbacks across the entire application.
-   - Bypasses hotlink and proxy issues completely, allowing remote album art from CDNs (`c.saavncdn.com`, Unsplash, etc.) to load instantly without broken image icons or alt text overflow.
+2. **Sign Out Everywhere:**
+   - Added a prominent **Sign Out** button in [`ProfilePage`](file:///e:/Music/src/app/profile/page.tsx) header card.
+   - Added direct **Sign Out** button in [`Header.tsx`](file:///e:/Music/src/components/layout/Header.tsx) next to the user avatar.
+   - Added **Sign Out** option in [`Sidebar.tsx`](file:///e:/Music/src/components/layout/Sidebar.tsx) below Profile.
 
-3. **Sequential Search Queue Playback (Next/Previous Navigation):**
-   - When any song is clicked in the search results, the entire result list becomes the active queue (`playlistContext={results}`).
-   - Clicking **Next** (`⏭`) plays the next search result sequentially.
-   - Clicking **Previous** (`⏮`) returns to the previous song (or seeks to start if > 3s).
-   - Once the search list finishes, auto-radio recommendations are queued automatically so music never halts.
+3. **Change Password in Profile Section:**
+   - Built a dedicated **Security & Change Password** card in [`ProfilePage`](file:///e:/Music/src/app/profile/page.tsx).
+   - Features New Password and Confirm Password inputs with show/hide password toggle.
+   - Fully wired to `changePassword` in `useAuthStore` and Supabase Auth with visual confirmation feedback.
 
-4. **Clean English UI & Removal of Parenthesized Tamil Labels:**
-   - Removed all bracketed translations across navigation, header, sidebar, installer, lyrics, and settings (`Home`, `Explore`, `Search`, `Your Library`, `Local Music`, `Install App`, `Good Evening`, `InIsai Listener`).
+4. **Dark & Light Theme Mode:**
+   - Created reusable [`ThemeToggle.tsx`](file:///e:/Music/src/components/ui/ThemeToggle.tsx) component with Sun / Moon toggle.
+   - Supported in [`Header.tsx`](file:///e:/Music/src/components/layout/Header.tsx) and [`ProfilePage`](file:///e:/Music/src/app/profile/page.tsx).
+   - Full CSS variables and class overrides in `globals.css` for instant switching between deep midnight dark and clean modern light mode.
 
-5. **Live Synchronized Lyrics Engine (`/api/music/lyrics`):**
-   - Integrated LRCLIB for live synchronized LRC and plain lyrics with dynamic line-by-line scrolling and calibration.
+5. **Nilaave Vaa Featured Hero Track:**
+   - Replaced *Malarndhum Malaraadha* with **"Nilaave Vaa"** from *Mouna Ragam* (Ilaiyaraaja, SPB) with direct 500x500 artwork and 320kbps `.mp4` audio stream.
+
+6. **Dynamic Multi-Language Explore:**
+   - English, Telugu, Malayalam, Hindi, and Tamil dynamic search on `/explore` with high-bitrate streaming.
 
 ---
 
