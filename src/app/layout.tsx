@@ -61,6 +61,24 @@ export default function RootLayout({
             <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
               {children}
             </main>
+
+            {/* Copyright & Creator Attribution Footer */}
+            <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 text-xs text-inisai-muted flex flex-col sm:flex-row items-center justify-between gap-2">
+              <p>
+                © 2026 <span className="font-semibold text-white">InIsai (இனிசை)</span> — Every Beat, Your World.
+              </p>
+              <p className="flex items-center space-x-1.5">
+                <span>Created with ❤️ by</span>
+                <a
+                  href="https://www.linkedin.com/in/anandh-m/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-inisai-teal hover:text-inisai-accent font-semibold underline underline-offset-4 transition-colors"
+                >
+                  Anandh M
+                </a>
+              </p>
+            </footer>
           </div>
         </div>
 

@@ -7,6 +7,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { formatDuration } from "@/lib/utils";
 import {
   ChevronDown,
+  X,
   Play,
   Pause,
   SkipBack,
@@ -79,13 +80,14 @@ export const FullScreenPlayer: React.FC = () => {
       />
 
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/5 bg-black/40 backdrop-blur-md">
         <button
           onClick={() => setFullScreenOpen(false)}
-          className="p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/80 hover:text-white transition-colors"
-          title="Minimize player"
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium text-xs transition-colors shadow-sm cursor-pointer"
+          title="Close player"
         >
-          <ChevronDown className="w-6 h-6" />
+          <X className="w-4 h-4 text-rose-400" />
+          <span className="font-bold">Close</span>
         </button>
 
         {/* Tab Navigation */}

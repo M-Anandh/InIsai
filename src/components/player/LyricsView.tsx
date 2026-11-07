@@ -4,12 +4,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { parseLrc, getActiveLyricsIndex } from "@/lib/lyrics-parser";
 import { musicSourceManager } from "@/music/adapters/MusicSourceManager";
-import { Mic2, Clock } from "lucide-react";
+import { Mic2, Clock, X, ArrowLeft } from "lucide-react";
 
 export const LyricsView: React.FC = () => {
   const currentTrack = usePlayerStore((s) => s.currentTrack);
   const currentTime = usePlayerStore((s) => s.currentTime);
   const seek = usePlayerStore((s) => s.seek);
+  const setActiveDrawerTab = usePlayerStore((s) => s.setActiveDrawerTab);
+  const setFullScreenOpen = usePlayerStore((s) => s.setFullScreenOpen);
 
   const [rawLyrics, setRawLyrics] = useState<string | null>(null);
   const [offsetSec, setOffsetSec] = useState<number>(0);
@@ -77,7 +79,26 @@ export const LyricsView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full max-w-xl mx-auto px-4 py-2">
+    <div className="flex flex-col h-full max-w-xl mx-auto px-4 py-2 w-full">
+      {/* Quick Navigation and Close Header */}
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-white/10 text-xs">
+        <button
+          onClick={() => setActiveDrawerTab("nowPlaying")}
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Now Playing</span>
+        </button>
+
+        <button
+          onClick={() => setFullScreenOpen(false)}
+          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 font-semibold transition-all"
+        >
+          <X className="w-3.5 h-3.5" />
+          <span>Close</span>
+        </button>
+      </div>
+
       {/* Sync Offset Controls (only shown if time-synced) */}
       {parsedLyrics.length > 0 && (
         <div className="flex items-center justify-between text-xs py-2 px-3 mb-2 rounded-xl bg-white/5 border border-white/5 text-inisai-muted">

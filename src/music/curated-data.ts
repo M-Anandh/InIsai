@@ -2,36 +2,145 @@ import { Track } from "@/types";
 
 export const CURATED_TRACKS: Track[] = [
   {
-    id: "inisai-tamil-01",
-    title: "Malarndhum Malaraadha",
-    artist: "T. M. Soundararajan, P. Susheela",
-    album: "Paasamalar Classics",
-    duration: 214,
-    artworkUrl: "https://c.saavncdn.com/936/Paasamalar-Tamil-1961-20200508133346-500x500.jpg",
-    streamUrl: "https://aac.saavncdn.com/936/8110d902da5d89d1750dabb6b1d8e481_320.mp4",
+    id: "inisai-tamil-nilave",
+    title: "Nilaave Vaa",
+    artist: "S. P. Balasubrahmanyam, Ilaiyaraaja",
+    album: "Mouna Ragam",
+    duration: 277,
+    artworkUrl: "https://c.saavncdn.com/256/Mouna-Ragam-Tamil-2024-20251210130325-500x500.jpg",
+    streamUrl: "https://aac.saavncdn.com/256/f8f1eb835453f3661bd9be2745c3c508_320.mp4",
     sourceType: "curated",
-    sourceId: "curated-tamil-01",
+    sourceId: "curated-nilave-vaa",
     language: "Tamil",
     genre: "Melody",
     isPlayable: true,
-    plainLyrics: `மலர்ந்தும் மலராத பாதி மலர் போல
-வளரும் விழி வண்ணமே - வந்து
-விடிந்தும் விடியாத காலைப் பொழுதாக
-விளைந்த கலை அன்னமே
-நதி வெள்ளம் காய்ந்து விட்டால்
-நாளைப் பொழுதில் மழை பொழியாதா
-பொன்மானின் கால்கள் பட்டால்
-பூவின் மடியில் தேன் வழியாதா`,
-    syncedLyrics: `[00:00.00]♫ InIsai Tamil Classics ♫
-[00:06.00]மலர்ந்தும் மலராத பாதி மலர் போல
-[00:15.50]வளரும் விழி வண்ணமே - வந்து
-[00:24.00]விடிந்தும் விடியாத காலைப் பொழுதாக
-[00:32.00]விளைந்த கலை அன்னமே
-[00:41.00]நதி வெள்ளம் காய்ந்து விட்டால்
-[00:46.50]நாளைப் பொழுதில் மழை பொழியாதா
-[00:54.00]பொன்மானின் கால்கள் பட்டால்
-[01:02.00]பூவின் மடியில் தேன் வழியாதா
-[01:12.00]மலர்ந்தும் மலராத பாதி மலர் போல...`,
+    plainLyrics: `நிலாவே வா நில்லாதே வா
+என்னைத் தொட்டுத் தாலாட்ட வா
+கண்ணில் சுடும் காயம்
+நெஞ்சில் சுடும் பாரம்
+தீர்க்க ஒரு பாட்டெழுது
+நிலாவே வா நில்லாதே வா...`,
+    syncedLyrics: `[00:00.00]♫ Nilaave Vaa — Mouna Ragam ♫
+[00:26.50]நிலாவே வா நில்லாதே வா
+[00:39.00]என்னைத் தொட்டுத் தாலாட்ட வா
+[00:51.00]நிலாவே வா நில்லாதே வா
+[01:03.50]என்னைத் தொட்டுத் தாலாட்ட வா
+[01:15.50]கண்ணில் சுடும் காயம்
+[01:21.00]நெஞ்சில் சுடும் பாரம்
+[01:27.50]தீர்க்க ஒரு பாட்டெழுது
+[01:39.00]நிலாவே வா நில்லாதே வா
+[01:51.50]என்னைத் தொட்டுத் தாலாட்ட வா`,
+  },
+  {
+    id: "inisai-tamil-03",
+    title: "Chinna Thamarai",
+    artist: "Krish, Suchitra",
+    album: "Vettaikaaran",
+    duration: 236,
+    artworkUrl: "https://c.saavncdn.com/221/Vettaikaaran-Tamil-2009-20200620122143-500x500.jpg",
+    streamUrl: "https://aac.saavncdn.com/221/4a613f1d8f7ceca06796c9c613e580e0_320.mp4",
+    sourceType: "curated",
+    sourceId: "curated-tamil-03",
+    language: "Tamil",
+    genre: "Romantic / Melody",
+    isPlayable: true,
+    plainLyrics: `ஒரு சின்ன தாமரை
+என் கண்ணில் பூத்ததே
+அதன் மின்னல் வார்த்தைகள்
+என் நெஞ்சை தைத்ததே...`,
+    syncedLyrics: `[00:00.00]♫ Chinna Thamarai — Vettaikaaran ♫
+[00:15.50]ஒரு சின்ன தாமரை
+[00:20.50]என் கண்ணில் பூத்ததே
+[00:27.00]அதன் மின்னல் வார்த்தைகள்
+[00:32.50]என் நெஞ்சை தைத்ததே
+[00:38.00]கண்கள் மூடினால் கண்ணெதிரே தோன்றுதே
+[00:44.00]கைகள் நீட்டினால் காற்றில் கரைந்து போகுதே...`,
+  },
+  {
+    id: "inisai-tel-01",
+    title: "Samajavaragamana",
+    artist: "Sid Sriram, Thaman S",
+    album: "Ala Vaikunthapurramuloo",
+    duration: 219,
+    artworkUrl: "https://c.saavncdn.com/517/Ala-Vaikunthapurramuloo-Telugu-2019-20200116144338-500x500.jpg",
+    streamUrl: "https://aac.saavncdn.com/517/339d76dce4db4f43f4721eec2d8f03ef_320.mp4",
+    sourceType: "curated",
+    sourceId: "curated-tel-01",
+    language: "Telugu",
+    genre: "Tollywood / Melody",
+    isPlayable: true,
+    plainLyrics: `సామజవరగమనా
+నిను చూసి ఆగగలనా
+మనోహరా నా ప్రాణమా
+నీపైనే నా సర్వమా...`,
+    syncedLyrics: `[00:00.00]♫ Samajavaragamana ♫
+[00:12.00]సామజవరగమనా
+[00:24.00]నిను చూసి ఆగగలనా
+[00:36.00]మనోహరా నా ప్రాణమా`,
+  },
+  {
+    id: "inisai-mal-01",
+    title: "Darshana",
+    artist: "Hesham Abdul Wahab",
+    album: "Hridayam",
+    duration: 225,
+    artworkUrl: "https://c.saavncdn.com/555/Hridayam-Side-A-Malayalam-2022-20230803211029-500x500.jpg",
+    streamUrl: "https://aac.saavncdn.com/555/dd42c3e603cb40b91cc2ddd03ae6a499_320.mp4",
+    sourceType: "curated",
+    sourceId: "curated-mal-01",
+    language: "Malayalam",
+    genre: "Mollywood / Romantic",
+    isPlayable: true,
+    plainLyrics: `ദർശനാ...
+പകരം നൽകാൻ ഒന്നുമില്ലാതെ
+നിൻ ഓർമ്മകളിൽ ഞാൻ ഉഴലുന്നു...`,
+    syncedLyrics: `[00:00.00]♫ Darshana — Hridayam ♫
+[00:15.00]ദർശനാ...
+[00:30.00]പകരം നൽകാൻ ഒന്നുമില്ലാതെ`,
+  },
+  {
+    id: "inisai-eng-01",
+    title: "Espresso",
+    artist: "Sabrina Carpenter",
+    album: "Espresso",
+    duration: 175,
+    artworkUrl: "https://c.saavncdn.com/111/Espresso-English-2024-20240412064803-500x500.jpg",
+    streamUrl: "https://aac.saavncdn.com/111/cf81f6eb5b6768fe2e1ddf9335124a5f_320.mp4",
+    sourceType: "curated",
+    sourceId: "curated-eng-01",
+    language: "English",
+    genre: "Pop",
+    isPlayable: true,
+    plainLyrics: `Now he's thinkin' 'bout me every night, oh
+Is it that sweet? I guess so
+Say you can't sleep, baby, I know
+That's that me espresso`,
+    syncedLyrics: `[00:00.00]♫ Espresso — Sabrina Carpenter ♫
+[00:08.50]Now he's thinkin' 'bout me every night, oh
+[00:13.00]Is it that sweet? I guess so
+[00:17.00]Say you can't sleep, baby, I know
+[00:21.50]That's that me espresso`,
+  },
+  {
+    id: "inisai-hin-01",
+    title: "Kesariya",
+    artist: "Arijit Singh, Pritam, Amitabh Bhattacharya",
+    album: "Brahmastra",
+    duration: 268,
+    artworkUrl: "https://c.saavncdn.com/871/Kesariya-From-Brahmastra-Hindi-2022-20220717092820-500x500.jpg",
+    streamUrl: "https://aac.saavncdn.com/871/c2febd353f3a076a406fa37510f31f9f_320.mp4",
+    sourceType: "curated",
+    sourceId: "curated-hin-01",
+    language: "Hindi",
+    genre: "Romantic / Bollywood",
+    isPlayable: true,
+    plainLyrics: `केसरिया तेरा इश्क है पिया
+रंग जाऊं जो मैं हाथ लगाऊं
+दिन बीते सारा तेरी फिक्र में
+रैन सारी तेरी खैर मनाऊं`,
+    syncedLyrics: `[00:00.00]♫ Kesariya ♫
+[00:15.00]केसरिया तेरा इश्क है पिया
+[00:30.00]रंग जाऊं जो मैं हाथ लगाऊं`,
   },
   {
     id: "inisai-tamil-02",
@@ -57,29 +166,6 @@ export const CURATED_TRACKS: Track[] = [
 [00:34.00]அந்தியில் பூத்த முல்லையே
 [00:48.00]மன்னவன் பாடும் பாட்டிலே
 [01:00.00]உள்ளம் மயங்கிட ஆ ஆ...`,
-  },
-  {
-    id: "inisai-tamil-03",
-    title: "Chinna Thamarai",
-    artist: "Vijay Antony, Krish, Suchitra",
-    album: "Vettaikaaran",
-    duration: 258,
-    artworkUrl: "https://c.saavncdn.com/221/Vettaikaaran-Tamil-2009-20200620122143-500x500.jpg",
-    streamUrl: "https://aac.saavncdn.com/221/3a5db784670af4cecf0ff4656a489efb_320.mp4",
-    sourceType: "curated",
-    sourceId: "curated-tamil-03",
-    language: "Tamil",
-    genre: "Romantic / Melody",
-    isPlayable: true,
-    plainLyrics: `ஒரு சின்ன தாமரை
-என் கண்ணில் பூத்ததே
-அதன் மின்னல் வார்த்தைகள்
-என் நெஞ்சை தைத்ததே...`,
-    syncedLyrics: `[00:00.00]♫ Chinna Thamarai ♫
-[00:10.00]ஒரு சின்ன தாமரை
-[00:20.00]என் கண்ணில் பூத்ததே
-[00:30.00]அதன் மின்னல் வார்த்தைகள்
-[00:40.00]என் நெஞ்சை தைத்ததே...`,
   },
   {
     id: "inisai-inst-01",
@@ -115,33 +201,7 @@ export const CURATED_TRACKS: Track[] = [
 धियो यो नः प्रचोदयात्`,
     syncedLyrics: `[00:00.00]ॐ...
 [00:15.00]ॐ भूर्भुवः स्वः
-[00:30.00]तत्सवितुर्वरेण्यं
-[00:48.00]भर्गோ தேவஸ்ய தீமஹி
-[01:05.00]தியோ யோ ந: ப்ரசோதயாத்
-[01:25.00]சாந்தி... சாந்தி... சாந்தி...`,
-  },
-  {
-    id: "inisai-hin-01",
-    title: "Kesariya",
-    artist: "Arijit Singh, Pritam, Amitabh Bhattacharya",
-    album: "Brahmastra",
-    duration: 268,
-    artworkUrl: "https://c.saavncdn.com/871/Kesariya-From-Brahmastra-Hindi-2022-20220717092820-500x500.jpg",
-    streamUrl: "https://aac.saavncdn.com/871/c2febd353f3a076a406fa37510f31f9f_320.mp4",
-    sourceType: "curated",
-    sourceId: "curated-hin-01",
-    language: "Hindi",
-    genre: "Romantic / Pop",
-    isPlayable: true,
-    plainLyrics: `केसरिया तेरा इश्क है पिया
-रंग जाऊं जो मैं हाथ लगाऊं
-दिन बीते सारा तेरी फिक्र में
-रैन सारी तेरी खैर मनाऊं...`,
-    syncedLyrics: `[00:00.00]♫ Kesariya ♫
-[00:15.00]केसरिया तेरा इश्क है पिया
-[00:30.00]रंग जाऊं जो मैं हाथ लगाऊं
-[00:45.00]दिन बीते सारा तेरी फिक्र में
-[01:00.00]रैन सारी तेरी खैर मनाऊं...`,
+[00:30.00]तत्सवितुर्वरेण्यं`,
   },
   {
     id: "inisai-tamil-04",
@@ -157,12 +217,10 @@ export const CURATED_TRACKS: Track[] = [
     genre: "Patriotic / Anthem",
     isPlayable: true,
     plainLyrics: `தாய் மண்ணே வணக்கம்!
-வந்தே மாதரம்... வந்தே மாதரம்...
 வந்தே மாதரம்... வந்தே மாதரம்...`,
     syncedLyrics: `[00:00.00]♫ வந்தே மாதரம் ♫
 [00:15.00]தாய் மண்ணே வணக்கம்
-[00:30.00]வந்தே மாதரம்
-[00:45.00]வந்தே மாதரம்...`,
+[00:30.00]வந்தே மாதரம்`,
   },
 ];
 
@@ -171,8 +229,8 @@ export const FEATURED_PLAYLISTS = [
     id: "playlist-tamil-golden",
     name: "Tamil Golden Melodies",
     description: "Timeless Tamil melodies and soothing classics that touch your soul.",
-    artworkUrl: "https://c.saavncdn.com/936/Paasamalar-Tamil-1961-20200508133346-500x500.jpg",
-    trackIds: ["inisai-tamil-01", "inisai-tamil-02", "inisai-tamil-03"],
+    artworkUrl: "https://c.saavncdn.com/256/Mouna-Ragam-Tamil-2024-20251210130325-500x500.jpg",
+    trackIds: ["inisai-tamil-nilave", "inisai-tamil-02", "inisai-tamil-03"],
   },
   {
     id: "playlist-meditation",
@@ -202,3 +260,16 @@ export const EXPLORE_CATEGORIES = [
   { id: "lofi", label: "Lo-Fi & Study", icon: "Coffee", count: "Focus & Chill" },
   { id: "workout", label: "Workout & Energy", icon: "Zap", count: "High BPM Beats" },
 ];
+
+export const CATEGORY_QUERY_MAP: Record<string, string> = {
+  tamil: "tamil songs",
+  english: "english pop",
+  hindi: "hindi hits",
+  telugu: "telugu hits",
+  malayalam: "malayalam hits",
+  instrumental: "veena instrumental",
+  devotional: "tamil devotional",
+  classical: "carnatic classical",
+  lofi: "tamil lofi chill",
+  workout: "tamil workout beats",
+};

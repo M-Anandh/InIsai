@@ -122,6 +122,19 @@ export const Sidebar: React.FC = () => {
             );
           })}
         </div>
+
+        {/* Creator Attribution */}
+        <div className="pt-2 text-[11px] text-inisai-muted/60 text-center">
+          <p>© 2026 InIsai</p>
+          <a
+            href="https://www.linkedin.com/in/anandh-m/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-inisai-teal/80 hover:text-inisai-teal transition-colors font-medium inline-block mt-0.5"
+          >
+            By Anandh M ↗
+          </a>
+        </div>
       </div>
     </aside>
   );

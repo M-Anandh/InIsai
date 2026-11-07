@@ -1,35 +1,91 @@
 "use client";
 
-import React, { useState, useMemo, Suspense } from "react";
-import { EXPLORE_CATEGORIES, CURATED_TRACKS } from "@/music/curated-data";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
+import { EXPLORE_CATEGORIES, CATEGORY_QUERY_MAP, CURATED_TRACKS } from "@/music/curated-data";
 import { TrackCard } from "@/components/music/TrackCard";
 import { TrackRow } from "@/components/music/TrackRow";
 import { useSearchParams } from "next/navigation";
-import { Compass, LayoutGrid, List } from "lucide-react";
+import { Track } from "@/types";
+import { Compass, LayoutGrid, List, Loader2 } from "lucide-react";
 
 function ExploreContent() {
   const searchParams = useSearchParams();
-  const initialCategory = searchParams.get("category") || "all";
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const categoryParam = searchParams.get("category");
+  const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [onlineTracks, setOnlineTracks] = useState<Track[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const filteredTracks = useMemo(() => {
-    if (selectedCategory === "all") return CURATED_TRACKS;
+  // Sync category state when URL query parameter changes
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
 
-    return CURATED_TRACKS.filter((track) => {
-      const cat = selectedCategory.toLowerCase();
-      const lang = (track.language || "").toLowerCase();
-      const genre = (track.genre || "").toLowerCase();
+  // Fetch online tracks matching the selected category
+  useEffect(() => {
+    let isCancelled = false;
 
-      return (
-        lang.includes(cat) ||
-        genre.includes(cat) ||
-        (cat === "classical" && (genre.includes("carnatic") || genre.includes("classical"))) ||
-        (cat === "lofi" && (genre.includes("lofi") || genre.includes("chill"))) ||
-        (cat === "devotional" && (genre.includes("devotional") || lang.includes("sanskrit")))
-      );
-    });
+    if (selectedCategory === "all") {
+      setOnlineTracks([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const query = CATEGORY_QUERY_MAP[selectedCategory] || `${selectedCategory} songs`;
+    setIsLoading(true);
+
+    fetch(`/api/music/search?q=${encodeURIComponent(query)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (!isCancelled && data.results) {
+          setOnlineTracks(data.results);
+        }
+      })
+      .catch((err) => {
+        console.warn("Category tracks fetch error:", err);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [selectedCategory]);
+
+  const displayedTracks = useMemo(() => {
+    // 1. Filter local curated tracks matching category
+    let localMatches = CURATED_TRACKS;
+    if (selectedCategory !== "all") {
+      const cat = selectedCategory.toLowerCase();
+      localMatches = CURATED_TRACKS.filter((track) => {
+        const lang = (track.language || "").toLowerCase();
+        const genre = (track.genre || "").toLowerCase();
+        return (
+          lang.includes(cat) ||
+          genre.includes(cat) ||
+          (cat === "classical" && (genre.includes("carnatic") || genre.includes("classical"))) ||
+          (cat === "lofi" && (genre.includes("lofi") || genre.includes("chill"))) ||
+          (cat === "devotional" && (genre.includes("devotional") || lang.includes("sanskrit")))
+        );
+      });
+    }
+
+    // 2. Merge local and online tracks (avoiding duplicate IDs)
+    const combined = [...localMatches];
+    const seenIds = new Set(localMatches.map((t) => t.id));
+
+    for (const ot of onlineTracks) {
+      if (!seenIds.has(ot.id)) {
+        combined.push(ot);
+        seenIds.add(ot.id);
+      }
+    }
+
+    return combined;
+  }, [selectedCategory, onlineTracks]);
 
   return (
     <div className="space-y-8">
@@ -41,7 +97,7 @@ function ExploreContent() {
             <span>Explore & Discover</span>
           </h1>
           <p className="text-xs sm:text-sm text-inisai-muted mt-1">
-            Browse by language, mood, genre, or regional classical traditions.
+            Browse top hits by language, mood, genre, or regional classical traditions.
           </p>
         </div>
 
@@ -98,29 +154,34 @@ function ExploreContent() {
 
       {/* Results Header */}
       <div className="flex items-center justify-between text-xs text-inisai-muted">
-        <span>Showing {filteredTracks.length} tracks</span>
-        <span>InIsai Curated Collection</span>
+        <span>Showing {displayedTracks.length} tracks</span>
+        {isLoading && (
+          <span className="flex items-center space-x-1.5 text-inisai-accent">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span>Loading {selectedCategory} songs...</span>
+          </span>
+        )}
       </div>
 
       {/* Track Grid / List */}
       {viewMode === "grid" ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-4">
-          {filteredTracks.map((track) => (
+          {displayedTracks.map((track) => (
             <TrackCard
               key={track.id}
               track={track}
-              playlistContext={filteredTracks}
+              playlistContext={displayedTracks}
             />
           ))}
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredTracks.map((track, idx) => (
+          {displayedTracks.map((track, idx) => (
             <TrackRow
               key={track.id}
               track={track}
               index={idx}
-              playlistContext={filteredTracks}
+              playlistContext={displayedTracks}
             />
           ))}
         </div>
