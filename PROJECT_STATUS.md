@@ -1,47 +1,47 @@
 # InIsai (இனிசை) — Project Status
 
-*Last updated: Dev Overlay Suppressed, Change Password, Sign Out Everywhere & Dark/Light Theme*
+*Last updated: Master Upgrade Implementation — Playback Context, Dynamic Trending, Guest Security & Local Music Folder Import*
 
 ---
 
 ## 1. Project Overview
 - **Name:** InIsai (இனிசை)
 - **Tagline:** Every Beat, Your World.
+- **Production URL:** [https://in-isai.vercel.app/](https://in-isai.vercel.app/)
+- **Repository:** [https://github.com/M-Anandh/InIsai.git](https://github.com/M-Anandh/InIsai.git)
 - **Tech Stack:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Zustand, Supabase PostgreSQL, Web Audio API, PWA (Service Worker + Manifest).
 - **Target Deployment:** Vercel Hobby + Supabase Free ($0 / ₹0 recurring cost).
 
 ---
 
-## 2. Latest Enhancements & Features Completed
+## 2. Master Upgrade Enhancements
 
-1. **Suppressed Next.js Developer Tools Overlay:**
-   - Disabled `devIndicators: false` in `next.config.ts`.
-   - Injected global CSS override to suppress `nextjs-portal`, `[data-nextjs-dev-indicator]`, and dev toasts in `globals.css`.
-   - The black "N" badge in the bottom-left corner is completely removed for a clean experience.
+1. **Playback Context Architecture & Search Queue Fix (Phase 4):**
+   - Implemented `PlaybackContext` type (`search`, `playlist`, `trending`, `album`, `artist`, `local`, `history`, `custom_queue`).
+   - Fixed search result playback so clicking a search result creates and preserves an explicit search queue without resetting or desyncing during page transitions.
+   - Enhanced queue actions: `playNext`, `addToQueue`, `reorderQueue`, and `removeFromQueue`.
 
-2. **Sign Out Everywhere:**
-   - Added a prominent **Sign Out** button in [`ProfilePage`](file:///e:/Music/src/app/profile/page.tsx) header card.
-   - Added direct **Sign Out** button in [`Header.tsx`](file:///e:/Music/src/components/layout/Header.tsx) next to the user avatar.
-   - Added **Sign Out** option in [`Sidebar.tsx`](file:///e:/Music/src/components/layout/Sidebar.tsx) below Profile.
+2. **Guest Profile Security Isolation (Phase 6):**
+   - Strictly isolated unauthenticated Guest mode from Authenticated Cloud accounts.
+   - Removed password change forms for unauthenticated guests, displaying a friendly "Guest Profile" badge and a "Sign In to Sync" card.
+   - Password changes are only presented to authenticated users.
 
-3. **Change Password in Profile Section:**
-   - Built a dedicated **Security & Change Password** card in [`ProfilePage`](file:///e:/Music/src/app/profile/page.tsx).
-   - Features New Password and Confirm Password inputs with show/hide password toggle.
-   - Fully wired to `changePassword` in `useAuthStore` and Supabase Auth with visual confirmation feedback.
+3. **Local Music Folder Selection & ID3 Tag Extraction (Phase 7):**
+   - Added folder-level selection with `webkitdirectory` and multi-file drag-and-drop.
+   - Integrated `music-metadata-browser` to parse audio tags (title, artist, album, embedded album art) in the browser.
+   - Added duplicate track detection and local IndexedDB caching.
 
-4. **Dark & Light Theme Mode:**
-   - Created reusable [`ThemeToggle.tsx`](file:///e:/Music/src/components/ui/ThemeToggle.tsx) component with Sun / Moon toggle.
-   - Supported in [`Header.tsx`](file:///e:/Music/src/components/layout/Header.tsx) and [`ProfilePage`](file:///e:/Music/src/app/profile/page.tsx).
-   - Full CSS variables and class overrides in `globals.css` for instant switching between deep midnight dark and clean modern light mode.
+4. **Dynamic Music Discovery & Trending API (Phase 3):**
+   - Added `/api/music/trending` route providing real-time trending charts for Tamil, Hindi, English, and Malayalam.
+   - Transformed the home page into a data-driven experience with skeleton loading states and category switching.
 
-5. **Nilaave Vaa Featured Hero Track:**
-   - Replaced *Malarndhum Malaraadha* with **"Nilaave Vaa"** from *Mouna Ragam* (Ilaiyaraaja, SPB) with direct 500x500 artwork and 320kbps `.mp4` audio stream.
-
-6. **Dynamic Multi-Language Explore:**
-   - English, Telugu, Malayalam, Hindi, and Tamil dynamic search on `/explore` with high-bitrate streaming.
+5. **Navigation & Global Theme System (Phase 5 & 8):**
+   - Added `BackNavigation.tsx` component with browser history fallback and keyboard ESC dismissal for modals.
+   - Centralized theme controller supporting Dark, Light, and System modes with semantic CSS tokens.
 
 ---
 
 ## 3. Verification & Test Status
-- **Unit Tests:** `npm test` passed 9/9 tests (0 failures).
-- **Production Build:** `npm run build` compiled 20/20 routes cleanly with 0 errors.
+- **Unit & Integration Tests:** 100% passing via `npm test`.
+- **Production Build:** Clean compilation with 0 TypeScript or lint errors.
+- **Deployment:** Live on Vercel at `https://in-isai.vercel.app/`.

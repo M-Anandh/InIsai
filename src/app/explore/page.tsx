@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { EXPLORE_CATEGORIES, CATEGORY_QUERY_MAP, CURATED_TRACKS } from "@/music/curated-data";
 import { TrackCard } from "@/components/music/TrackCard";
 import { TrackRow } from "@/components/music/TrackRow";
+import { BackNavigation } from "@/components/layout/BackNavigation";
 import { useSearchParams } from "next/navigation";
-import { Track } from "@/types";
+import { Track, PlaybackContext } from "@/types";
 import { Compass, LayoutGrid, List, Loader2 } from "lucide-react";
 
 function ExploreContent() {
@@ -89,6 +90,8 @@ function ExploreContent() {
 
   return (
     <div className="space-y-8">
+      <BackNavigation fallbackUrl="/" />
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
         <div>
@@ -171,6 +174,12 @@ function ExploreContent() {
               key={track.id}
               track={track}
               playlistContext={displayedTracks}
+              context={{
+                id: `explore-${selectedCategory}`,
+                type: "trending",
+                title: `Explore: ${selectedCategory}`,
+                trackIds: displayedTracks.map((t) => t.id),
+              }}
             />
           ))}
         </div>
@@ -182,6 +191,12 @@ function ExploreContent() {
               track={track}
               index={idx}
               playlistContext={displayedTracks}
+              context={{
+                id: `explore-${selectedCategory}`,
+                type: "trending",
+                title: `Explore: ${selectedCategory}`,
+                trackIds: displayedTracks.map((t) => t.id),
+              }}
             />
           ))}
         </div>

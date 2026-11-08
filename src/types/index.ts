@@ -2,6 +2,33 @@ export type RepeatMode = "off" | "all" | "one";
 
 export type AudioSourceType = "local" | "jamendo" | "curated" | "public_api";
 
+export type PlaybackContextType =
+  | "search"
+  | "playlist"
+  | "album"
+  | "artist"
+  | "home_recommendations"
+  | "trending"
+  | "liked"
+  | "history"
+  | "local"
+  | "custom_queue";
+
+export interface PlaybackContext {
+  id: string;
+  type: PlaybackContextType;
+  title: string;
+  trackIds?: string[];
+}
+
+export interface FolderImportStats {
+  scanned: number;
+  added: number;
+  duplicates: number;
+  errors: number;
+}
+
+
 export interface LyricsLine {
   time: number; // in seconds
   text: string;

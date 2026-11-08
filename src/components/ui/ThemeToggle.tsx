@@ -13,7 +13,7 @@ export const ThemeToggle: React.FC<{ className?: string }> = ({ className = "" }
 
   return (
     <button
-      onClick={toggleTheme}
+      onClick={() => toggleTheme()}
       className={`p-2 rounded-xl transition-all border ${
         isLight
           ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20"

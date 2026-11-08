@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useState } from "react";
-import { Track } from "@/types";
+import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { formatDuration } from "@/lib/utils";
-import { Play, Pause, Heart, Plus, Trash2 } from "lucide-react";
+import { Play, Pause, Heart, Plus, Trash2, ListPlus } from "lucide-react";
 
 interface TrackRowProps {
   track: Track;
   index?: number;
   playlistContext?: Track[];
+  context?: PlaybackContext;
   onRemove?: () => void;
 }
 
@@ -19,9 +20,10 @@ export const TrackRow: React.FC<TrackRowProps> = ({
   track,
   index,
   playlistContext,
+  context,
   onRemove,
 }) => {
-  const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue } =
+  const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue, playNext } =
     usePlayerStore();
   const { isLiked, toggleLikeTrack } = useAuthStore();
   const [imgError, setImgError] = useState(false);
@@ -34,7 +36,7 @@ export const TrackRow: React.FC<TrackRowProps> = ({
     if (isCurrent) {
       togglePlay();
     } else {
-      playTrack(track, playlistContext);
+      playTrack(track, playlistContext, context);
     }
   };
 
@@ -119,6 +121,17 @@ export const TrackRow: React.FC<TrackRowProps> = ({
           title={liked ? "Unlike" : "Like"}
         >
           <Heart className={`w-4 h-4 ${liked ? "fill-rose-500" : ""}`} />
+        </button>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            playNext(track);
+          }}
+          className="p-1.5 rounded-lg text-white/30 hover:text-inisai-teal opacity-0 group-hover:opacity-100 transition-colors"
+          title="Play next"
+        >
+          <ListPlus className="w-4 h-4" />
         </button>
 
         <button

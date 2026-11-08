@@ -1,22 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
-import { Track } from "@/types";
+import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useMounted } from "@/hooks/use-mounted";
-import { Play, Pause, Heart, Plus, Music } from "lucide-react";
+import { Play, Pause, Heart, Plus, ListPlus, Music } from "lucide-react";
 
 interface TrackCardProps {
   track: Track;
   playlistContext?: Track[];
+  context?: PlaybackContext;
 }
 
 export const TrackCard: React.FC<TrackCardProps> = ({
   track,
   playlistContext,
+  context,
 }) => {
-  const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue } =
+  const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue, playNext } =
     usePlayerStore();
   const { isLiked, toggleLikeTrack } = useAuthStore();
   const [imgError, setImgError] = useState(false);
@@ -30,7 +32,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     if (isCurrent) {
       togglePlay();
     } else {
-      playTrack(track, playlistContext);
+      playTrack(track, playlistContext, context);
     }
   };
 
@@ -107,19 +109,31 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         </p>
       </div>
 
-      {/* Quick Add To Queue */}
+      {/* Quick Add To Queue & Play Next */}
       <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] text-inisai-muted">
         <span>{track.genre || track.language || "Music"}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            addToQueue(track);
-          }}
-          className="text-white/40 hover:text-inisai-accent p-1"
-          title="Add to queue"
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              playNext(track);
+            }}
+            className="text-white/40 hover:text-inisai-teal p-1"
+            title="Play next"
+          >
+            <ListPlus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              addToQueue(track);
+            }}
+            className="text-white/40 hover:text-inisai-accent p-1"
+            title="Add to queue"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

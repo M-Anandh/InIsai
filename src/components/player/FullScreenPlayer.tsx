@@ -55,6 +55,18 @@ export const FullScreenPlayer: React.FC = () => {
   const mounted = useMounted();
   const [imgError, setImgError] = React.useState(false);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setFullScreenOpen(false);
+      }
+    };
+    if (isFullScreenOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isFullScreenOpen, setFullScreenOpen]);
+
   if (!mounted || !isFullScreenOpen || !currentTrack) return null;
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;

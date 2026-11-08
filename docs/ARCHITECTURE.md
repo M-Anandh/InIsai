@@ -155,3 +155,35 @@ All tables are secured with Row Level Security (RLS) guaranteeing users can only
 2. **Audio Bandwidth Protection**: Never proxy heavy audio streams through Next.js server functions; client connects directly to authorized audio origins or plays local device files.
 3. **Storage Protection**: Audio files are never stored in PostgreSQL or Supabase Storage (which have strict free-tier quotas). User audio remains on client devices via IndexedDB.
 
+---
+
+## 9. Playback Context Architecture & Security Isolation
+
+### Playback Context
+To prevent search results and playlist queues from colliding or resetting during client-side route transitions, InIsai implements an explicit `PlaybackContext`:
+```typescript
+export type PlaybackContextType =
+  | "search"
+  | "playlist"
+  | "album"
+  | "artist"
+  | "home_recommendations"
+  | "trending"
+  | "liked"
+  | "history"
+  | "local"
+  | "custom_queue";
+
+export interface PlaybackContext {
+  id: string;
+  type: PlaybackContextType;
+  title: string;
+  trackIds?: string[];
+}
+```
+When tracks are selected from search, the entire search result list is bound to the `search` context. Navigating away to other routes preserves the search queue intact in `usePlayerStore`.
+
+### Guest Security & Profile Isolation
+Unauthenticated users run strictly under a sandboxed `Guest Profile` (`user.id === 'guest-user'`, `isAuthenticated === false`). Change password and account security forms are strictly guarded and hidden from guest sessions, preventing invalid Supabase mutation attempts.
+
+

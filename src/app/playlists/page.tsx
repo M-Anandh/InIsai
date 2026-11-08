@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { FEATURED_PLAYLISTS, CURATED_TRACKS } from "@/music/curated-data";
 import { PlaylistCard } from "@/components/music/PlaylistCard";
+import { BackNavigation } from "@/components/layout/BackNavigation";
 import { ListMusic, Plus, Trash2 } from "lucide-react";
 
 export default function PlaylistsPage() {
@@ -32,6 +33,7 @@ export default function PlaylistsPage() {
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
+      <BackNavigation fallbackUrl="/" />
       <div className="flex items-center justify-between pb-4 border-b border-white/5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">

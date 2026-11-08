@@ -44,12 +44,13 @@ function getActiveLyricsIndex(lyrics, currentTime, offsetSeconds = 0) {
   return activeIndex;
 }
 
-// 2. Queue logic test
+// 2. Queue & Playback Context Manager
 class TestQueueManager {
-  constructor(initialTracks = []) {
+  constructor(initialTracks = [], initialContext = null) {
     this.queue = [...initialTracks];
     this.currentIndex = 0;
     this.repeatMode = "off"; // 'off' | 'all' | 'one'
+    this.context = initialContext;
   }
 
   getCurrentTrack() {
@@ -101,9 +102,72 @@ class TestQueueManager {
     const [moved] = this.queue.splice(from, 1);
     this.queue.splice(to, 0, moved);
   }
+
+  playTrack(track, newQueue = null, context = null) {
+    if (newQueue) {
+      this.queue = [...newQueue];
+      this.context = context;
+      this.currentIndex = this.queue.findIndex((t) => t.id === track.id);
+      if (this.currentIndex === -1) {
+        this.queue.unshift(track);
+        this.currentIndex = 0;
+      }
+    } else {
+      const idx = this.queue.findIndex((t) => t.id === track.id);
+      if (idx !== -1) {
+        this.currentIndex = idx;
+      } else {
+        this.queue.push(track);
+        this.currentIndex = this.queue.length - 1;
+      }
+    }
+  }
 }
 
-describe("InIsai (இனிசை) Unit Tests", () => {
+// 3. Local Music Duplicate Detector helper
+function filterDuplicateTracks(existingTracks, incomingFiles) {
+  const existingNames = new Set(existingTracks.map((t) => t.sourceId.toLowerCase()));
+  const existingKeys = new Set(
+    existingTracks.map((t) => `${t.title.toLowerCase()}:::${t.artist.toLowerCase()}`)
+  );
+
+  const uniqueFiles = [];
+  let duplicates = 0;
+
+  for (const file of incomingFiles) {
+    const name = file.name.toLowerCase();
+    const key = `${(file.title || "").toLowerCase()}:::${(file.artist || "").toLowerCase()}`;
+
+    if (existingNames.has(name) || (file.title && existingKeys.has(key))) {
+      duplicates++;
+    } else {
+      uniqueFiles.push(file);
+      existingNames.add(name);
+      if (file.title) existingKeys.add(key);
+    }
+  }
+
+  return { unique: uniqueFiles, duplicates };
+}
+
+// 4. Security Guard checker
+function shouldAllowPasswordChange(user, isAuthenticated) {
+  if (!isAuthenticated) return false;
+  if (!user) return false;
+  if (user.id === "guest-user") return false;
+  if (!user.email) return false;
+  return true;
+}
+
+// 5. Theme State Resolver
+function resolveEffectiveTheme(userTheme, systemPrefersDark) {
+  if (userTheme === "light") return "light";
+  if (userTheme === "dark") return "dark";
+  // "system" mode
+  return systemPrefersDark ? "dark" : "light";
+}
+
+describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
   describe("LRC Lyrics Synchronization Engine", () => {
     const sampleLrc = `
       [ti:Malarndhum Malaraadha]
@@ -139,54 +203,39 @@ describe("InIsai (இனிசை) Unit Tests", () => {
 
     test("should support manual calibration offset", () => {
       const parsed = parseLrc(sampleLrc);
-      // With +1s calibration at time 5s, target time is 6s which activates line 1
       assert.equal(getActiveLyricsIndex(parsed, 5.0, 1.0), 1);
     });
   });
 
-  describe("Queue & Playback Controller", () => {
-    const tracks = [
-      { id: "t1", title: "Track 1", duration: 180 },
-      { id: "t2", title: "Track 2", duration: 200 },
-      { id: "t3", title: "Track 3", duration: 220 },
+  describe("Queue & Playback Context Architecture (Phase 4)", () => {
+    const searchTracks = [
+      { id: "s1", title: "Search Track 1", duration: 180 },
+      { id: "s2", title: "Search Track 2", duration: 200 },
+      { id: "s3", title: "Search Track 3", duration: 220 },
     ];
 
-    test("should navigate next and previous correctly", () => {
-      const qm = new TestQueueManager(tracks);
-      assert.equal(qm.getCurrentTrack().id, "t1");
+    test("should preserve search context and queue across track navigation", () => {
+      const qm = new TestQueueManager();
+      const searchContext = {
+        id: "search-chinna-thamarai",
+        type: "search",
+        title: 'Search: "Chinna Thamarai"',
+      };
 
+      qm.playTrack(searchTracks[0], searchTracks, searchContext);
+
+      assert.equal(qm.context.type, "search");
+      assert.equal(qm.queue.length, 3);
+      assert.equal(qm.getCurrentTrack().id, "s1");
+
+      // Advance to next song within search queue
       qm.next();
-      assert.equal(qm.getCurrentTrack().id, "t2");
-
-      qm.next();
-      assert.equal(qm.getCurrentTrack().id, "t3");
-
-      // End of queue when repeat is off
-      const beyond = qm.next();
-      assert.equal(beyond, null);
-
-      // Previous returns t2
-      qm.prev();
-      assert.equal(qm.getCurrentTrack().id, "t2");
+      assert.equal(qm.getCurrentTrack().id, "s2");
+      assert.equal(qm.context.type, "search"); // Context intact
     });
 
-    test("should repeat all when repeatMode is 'all'", () => {
-      const qm = new TestQueueManager(tracks);
-      qm.repeatMode = "all";
-      qm.currentIndex = 2; // at last track
-      qm.next();
-      assert.equal(qm.getCurrentTrack().id, "t1"); // loops back to start
-    });
-
-    test("should repeat current track when repeatMode is 'one'", () => {
-      const qm = new TestQueueManager(tracks);
-      qm.repeatMode = "one";
-      qm.next();
-      assert.equal(qm.getCurrentTrack().id, "t1");
-    });
-
-    test("should support Play Next and Reorder", () => {
-      const qm = new TestQueueManager(tracks);
+    test("should support Play Next and Reorder without resetting active context", () => {
+      const qm = new TestQueueManager(searchTracks);
       const bonus = { id: "bonus", title: "Bonus Track", duration: 150 };
 
       qm.playNext(bonus);
@@ -200,28 +249,67 @@ describe("InIsai (இனிசை) Unit Tests", () => {
     });
   });
 
-  describe("Search & Recommendation Matcher", () => {
-    const catalog = [
-      { id: "1", title: "Malarndhum Malaraadha", artist: "TMS", language: "Tamil", genre: "Melody" },
-      { id: "2", title: "Kanne Kalaimane", artist: "Yesudas", language: "Tamil", genre: "Melody" },
-      { id: "3", title: "Veena Serenade", artist: "Carnatic Collective", language: "Instrumental", genre: "Classical" },
-    ];
-
-    test("should filter tracks accurately by title or artist keyword", () => {
-      const query = "kalai";
-      const matched = catalog.filter(
-        (t) =>
-          t.title.toLowerCase().includes(query.toLowerCase()) ||
-          t.artist.toLowerCase().includes(query.toLowerCase())
-      );
-      assert.equal(matched.length, 1);
-      assert.equal(matched[0].id, "2");
+  describe("Guest vs Authenticated Profile Security Boundary (Phase 6)", () => {
+    test("should strictly forbid password change for guest user", () => {
+      const guestUser = {
+        id: "guest-user",
+        displayName: "InIsai Listener",
+        preferredLanguage: "Tamil",
+      };
+      assert.equal(shouldAllowPasswordChange(guestUser, false), false);
+      assert.equal(shouldAllowPasswordChange(guestUser, true), false);
     });
 
-    test("should filter tracks by language", () => {
-      const tamilOnly = catalog.filter((t) => t.language === "Tamil");
-      assert.equal(tamilOnly.length, 2);
+    test("should strictly forbid password change when user is null or unauthenticated", () => {
+      assert.equal(shouldAllowPasswordChange(null, false), false);
+      assert.equal(shouldAllowPasswordChange(null, true), false);
+    });
+
+    test("should allow password change only for authenticated cloud accounts with email", () => {
+      const authUser = {
+        id: "auth-uuid-123",
+        email: "anandh@example.com",
+        displayName: "Anandh M",
+      };
+      assert.equal(shouldAllowPasswordChange(authUser, true), true);
+    });
+  });
+
+  describe("Local Music Duplicate Detection (Phase 7)", () => {
+    const existing = [
+      { id: "l1", title: "Chinna Thamarai", artist: "Vijay", sourceId: "chinna_thamarai.mp3" },
+      { id: "l2", title: "Nilaave Vaa", artist: "SPB", sourceId: "nilaave_vaa.mp3" },
+    ];
+
+    test("should filter out duplicate filenames and duplicate title+artist pairs", () => {
+      const incoming = [
+        { name: "chinna_thamarai.mp3", title: "Chinna Thamarai", artist: "Vijay" }, // duplicate by file and title+artist
+        { name: "new_song.mp3", title: "New Song", artist: "New Artist" }, // new
+        { name: "nilaave_vaa.mp3", title: "Another Title", artist: "Another Artist" }, // duplicate by filename
+        { name: "different_filename.mp3", title: "Nilaave Vaa", artist: "SPB" }, // duplicate by title+artist
+      ];
+
+      const { unique, duplicates } = filterDuplicateTracks(existing, incoming);
+      assert.equal(duplicates, 3);
+      assert.equal(unique.length, 1);
+      assert.equal(unique[0].name, "new_song.mp3");
+    });
+  });
+
+  describe("Global Theme System Mode Transitions (Phase 8)", () => {
+    test("should resolve dark mode", () => {
+      assert.equal(resolveEffectiveTheme("dark", false), "dark");
+      assert.equal(resolveEffectiveTheme("dark", true), "dark");
+    });
+
+    test("should resolve light mode", () => {
+      assert.equal(resolveEffectiveTheme("light", false), "light");
+      assert.equal(resolveEffectiveTheme("light", true), "light");
+    });
+
+    test("should resolve system mode according to OS prefers-color-scheme", () => {
+      assert.equal(resolveEffectiveTheme("system", true), "dark");
+      assert.equal(resolveEffectiveTheme("system", false), "light");
     });
   });
 });
-

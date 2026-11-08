@@ -28,7 +28,7 @@ interface AuthState {
 
   // Security & Preferences
   changePassword: (newPassword: string) => Promise<{ error?: string }>;
-  toggleTheme: () => void;
+  toggleTheme: (mode?: "dark" | "light" | "system" | any) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -301,16 +301,29 @@ export const useAuthStore = create<AuthState>()(
         }));
       },
 
-      toggleTheme: () => {
+      toggleTheme: (mode) => {
         const currentTheme = get().user?.theme || "dark";
-        const nextTheme = currentTheme === "dark" ? "light" : "dark";
+        const isValidMode = mode === "dark" || mode === "light" || mode === "system";
+        const nextTheme: "dark" | "light" | "system" = isValidMode
+          ? (mode as "dark" | "light" | "system")
+          : currentTheme === "dark"
+          ? "light"
+          : "dark";
+
         const currentUser = get().user;
         if (currentUser) {
           set({ user: { ...currentUser, theme: nextTheme } });
         }
+
         if (typeof document !== "undefined") {
           const root = document.documentElement;
-          if (nextTheme === "light") {
+          let effectiveTheme = nextTheme;
+          if (nextTheme === "system") {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            effectiveTheme = prefersDark ? "dark" : "light";
+          }
+
+          if (effectiveTheme === "light") {
             root.classList.add("light");
             root.classList.remove("dark");
           } else {

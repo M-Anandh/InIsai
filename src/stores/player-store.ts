@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { Track, RepeatMode, PlayerSettings } from "@/types";
+import { Track, RepeatMode, PlayerSettings, PlaybackContext } from "@/types";
 import { audioEngine } from "@/lib/audio-engine";
 import { musicSourceManager } from "@/music/adapters/MusicSourceManager";
 
@@ -54,6 +54,9 @@ interface PlayerState {
   buffered: number;
   error: string | null;
 
+  // Playback Context (preserves queue origin across route changes)
+  playbackContext: PlaybackContext | null;
+
   // Queue
   queue: Track[];
   queueIndex: number;
@@ -72,7 +75,8 @@ interface PlayerState {
   settings: PlayerSettings;
 
   // Actions
-  playTrack: (track: Track, newQueue?: Track[]) => Promise<void>;
+  playTrack: (track: Track, newQueue?: Track[], context?: PlaybackContext) => Promise<void>;
+  setPlaybackContext: (context: PlaybackContext | null) => void;
   togglePlay: () => void;
   pause: () => void;
   resume: () => void;
@@ -170,6 +174,8 @@ export const usePlayerStore = create<PlayerState>()(
         buffered: 0,
         error: null,
 
+        playbackContext: null,
+
         queue: [],
         queueIndex: -1,
         originalQueue: [],
@@ -183,7 +189,11 @@ export const usePlayerStore = create<PlayerState>()(
 
         settings: defaultSettings,
 
-        playTrack: async (track: Track, newQueue?: Track[]) => {
+        setPlaybackContext: (context: PlaybackContext | null) => {
+          set({ playbackContext: context });
+        },
+
+        playTrack: async (track: Track, newQueue?: Track[], context?: PlaybackContext) => {
           let updatedQueue = newQueue ? [...newQueue] : get().queue;
           let index = updatedQueue.findIndex((t) => t.id === track.id);
 
@@ -192,10 +202,18 @@ export const usePlayerStore = create<PlayerState>()(
             index = 0;
           }
 
+          const resolvedContext =
+            context !== undefined
+              ? context
+              : newQueue
+              ? null
+              : get().playbackContext;
+
           set({
             currentTrack: track,
             queue: updatedQueue,
             queueIndex: index,
+            playbackContext: resolvedContext,
             isLoading: true,
             error: null,
           });
@@ -210,8 +228,8 @@ export const usePlayerStore = create<PlayerState>()(
           const history = [track, ...get().history.filter((t) => t.id !== track.id)].slice(0, 50);
           set({ history });
 
-          // Auto-Radio recommendation: If queue has only 1 or 2 items, fetch recommended tracks
-          if (updatedQueue.length <= 2) {
+          // Auto-Radio recommendation: If queue has only 1 item and no explicit context, fetch recommended tracks
+          if (updatedQueue.length <= 1 && !resolvedContext) {
             try {
               const recoRes = await fetch(
                 `/api/music/recommend?id=${encodeURIComponent(
@@ -496,6 +514,7 @@ export const usePlayerStore = create<PlayerState>()(
         queue: state.queue,
         queueIndex: state.queueIndex,
         currentTrack: state.currentTrack,
+        playbackContext: state.playbackContext,
         settings: state.settings,
         history: state.history,
       }),

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { musicSourceManager } from "@/music/adapters/MusicSourceManager";
-import { Track } from "@/types";
+import { Track, PlaybackContext } from "@/types";
 import { TrackRow } from "@/components/music/TrackRow";
 import { Search, X, History, Sparkles, Disc3 } from "lucide-react";
 
@@ -205,6 +205,12 @@ export default function SearchPage() {
                 track={track}
                 index={idx}
                 playlistContext={results}
+                context={{
+                  id: `search-${query.trim() || "query"}`,
+                  type: "search",
+                  title: `Search: "${query.trim() || track.title}"`,
+                  trackIds: results.map((r) => r.id),
+                }}
               />
             </div>
           ))}

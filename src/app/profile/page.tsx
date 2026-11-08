@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { BackNavigation } from "@/components/layout/BackNavigation";
 import {
   User,
   Check,
@@ -19,6 +21,9 @@ import {
   Lock,
   Eye,
   EyeOff,
+  Cloud,
+  LogIn,
+  Sparkles,
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -104,6 +109,8 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-12">
+      <BackNavigation fallbackUrl="/" />
+
       {/* Profile Header Card with Sign Out */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-inisai-card via-[#1c1836] to-inisai-card border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
         <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
@@ -123,15 +130,25 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Sign Out Button */}
-        <button
-          onClick={() => signOut()}
-          className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all shadow-sm flex-shrink-0"
-          title="Sign out of InIsai"
-        >
-          <LogOut className="w-4 h-4" />
-          <span>Sign Out</span>
-        </button>
+        {/* Auth Action Button */}
+        {mounted && isAuthenticated && user?.id !== "guest-user" ? (
+          <button
+            onClick={() => signOut()}
+            className="flex items-center space-x-2 px-4 py-2.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 text-xs font-bold transition-all shadow-sm flex-shrink-0 cursor-pointer"
+            title="Sign out of InIsai"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-inisai-accent hover:bg-inisai-accent/90 text-white text-xs font-bold transition-all shadow-lg shadow-inisai-accent/25 flex-shrink-0 cursor-pointer"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>Sign In / Register</span>
+          </Link>
+        )}
       </div>
 
       {/* Stats Counter */}
@@ -169,7 +186,7 @@ export default function ProfilePage() {
             </p>
           </div>
           <button
-            onClick={toggleTheme}
+            onClick={() => toggleTheme()}
             className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
               isLight
                 ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500/20"
@@ -227,81 +244,107 @@ export default function ProfilePage() {
         </button>
       </form>
 
-      {/* Change Password Section */}
-      <form onSubmit={handlePasswordChange} className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5">
-        <div>
-          <h2 className="text-base font-bold text-white flex items-center space-x-2">
-            <KeyRound className="w-5 h-5 text-rose-400" />
-            <span>Security & Change Password</span>
-          </h2>
-          <p className="text-xs text-inisai-muted mt-1">
-            Update your account login password. Passwords must be at least 6 characters.
-          </p>
-        </div>
+      {/* Security Section: Only for Authenticated Users */}
+      {mounted && isAuthenticated && user && user.id !== "guest-user" ? (
+        <form onSubmit={handlePasswordChange} className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center space-x-2">
+              <KeyRound className="w-5 h-5 text-rose-400" />
+              <span>Security & Change Password</span>
+            </h2>
+            <p className="text-xs text-inisai-muted mt-1">
+              Update your account login password. Passwords must be at least 6 characters.
+            </p>
+          </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs text-inisai-muted font-medium block">
-              New Password
-            </label>
-            <div className="relative">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs text-inisai-muted font-medium block">
+                New Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter new password (min. 6 chars)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/10 text-sm text-white placeholder-inisai-muted/50 outline-none focus:border-inisai-accent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-inisai-muted font-medium block">
+                Confirm New Password
+              </label>
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder="Enter new password (min. 6 chars)"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2.5 pr-10 rounded-xl bg-black/50 border border-white/10 text-sm text-white placeholder-inisai-muted/50 outline-none focus:border-inisai-accent"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-white placeholder-inisai-muted/50 outline-none focus:border-inisai-accent"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs text-inisai-muted font-medium block">
-              Confirm New Password
-            </label>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl bg-black/50 border border-white/10 text-sm text-white placeholder-inisai-muted/50 outline-none focus:border-inisai-accent"
-            />
-          </div>
-        </div>
+          {passwordStatus && (
+            <div
+              className={`p-3 rounded-xl text-xs font-semibold flex items-center space-x-2 ${
+                passwordStatus.success
+                  ? "bg-inisai-emerald/15 text-inisai-emerald border border-inisai-emerald/30"
+                  : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+              }`}
+            >
+              {passwordStatus.success ? (
+                <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+              ) : (
+                <Lock className="w-4 h-4 flex-shrink-0" />
+              )}
+              <span>{passwordStatus.message}</span>
+            </div>
+          )}
 
-        {passwordStatus && (
-          <div
-            className={`p-3 rounded-xl text-xs font-semibold flex items-center space-x-2 ${
-              passwordStatus.success
-                ? "bg-inisai-emerald/15 text-inisai-emerald border border-inisai-emerald/30"
-                : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-            }`}
+          <button
+            type="submit"
+            disabled={isUpdatingPassword}
+            className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-inisai-accent text-white text-xs font-bold shadow-lg shadow-rose-500/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
           >
-            {passwordStatus.success ? (
-              <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-            ) : (
-              <Lock className="w-4 h-4 flex-shrink-0" />
-            )}
-            <span>{passwordStatus.message}</span>
+            <Lock className="w-4 h-4" />
+            <span>{isUpdatingPassword ? "Updating Password..." : "Update Password"}</span>
+          </button>
+        </form>
+      ) : (
+        /* Guest Cloud Sync Prompt (No Password Form in Guest Mode!) */
+        <div className="bg-gradient-to-r from-inisai-accent/10 via-[#1c1836] to-inisai-teal/10 border border-white/10 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="space-y-2 text-center sm:text-left">
+            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent/20 border border-inisai-accent/30 text-inisai-accent text-xs font-semibold">
+              <Cloud className="w-3.5 h-3.5" />
+              <span>Free Cloud Account</span>
+            </div>
+            <h3 className="text-lg font-bold text-white">
+              Sync Your Music Across Devices
+            </h3>
+            <p className="text-xs text-inisai-muted max-w-md">
+              Create a free InIsai account to backup your playlists, liked songs, and listening history so you can enjoy them across mobile, desktop, and tablets.
+            </p>
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={isUpdatingPassword}
-          className="flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-inisai-accent text-white text-xs font-bold shadow-lg shadow-rose-500/20 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-        >
-          <Lock className="w-4 h-4" />
-          <span>{isUpdatingPassword ? "Updating Password..." : "Update Password"}</span>
-        </button>
-      </form>
+          <Link
+            href="/login"
+            className="flex items-center space-x-2 px-6 py-3 rounded-2xl bg-white text-black font-bold text-xs shadow-xl shadow-white/10 hover:scale-105 active:scale-95 transition-transform whitespace-nowrap cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-inisai-accent" />
+            <span>Sign In or Register</span>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
