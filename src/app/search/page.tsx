@@ -10,7 +10,6 @@ export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<"all" | "youtube" | "local">("all");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Load recent searches from localStorage
@@ -53,23 +52,32 @@ export default function SearchPage() {
 
     setIsLoading(true);
     try {
-      let tracks: Track[] = [];
+      // 1. Search high-fidelity audio catalog
+      const onlineTracks = await musicSourceManager.searchAll(q);
 
-      if (activeFilter === "local") {
-        tracks = await musicSourceManager.getLocalAdapter().search(q);
-      } else if (activeFilter === "youtube") {
-        // Query YouTube Music API endpoint
-        const ytRes = await fetch(`/api/music/youtube?q=${encodeURIComponent(q)}`);
-        if (ytRes.ok) {
-          const ytData = await ytRes.json();
-          tracks = ytData.results || [];
-        }
-      } else {
-        // All online sources: query standard catalog + merge
-        tracks = await musicSourceManager.searchAll(q);
+      // 2. Search local device tracks
+      let localTracks: Track[] = [];
+      try {
+        localTracks = await musicSourceManager.getLocalAdapter().search(q);
+      } catch {}
+
+      let merged = [...localTracks, ...onlineTracks];
+
+      // 3. If results are scarce, seamlessly search YouTube bridge internally
+      if (merged.length < 5) {
+        try {
+          const ytRes = await fetch(`/api/music/youtube?q=${encodeURIComponent(q)}`);
+          if (ytRes.ok) {
+            const ytData = await ytRes.json();
+            const ytTracks = (ytData.results || []).filter(
+              (yt: Track) => !merged.some((m) => m.title.toLowerCase() === yt.title.toLowerCase())
+            );
+            merged = [...merged, ...ytTracks];
+          }
+        } catch {}
       }
 
-      setResults(tracks);
+      setResults(merged);
     } catch (e) {
       console.error("Search failure:", e);
     } finally {
@@ -91,7 +99,7 @@ export default function SearchPage() {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [query, activeFilter]);
+  }, [query]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -104,9 +112,9 @@ export default function SearchPage() {
   };
 
   const searchContext: PlaybackContext = {
-    id: `search-${activeFilter}-${query.trim() || "query"}`,
+    id: `search-${query.trim() || "query"}`,
     type: "search",
-    title: `Search: "${query.trim() || "Results"}" (${activeFilter.toUpperCase()})`,
+    title: `Search: "${query.trim() || "Results"}"`,
     trackIds: results.map((r) => r.id),
   };
 
@@ -121,7 +129,7 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search Tamil songs, artists, YouTube Music (e.g. Chinna Thamarai, Naa Ready, Ilaiyaraaja)..."
+            placeholder="Search any song, artist, album (e.g. Believer, Naa Ready, Ilaiyaraaja)..."
             className="w-full bg-transparent px-3 text-white placeholder-inisai-muted/60 text-sm sm:text-base outline-none"
             autoFocus
           />
@@ -134,45 +142,6 @@ export default function SearchPage() {
             </button>
           )}
         </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex items-center space-x-2 flex-wrap gap-y-2">
-        <button
-          onClick={() => setActiveFilter("all")}
-          className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeFilter === "all"
-              ? "bg-inisai-accent text-white shadow-md shadow-inisai-accent/30"
-              : "bg-white/5 text-white/70 hover:bg-white/10"
-          }`}
-        >
-          <Music className="w-3.5 h-3.5" />
-          <span>All Online Sources</span>
-        </button>
-
-        <button
-          onClick={() => setActiveFilter("youtube")}
-          className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeFilter === "youtube"
-              ? "bg-rose-600 text-white shadow-md shadow-rose-600/30"
-              : "bg-white/5 text-white/70 hover:bg-white/10"
-          }`}
-        >
-          <Youtube className="w-3.5 h-3.5 text-rose-500 group-hover:text-white" />
-          <span>YouTube Music</span>
-        </button>
-
-        <button
-          onClick={() => setActiveFilter("local")}
-          className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-            activeFilter === "local"
-              ? "bg-inisai-teal text-black shadow-md shadow-inisai-teal/30 font-bold"
-              : "bg-white/5 text-white/70 hover:bg-white/10"
-          }`}
-        >
-          <Disc3 className="w-3.5 h-3.5 text-inisai-teal" />
-          <span>Local Device Only</span>
-        </button>
       </div>
 
       {/* Recent Searches (when query is empty) */}
@@ -212,7 +181,7 @@ export default function SearchPage() {
         <div className="py-16 flex flex-col items-center justify-center text-inisai-muted space-y-2">
           <div className="w-8 h-8 rounded-full border-2 border-inisai-accent border-t-transparent animate-spin" />
           <p className="text-xs">
-            Searching {activeFilter === "youtube" ? "YouTube Music" : "InIsai & Tamil catalogs"}...
+            Searching across all music catalogs...
           </p>
         </div>
       ) : query && results.length === 0 ? (
@@ -226,7 +195,7 @@ export default function SearchPage() {
         <div className="space-y-2">
           <div className="flex justify-between items-center text-xs text-inisai-muted pb-1">
             <span>
-              Found {results.length} songs {activeFilter === "youtube" ? "on YouTube Music" : ""}
+              Found {results.length} songs
             </span>
             <span>Click to play</span>
           </div>

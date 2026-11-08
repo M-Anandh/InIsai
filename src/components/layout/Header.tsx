@@ -27,7 +27,7 @@ export const Header: React.FC = () => {
   }, [mounted]);
 
   return (
-    <header className="sticky top-0 z-20 bg-inisai-dark/80 backdrop-blur-2xl border-b border-white/[0.08] px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors">
+    <header className="sticky top-0 z-20 bg-white/85 dark:bg-inisai-dark/80 backdrop-blur-2xl border-b border-slate-200/80 dark:border-white/[0.08] px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors duration-200">
       {/* Mobile Logo / Desktop Greeting */}
       <div className="flex items-center space-x-3">
         <div className="md:hidden">
@@ -38,7 +38,7 @@ export const Header: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5" />
             <span>{greeting}</span>
           </p>
-          <h2 className="text-lg font-bold text-white tracking-tight">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
             {mounted && user?.displayName ? user.displayName : "InIsai Music"}
           </h2>
         </div>
@@ -47,7 +47,7 @@ export const Header: React.FC = () => {
       {/* Quick Search Bar */}
       <div
         onClick={() => router.push("/search")}
-        className="hidden sm:flex items-center space-x-2.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] hover:border-inisai-accent/30 px-4 py-2 rounded-full cursor-pointer text-xs text-inisai-muted max-w-xs w-full transition-all shadow-inner"
+        className="hidden sm:flex items-center space-x-2.5 bg-slate-100 dark:bg-white/[0.04] hover:bg-slate-200/70 dark:hover:bg-white/[0.08] border border-slate-200 dark:border-white/[0.08] hover:border-inisai-accent/30 px-4 py-2 rounded-full cursor-pointer text-xs text-slate-500 dark:text-inisai-muted max-w-xs w-full transition-all shadow-inner"
       >
         <Search className="w-4 h-4 text-inisai-teal" />
         <span className="truncate">Search songs, artists, albums...</span>
@@ -55,7 +55,7 @@ export const Header: React.FC = () => {
 
       {/* Right Actions: Theme Toggle, Install & Profile / Sign Out */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        <ThemeToggle />
+        <ThemeToggle showLabelOnMobile={true} />
         <PWAInstaller />
 
         {mounted && isAuthenticated && user ? (

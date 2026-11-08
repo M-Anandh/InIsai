@@ -5,6 +5,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { Header } from "@/components/layout/Header";
 import { MiniPlayer } from "@/components/player/MiniPlayer";
 import { FullScreenPlayer } from "@/components/player/FullScreenPlayer";
+import { ThemeSync } from "@/components/ui/ThemeSync";
 
 export const metadata: Metadata = {
   title: "InIsai — Every Beat, Your World",
@@ -36,9 +37,33 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="referrer" content="no-referrer" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const stored = localStorage.getItem('inisai_auth_storage') || localStorage.getItem('inisai-auth-storage');
+                let theme = 'dark';
+                if (stored) {
+                  const parsed = JSON.parse(stored);
+                  theme = parsed?.state?.theme || parsed?.state?.user?.theme || 'dark';
+                }
+                if (theme === 'system') {
+                  theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                if (theme === 'light') {
+                  document.documentElement.classList.add('light');
+                  document.documentElement.classList.remove('dark');
+                } else {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.classList.remove('light');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -50,7 +75,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-inisai-dark text-white flex flex-col antialiased selection:bg-inisai-accent selection:text-white">
+      <body className="min-h-screen bg-inisai-dark text-white flex flex-col antialiased selection:bg-inisai-accent selection:text-white transition-colors duration-200">
+        <ThemeSync />
         <div className="flex flex-1 min-h-screen">
           {/* Desktop Sidebar */}
           <Sidebar />

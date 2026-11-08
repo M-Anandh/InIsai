@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 
 interface AuthState {
   user: UserProfile | null;
+  theme: "dark" | "light" | "system";
   isAuthenticated: boolean;
   isLoading: boolean;
   likedTrackIds: string[];
@@ -35,13 +36,14 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      theme: "dark",
       isAuthenticated: false,
       isLoading: false,
       likedTrackIds: [],
       userPlaylists: [],
 
       initialize: async () => {
-        const savedTheme = get().user?.theme || "dark";
+        const savedTheme = get().theme || get().user?.theme || "dark";
         if (typeof document !== "undefined") {
           const root = document.documentElement;
           let effectiveTheme = savedTheme;
@@ -51,7 +53,8 @@ export const useAuthStore = create<AuthState>()(
 
             // Attach system theme listener
             window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
-              if (get().user?.theme === "system") {
+              const currentT = get().theme || get().user?.theme;
+              if (currentT === "system") {
                 if (e.matches) {
                   root.classList.add("dark");
                   root.classList.remove("light");
@@ -321,7 +324,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       toggleTheme: (mode) => {
-        const currentTheme = get().user?.theme || "dark";
+        const currentTheme = get().theme || get().user?.theme || "dark";
         const isValidMode = mode === "dark" || mode === "light" || mode === "system";
         const nextTheme: "dark" | "light" | "system" = isValidMode
           ? (mode as "dark" | "light" | "system")
@@ -330,9 +333,10 @@ export const useAuthStore = create<AuthState>()(
           : "dark";
 
         const currentUser = get().user;
-        if (currentUser) {
-          set({ user: { ...currentUser, theme: nextTheme } });
-        }
+        set({
+          theme: nextTheme,
+          user: currentUser ? { ...currentUser, theme: nextTheme } : null,
+        });
 
         if (typeof document !== "undefined") {
           const root = document.documentElement;
@@ -372,6 +376,7 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
+        theme: state.theme,
         isAuthenticated: state.isAuthenticated,
         likedTrackIds: state.likedTrackIds,
         userPlaylists: state.userPlaylists,

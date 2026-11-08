@@ -90,7 +90,27 @@ html.light body {
   color: var(--foreground);
 }
 
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4 {
+  color: #0f172a;
+}
+
+html.light input[type="text"],
+html.light input[type="search"] {
+  color: #0f172a !important;
+}
+
+html.light input::placeholder {
+  color: #94a3b8 !important;
+}
+
 html.light .bg-inisai-dark {
+  background-color: #f8f9fc !important;
+}
+
+html.light [class*="bg-inisai-dark"] {
   background-color: #f8f9fc !important;
 }
 
@@ -111,7 +131,7 @@ html.light .bg-inisai-surfaceElevated:hover {
 html.light aside,
 html.light header,
 html.light nav {
-  background-color: rgba(255, 255, 255, 0.88) !important;
+  background-color: rgba(255, 255, 255, 0.94) !important;
   border-color: #e2e8f0 !important;
 }
 

@@ -6,17 +6,16 @@ import { usePlayerStore } from "@/stores/player-store";
 
 interface AudioVisualizerProps {
   className?: string;
-  barColor?: string;
   barCount?: number;
 }
 
 export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
   className = "w-full h-12",
-  barColor = "#8b5cf6",
-  barCount = 32,
+  barCount = 36,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const currentTime = usePlayerStore((s) => s.currentTime);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -25,44 +24,95 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     if (!ctx) return;
 
     let animationId: number;
+    let phase = 0;
+    const peaks = new Array(barCount).fill(0);
 
     const render = () => {
-      const data = audioEngine.getVisualizerData();
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const width = canvas.width;
+      const height = canvas.height;
+      ctx.clearRect(0, 0, width, height);
 
-      if (!data || !isPlaying) {
-        // Draw static subtle resting bars
-        const step = canvas.width / barCount;
-        ctx.fillStyle = "rgba(139, 92, 246, 0.2)";
-        for (let i = 0; i < barCount; i++) {
-          const barHeight = 4 + Math.sin(i * 0.3) * 2;
-          ctx.fillRect(
-            i * step + 2,
-            canvas.height - barHeight,
-            Math.max(2, step - 3),
-            barHeight
-          );
+      const step = width / barCount;
+      const barWidth = Math.max(3, step - 3);
+
+      // Check real audio engine data first
+      const rawData = audioEngine.getVisualizerData();
+      let hasRealData = false;
+      if (rawData && rawData.length > 0) {
+        let sum = 0;
+        for (let i = 0; i < Math.min(16, rawData.length); i++) sum += rawData[i];
+        if (sum > 10) hasRealData = true;
+      }
+
+      phase += isPlaying ? 0.08 : 0.015;
+
+      for (let i = 0; i < barCount; i++) {
+        let normalizedHeight = 0;
+
+        if (isPlaying) {
+          if (hasRealData && rawData) {
+            const dataIdx = Math.floor((i / barCount) * rawData.length);
+            normalizedHeight = (rawData[dataIdx] || 0) / 255;
+          } else {
+            // High-fidelity musical spectrum simulation
+            // Bass emphasis on left (lower frequencies), mids in center, treble on right
+            const freqRatio = i / barCount;
+            const bassWave = Math.sin(phase * 1.8 + i * 0.35) * 0.45 + 0.55;
+            const midWave = Math.cos(phase * 2.4 - i * 0.4) * 0.35 + 0.45;
+            const trebleWave = Math.sin(phase * 3.2 + i * 0.6) * 0.25 + 0.3;
+
+            if (freqRatio < 0.35) {
+              // Bass region
+              normalizedHeight = bassWave * 0.85 + Math.sin(phase * 4 + i) * 0.15;
+            } else if (freqRatio < 0.75) {
+              // Mids / Vocals
+              normalizedHeight = midWave * 0.75 + Math.cos(phase * 3 + i * 0.5) * 0.2;
+            } else {
+              // Highs / Treble
+              normalizedHeight = trebleWave * 0.6 + Math.sin(phase * 5 + i * 0.8) * 0.2;
+            }
+
+            // Natural audio dynamic dip / breathing
+            const breathing = Math.sin(phase * 0.5) * 0.15 + 0.85;
+            normalizedHeight = Math.min(1, Math.max(0.12, normalizedHeight * breathing));
+          }
+        } else {
+          // Tranquil resting waveform when paused
+          normalizedHeight = (Math.sin(phase + i * 0.25) * 0.5 + 0.5) * 0.18 + 0.08;
         }
-      } else {
-        const step = canvas.width / barCount;
-        const grad = ctx.createLinearGradient(0, canvas.height, 0, 0);
-        grad.addColorStop(0, barColor);
-        grad.addColorStop(1, "#06b6d4");
-        ctx.fillStyle = grad;
 
-        for (let i = 0; i < barCount; i++) {
-          const dataIdx = Math.floor((i / barCount) * data.length);
-          const rawVal = data[dataIdx] || 0;
-          const percent = rawVal / 255;
-          const barHeight = Math.max(3, percent * (canvas.height - 4));
+        const barH = Math.max(4, normalizedHeight * (height - 8));
+        const x = i * step + 1.5;
+        const y = height - barH;
 
-          // Draw rounded bar
-          const x = i * step + 2;
-          const y = canvas.height - barHeight;
-          const w = Math.max(2, step - 3);
+        // Peak dot tracking with gravity
+        if (barH > peaks[i]) {
+          peaks[i] = barH;
+        } else {
+          peaks[i] = Math.max(0, peaks[i] - 0.6);
+        }
 
+        // Gradient bar
+        const gradient = ctx.createLinearGradient(0, height, 0, y);
+        if (isPlaying) {
+          gradient.addColorStop(0, "rgba(149, 101, 255, 0.95)"); // Electric Violet
+          gradient.addColorStop(0.6, "rgba(32, 199, 232, 0.95)"); // Cyan
+          gradient.addColorStop(1, "rgba(16, 185, 129, 0.95)");  // Emerald
+        } else {
+          gradient.addColorStop(0, "rgba(149, 101, 255, 0.3)");
+          gradient.addColorStop(1, "rgba(32, 199, 232, 0.2)");
+        }
+
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barH, [3, 3, 1, 1]);
+        ctx.fill();
+
+        // Glowing peak cap on active playing
+        if (isPlaying && peaks[i] > 6) {
+          ctx.fillStyle = "#ffffff";
           ctx.beginPath();
-          ctx.roundRect(x, y, w, barHeight, [2, 2, 0, 0]);
+          ctx.arc(x + barWidth / 2, Math.max(2, height - peaks[i] - 2), 1.2, 0, Math.PI * 2);
           ctx.fill();
         }
       }
@@ -75,16 +125,17 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [isPlaying, barColor, barCount]);
+  }, [isPlaying, barCount, currentTime]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={240}
-      height={48}
-      className={className}
-      aria-label="Real-time Audio Visualizer"
-    />
+    <div className="w-full flex items-center justify-center py-1">
+      <canvas
+        ref={canvasRef}
+        width={320}
+        height={56}
+        className={className}
+        aria-label="Real-time Audio Visualizer"
+      />
+    </div>
   );
 };
-

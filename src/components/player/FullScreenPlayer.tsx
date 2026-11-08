@@ -180,9 +180,10 @@ export const FullScreenPlayer: React.FC = () => {
             {currentTrack.sourceType === "youtube" && currentTrack.youtubeVideoId ? (
               <div className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-red-500/10 border border-white/10 bg-black relative">
                 <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${currentTrack.youtubeVideoId}?autoplay=1&enablejsapi=1`}
+                  src={`https://www.youtube.com/embed/${currentTrack.youtubeVideoId}?autoplay=1&enablejsapi=1&rel=0`}
                   title={currentTrack.title}
                   className="w-full h-full border-0"
+                  referrerPolicy="strict-origin-when-cross-origin"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
