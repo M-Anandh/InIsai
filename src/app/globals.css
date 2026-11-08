@@ -3,13 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --background: #08090d;
-  --foreground: #f8fafc;
+  --background: #080a12;
+  --surface: #101522;
+  --surface-elevated: #171d2c;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-hover: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --accent-primary: #9565ff;
+  --accent-secondary: #20c7e8;
+  --foreground: #ffffff;
+  --text-muted: #a5aabd;
 }
 
 html.light {
   --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-elevated: #f1f5f9;
+  --glass: rgba(15, 23, 42, 0.04);
+  --glass-hover: rgba(15, 23, 42, 0.07);
+  --glass-border: rgba(15, 23, 42, 0.10);
   --foreground: #0f172a;
+  --text-muted: #64748b;
 }
 
 body {
@@ -19,6 +33,36 @@ body {
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Aurora Glass Utilities */
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-panel-hover:hover {
+  background: var(--glass-hover);
+  border-color: rgba(149, 101, 255, 0.35);
+}
+
+.aurora-glow {
+  box-shadow: 0 8px 32px 0 rgba(149, 101, 255, 0.22);
+}
+
+.cyan-glow {
+  box-shadow: 0 8px 32px 0 rgba(32, 199, 232, 0.22);
+}
+
+/* Hide scrollbar utility for clean carousels */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 /* Light Mode Overrides */

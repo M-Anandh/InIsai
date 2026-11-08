@@ -52,24 +52,25 @@ export const MiniPlayer: React.FC = () => {
       : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80";
 
   return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 bg-inisai-card/95 backdrop-blur-xl border-t border-inisai-border shadow-2xl transition-all duration-300">
+    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 bg-inisai-dark/90 backdrop-blur-2xl border-t border-white/[0.08] shadow-2xl transition-all duration-300">
       {/* Interactive Progress Scrubber */}
       <div
-        className="w-full h-1.5 bg-white/10 cursor-pointer group relative"
+        className="w-full h-1 bg-white/10 cursor-pointer group relative hover:h-1.5 transition-all"
         onClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const clickX = e.clientX - rect.left;
           const ratio = Math.max(0, Math.min(1, clickX / rect.width));
           seek(ratio * duration);
         }}
+        title="Seek position"
       >
         <div
-          className="h-full bg-gradient-to-r from-inisai-accent to-inisai-teal transition-all group-hover:h-2"
+          className="h-full bg-gradient-to-r from-inisai-accent via-purple-500 to-inisai-teal transition-all group-hover:h-1.5"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-2">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2">
         {/* Track Info & Artwork */}
         <div
           className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1 max-w-[150px] xs:max-w-xs sm:max-w-sm cursor-pointer select-none"
@@ -105,7 +106,7 @@ export const MiniPlayer: React.FC = () => {
               e.stopPropagation();
               toggleLikeTrack(currentTrack);
             }}
-            className="hidden sm:block p-1 text-white/50 hover:text-rose-500 transition-colors"
+            className="hidden sm:block p-1 text-white/50 hover:text-rose-500 transition-colors cursor-pointer"
             title={liked ? "Unlike" : "Like"}
           >
             <Heart
@@ -121,7 +122,7 @@ export const MiniPlayer: React.FC = () => {
           <div className="flex items-center space-x-3 sm:space-x-5">
             <button
               onClick={prevTrack}
-              className="text-white/70 hover:text-white transition-colors p-1"
+              className="text-white/70 hover:text-white transition-colors p-1 cursor-pointer"
               title="Previous Track"
             >
               <SkipBack className="w-5 h-5" />
@@ -129,7 +130,7 @@ export const MiniPlayer: React.FC = () => {
 
             <button
               onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shadow-lg shadow-white/10 hover:scale-105 active:scale-95 transition-transform cursor-pointer"
               title={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
@@ -141,7 +142,7 @@ export const MiniPlayer: React.FC = () => {
 
             <button
               onClick={nextTrack}
-              className="text-white/70 hover:text-white transition-colors p-1"
+              className="text-white/70 hover:text-white transition-colors p-1 cursor-pointer"
               title="Next Track"
             >
               <SkipForward className="w-5 h-5" />
@@ -156,14 +157,14 @@ export const MiniPlayer: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Tools (Volume, Lyrics, Queue, Equalizer) */}
-        <div className="flex items-center space-x-2 sm:space-x-3">
+        {/* Right Tools (Volume, Lyrics, Queue, Equalizer, Fullscreen) */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2.5">
           <button
             onClick={() => {
               setActiveDrawerTab("lyrics");
               setFullScreenOpen(true);
             }}
-            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             title="Lyrics"
           >
             <Mic2 className="w-4 h-4" />
@@ -174,7 +175,7 @@ export const MiniPlayer: React.FC = () => {
               setActiveDrawerTab("queue");
               setFullScreenOpen(true);
             }}
-            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             title="Queue"
           >
             <ListMusic className="w-4 h-4" />
@@ -185,7 +186,7 @@ export const MiniPlayer: React.FC = () => {
               setActiveDrawerTab("equalizer");
               setFullScreenOpen(true);
             }}
-            className="hidden sm:block p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+            className="hidden sm:block p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             title="Equalizer & Audio FX"
           >
             <Sliders className="w-4 h-4" />
@@ -195,7 +196,7 @@ export const MiniPlayer: React.FC = () => {
           <div className="hidden md:flex items-center space-x-2 pl-2 border-l border-white/10">
             <button
               onClick={toggleMute}
-              className="text-white/60 hover:text-white"
+              className="text-white/60 hover:text-white cursor-pointer"
             >
               {settings.isMuted || settings.volume === 0 ? (
                 <VolumeX className="w-4 h-4 text-rose-400" />
@@ -219,7 +220,7 @@ export const MiniPlayer: React.FC = () => {
               setActiveDrawerTab("nowPlaying");
               setFullScreenOpen(true);
             }}
-            className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+            className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
             title="Expand Full Player"
           >
             <Maximize2 className="w-4 h-4" />
@@ -229,4 +230,3 @@ export const MiniPlayer: React.FC = () => {
     </div>
   );
 };
-

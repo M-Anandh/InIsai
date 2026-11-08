@@ -11,14 +11,19 @@ const config: Config = {
     extend: {
       colors: {
         inisai: {
-          dark: "#08090d",
-          card: "#12141c",
-          cardHover: "#1b1e2a",
-          border: "#232738",
-          muted: "#8e95ab",
-          accent: "#8b5cf6", // Purple/violet primary
-          accentGlow: "rgba(139, 92, 246, 0.35)",
-          teal: "#06b6d4",
+          dark: "#080A12",
+          surface: "#101522",
+          surfaceElevated: "#171D2C",
+          card: "#121624",
+          cardHover: "#181D30",
+          border: "rgba(255, 255, 255, 0.08)",
+          glass: "rgba(255, 255, 255, 0.05)",
+          glassBorder: "rgba(255, 255, 255, 0.10)",
+          muted: "#A5AABD",
+          accent: "#9565FF", // Aurora Violet
+          accentGlow: "rgba(149, 101, 255, 0.35)",
+          teal: "#20C7E8",   // Electric Cyan
+          secondary: "#20C7E8",
           emerald: "#10b981",
           rose: "#f43f5e",
           amber: "#f59e0b",

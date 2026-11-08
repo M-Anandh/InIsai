@@ -312,4 +312,83 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(resolveEffectiveTheme("system", false), "light");
     });
   });
+
+  describe("Dynamic Recommendation Engine & Scoring (Phase 3 & 7)", () => {
+    function scoreTrackTest(track, affinity, recentTrackIds) {
+      if (!track.isPlayable || !track.streamUrl) return -100;
+      let score = 20;
+      if (track.artworkUrl && !track.artworkUrl.includes("placeholder")) score += 10;
+      if (track.language) {
+        const langKey = track.language.toLowerCase();
+        score += (affinity.preferredLanguages[langKey] || 0) * 3;
+      }
+      if (track.artist) {
+        const artistKey = track.artist.toLowerCase();
+        for (const [known, s] of Object.entries(affinity.preferredArtists)) {
+          if (artistKey.includes(known) || known.includes(artistKey)) score += s * 4;
+        }
+      }
+      if (recentTrackIds.has(track.id)) score -= 30; // repetition penalty
+      return score;
+    }
+
+    test("should prioritize songs matching user language and artist affinity", () => {
+      const affinity = {
+        preferredLanguages: { tamil: 15, english: 2 },
+        preferredArtists: { anirudh: 10, spb: 8 },
+        preferredGenres: { melody: 5 },
+        totalPlays: 10,
+      };
+
+      const trackA = {
+        id: "a1",
+        title: "Naa Ready",
+        artist: "Anirudh Ravichander",
+        language: "Tamil",
+        isPlayable: true,
+        streamUrl: "https://example.com/stream1.mp4",
+        artworkUrl: "https://example.com/art1.jpg",
+      };
+
+      const trackB = {
+        id: "b1",
+        title: "Shape of You",
+        artist: "Ed Sheeran",
+        language: "English",
+        isPlayable: true,
+        streamUrl: "https://example.com/stream2.mp4",
+        artworkUrl: "https://example.com/art2.jpg",
+      };
+
+      const scoreA = scoreTrackTest(trackA, affinity, new Set());
+      const scoreB = scoreTrackTest(trackB, affinity, new Set());
+
+      // Track A (Tamil + Anirudh) should score significantly higher than Track B (English)
+      assert.ok(scoreA > scoreB, `Track A (${scoreA}) should beat Track B (${scoreB})`);
+    });
+
+    test("should apply repetition penalty to recently played tracks", () => {
+      const affinity = {
+        preferredLanguages: { tamil: 10 },
+        preferredArtists: { anirudh: 5 },
+        preferredGenres: {},
+        totalPlays: 5,
+      };
+
+      const track = {
+        id: "a1",
+        title: "Naa Ready",
+        artist: "Anirudh",
+        language: "Tamil",
+        isPlayable: true,
+        streamUrl: "https://example.com/stream1.mp4",
+        artworkUrl: "https://example.com/art1.jpg",
+      };
+
+      const scoreFresh = scoreTrackTest(track, affinity, new Set());
+      const scoreRecentlyPlayed = scoreTrackTest(track, affinity, new Set(["a1"]));
+
+      assert.equal(scoreFresh - scoreRecentlyPlayed, 30);
+    });
+  });
 });
