@@ -18,6 +18,7 @@ import {
   Maximize2,
   Sliders,
 } from "lucide-react";
+import { ArtworkImage } from "@/components/ui/ArtworkImage";
 
 export const MiniPlayer: React.FC = () => {
   const {
@@ -80,12 +81,11 @@ export const MiniPlayer: React.FC = () => {
           }}
         >
           <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/10 group">
-            <img
-              src={artworkSrc}
+            <ArtworkImage
+              src={currentTrack.artworkUrl}
               alt={currentTrack.title}
-              onError={() => setImgError(true)}
-              className={`w-full h-full object-cover ${isPlaying ? "animate-spin-slow" : ""}`}
-              referrerPolicy="no-referrer"
+              type="track"
+              className={`w-full h-full object-cover ${isPlaying && currentTrack.sourceType !== "youtube" ? "animate-spin-slow" : ""}`}
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
               <Maximize2 className="w-4 h-4 text-white" />
@@ -93,9 +93,16 @@ export const MiniPlayer: React.FC = () => {
           </div>
 
           <div className="min-w-0 flex-1">
-            <h4 className="text-xs sm:text-sm font-semibold text-white truncate hover:underline">
-              {currentTrack.title}
-            </h4>
+            <div className="flex items-center space-x-1.5">
+              <h4 className="text-xs sm:text-sm font-semibold text-white truncate hover:underline">
+                {currentTrack.title}
+              </h4>
+              {currentTrack.sourceType === "youtube" && (
+                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600/90 text-white flex-shrink-0">
+                  YT
+                </span>
+              )}
+            </div>
             <p className="text-[11px] sm:text-xs text-inisai-muted truncate">
               {currentTrack.artist}
             </p>

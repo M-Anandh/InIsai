@@ -44,7 +44,26 @@ export const useAuthStore = create<AuthState>()(
         const savedTheme = get().user?.theme || "dark";
         if (typeof document !== "undefined") {
           const root = document.documentElement;
-          if (savedTheme === "light") {
+          let effectiveTheme = savedTheme;
+          if (savedTheme === "system") {
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            effectiveTheme = prefersDark ? "dark" : "light";
+
+            // Attach system theme listener
+            window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
+              if (get().user?.theme === "system") {
+                if (e.matches) {
+                  root.classList.add("dark");
+                  root.classList.remove("light");
+                } else {
+                  root.classList.add("light");
+                  root.classList.remove("dark");
+                }
+              }
+            });
+          }
+
+          if (effectiveTheme === "light") {
             root.classList.add("light");
             root.classList.remove("dark");
           } else {

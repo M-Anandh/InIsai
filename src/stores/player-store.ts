@@ -218,11 +218,22 @@ export const usePlayerStore = create<PlayerState>()(
             error: null,
           });
 
-          // Resolve playable stream URL
-          const resolvedStream = await musicSourceManager.resolveStreamUrl(track);
-          const { crossfadeDuration } = get().settings;
-
-          await audioEngine.playTrack(track, resolvedStream, crossfadeDuration);
+          // For YouTube tracks, audio playback happens via the official YouTube Iframe Player
+          if (track.sourceType === "youtube") {
+            audioEngine.pause();
+            set({
+              isPlaying: true,
+              isLoading: false,
+              duration: track.duration || 180,
+              currentTime: 0,
+              isFullScreenOpen: true, // open fullscreen player for seamless embedded video viewing
+            });
+          } else {
+            // Resolve playable stream URL
+            const resolvedStream = await musicSourceManager.resolveStreamUrl(track);
+            const { crossfadeDuration } = get().settings;
+            await audioEngine.playTrack(track, resolvedStream, crossfadeDuration);
+          }
 
           // Update history
           const history = [track, ...get().history.filter((t) => t.id !== track.id)].slice(0, 50);

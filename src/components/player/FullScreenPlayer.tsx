@@ -27,6 +27,7 @@ import { AudioVisualizer } from "./AudioVisualizer";
 import { LyricsView } from "./LyricsView";
 import { QueueView } from "./QueueView";
 import { EqualizerDrawer } from "./EqualizerDrawer";
+import { ArtworkImage } from "@/components/ui/ArtworkImage";
 
 export const FullScreenPlayer: React.FC = () => {
   const {
@@ -174,20 +175,34 @@ export const FullScreenPlayer: React.FC = () => {
         {activeDrawerTab === "equalizer" && <EqualizerDrawer />}
 
         {activeDrawerTab === "nowPlaying" && (
-          <div className="flex flex-col items-center justify-center max-w-md w-full mx-auto space-y-6">
-            {/* Artwork Card */}
-            <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/20 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
-              <img
-                src={artworkSrc}
-                alt={currentTrack.title}
-                onError={() => setImgError(true)}
-                className={`w-full h-full object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] uppercase font-mono tracking-wider text-inisai-teal border border-white/10">
-                {currentTrack.sourceType}
+          <div className="flex flex-col items-center justify-center max-w-lg w-full mx-auto space-y-6">
+            {/* Visual Media: YouTube Player or Artwork Card */}
+            {currentTrack.sourceType === "youtube" && currentTrack.youtubeVideoId ? (
+              <div className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-red-500/10 border border-white/10 bg-black relative">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${currentTrack.youtubeVideoId}?autoplay=1&enablejsapi=1`}
+                  title={currentTrack.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+                <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-red-600/90 backdrop-blur-md text-[10px] font-bold text-white shadow">
+                  YouTube Player
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/20 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
+                <ArtworkImage
+                  src={currentTrack.artworkUrl}
+                  alt={currentTrack.title}
+                  type="track"
+                  className={`w-full h-full object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
+                />
+                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] uppercase font-mono tracking-wider text-inisai-teal border border-white/10">
+                  {currentTrack.sourceType}
+                </div>
+              </div>
+            )}
 
             {/* Track Info */}
             <div className="text-center w-full px-4">
@@ -198,6 +213,11 @@ export const FullScreenPlayer: React.FC = () => {
                 {currentTrack.artist}
                 {currentTrack.album && ` • ${currentTrack.album}`}
               </p>
+              {currentTrack.sourceAttribution && (
+                <p className="text-[11px] text-white/50 mt-1">
+                  Source: {currentTrack.sourceAttribution}
+                </p>
+              )}
             </div>
 
             {/* Audio Visualizer */}

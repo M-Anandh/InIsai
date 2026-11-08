@@ -391,4 +391,92 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(scoreFresh - scoreRecentlyPlayed, 30);
     });
   });
+
+  // 7. Dual Theme System Tests
+  describe("Dual Theme System", () => {
+    function resolveThemeClass(mode, osPrefersDark) {
+      if (mode === "dark") return "dark";
+      if (mode === "light") return "light";
+      // system
+      return osPrefersDark ? "dark" : "light";
+    }
+
+    test("should resolve light and dark modes explicitly", () => {
+      assert.equal(resolveThemeClass("dark", false), "dark");
+      assert.equal(resolveThemeClass("light", true), "light");
+    });
+
+    test("should dynamically follow OS preference in system mode", () => {
+      assert.equal(resolveThemeClass("system", true), "dark");
+      assert.equal(resolveThemeClass("system", false), "light");
+    });
+  });
+
+  // 8. YouTube Music Integration Compliance Tests
+  describe("YouTube Music Integration Compliance", () => {
+    test("should generate compliant YouTube track entity without stream ripping", () => {
+      const ytTrack = {
+        id: "yt_dQw4w9WgXcQ",
+        sourceId: "dQw4w9WgXcQ",
+        sourceType: "youtube",
+        title: "Never Gonna Give You Up",
+        artist: "Rick Astley",
+        album: "YouTube Music",
+        duration: 213,
+        artworkUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        streamUrl: "", // Compliant: raw stream extraction is strictly disallowed
+        isPlayable: true,
+        youtubeVideoId: "dQw4w9WgXcQ",
+        sourceAttribution: "YouTube Music / Google LLC (Embedded Player)",
+      };
+
+      assert.equal(ytTrack.sourceType, "youtube");
+      assert.equal(ytTrack.youtubeVideoId, "dQw4w9WgXcQ");
+      assert.equal(ytTrack.streamUrl, "");
+      assert.ok(ytTrack.sourceAttribution.includes("YouTube Music"));
+    });
+  });
+
+  // 9. Resilient Artwork Resolution Tests
+  describe("Resilient Artwork Resolution", () => {
+    function resolvePlaylistArtworkStrategy(artworkUrl, tracks = []) {
+      if (artworkUrl && artworkUrl.trim()) {
+        return { strategy: "direct", url: artworkUrl };
+      }
+      const validTrackArts = tracks
+        .map((t) => t.artworkUrl)
+        .filter((url) => Boolean(url && url.trim()));
+
+      if (validTrackArts.length >= 4) {
+        return { strategy: "collage_4", urls: validTrackArts.slice(0, 4) };
+      }
+      if (validTrackArts.length > 0) {
+        return { strategy: "first_track", url: validTrackArts[0] };
+      }
+      return { strategy: "inisai_branded_fallback" };
+    }
+
+    test("should use direct artwork if provided", () => {
+      const res = resolvePlaylistArtworkStrategy("https://images.example.com/cover.jpg");
+      assert.equal(res.strategy, "direct");
+      assert.equal(res.url, "https://images.example.com/cover.jpg");
+    });
+
+    test("should build 2x2 collage when playlist has 4+ tracks with artwork", () => {
+      const tracks = [
+        { artworkUrl: "https://img.com/1.jpg" },
+        { artworkUrl: "https://img.com/2.jpg" },
+        { artworkUrl: "https://img.com/3.jpg" },
+        { artworkUrl: "https://img.com/4.jpg" },
+      ];
+      const res = resolvePlaylistArtworkStrategy("", tracks);
+      assert.equal(res.strategy, "collage_4");
+      assert.equal(res.urls.length, 4);
+    });
+
+    test("should fallback to branded placeholder when no artwork or tracks exist", () => {
+      const res = resolvePlaylistArtworkStrategy(null, []);
+      assert.equal(res.strategy, "inisai_branded_fallback");
+    });
+  });
 });

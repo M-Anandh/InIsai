@@ -5,6 +5,7 @@ import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { ArtworkImage } from "@/components/ui/ArtworkImage";
 import { Play, Pause, Heart, Plus, ListPlus, Music } from "lucide-react";
 
 interface TrackCardProps {
@@ -54,25 +55,14 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     >
       {/* Artwork Container */}
       <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-tr from-purple-950/40 via-black/40 to-slate-900 border border-white/5 shadow-inner">
-        {!imgError ? (
-          <img
-            src={artworkSrc}
-            alt={track.title}
-            onError={() => setImgError(true)}
-            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${
-              isCurrent && isPlaying ? "opacity-90" : ""
-            }`}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-purple-900/30 via-slate-950 to-cyan-900/20 text-inisai-accent">
-            <Music className="w-8 h-8 opacity-60 mb-1" />
-            <span className="text-[10px] text-inisai-muted font-mono uppercase tracking-wider">
-              {track.language || "InIsai"}
-            </span>
-          </div>
-        )}
+        <ArtworkImage
+          src={artworkSrc}
+          alt={track.title}
+          type="track"
+          className={`group-hover:scale-105 transition-transform duration-500 ${
+            isCurrent && isPlaying ? "opacity-90" : ""
+          }`}
+        />
 
         {/* Ambient Back Glow on Hover */}
         <div className="absolute inset-0 bg-inisai-accent/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />

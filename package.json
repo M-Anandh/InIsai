@@ -5,7 +5,7 @@
   "description": "InIsai (இனிசை) — Every Beat, Your World. Modern, installable PWA music player.",
   "scripts": {
     "dev": "next dev",
-    "build": "node -e \"try{fs.rmSync('.next',{recursive:true,force:true})}catch(e){}\" && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "node --test tests/**/*.test.mjs"

@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { musicSourceManager } from "@/music/adapters/MusicSourceManager";
 import { Track, PlaybackContext } from "@/types";
 import { TrackRow } from "@/components/music/TrackRow";
-import { Search, X, History, Sparkles, Disc3 } from "lucide-react";
+import { Search, X, History, Sparkles, Disc3, Youtube, Music } from "lucide-react";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<"all" | "local" | "online">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "youtube" | "local">("all");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Load recent searches from localStorage
@@ -54,11 +54,21 @@ export default function SearchPage() {
     setIsLoading(true);
     try {
       let tracks: Track[] = [];
+
       if (activeFilter === "local") {
         tracks = await musicSourceManager.getLocalAdapter().search(q);
+      } else if (activeFilter === "youtube") {
+        // Query YouTube Music API endpoint
+        const ytRes = await fetch(`/api/music/youtube?q=${encodeURIComponent(q)}`);
+        if (ytRes.ok) {
+          const ytData = await ytRes.json();
+          tracks = ytData.results || [];
+        }
       } else {
+        // All online sources: query standard catalog + merge
         tracks = await musicSourceManager.searchAll(q);
       }
+
       setResults(tracks);
     } catch (e) {
       console.error("Search failure:", e);
@@ -93,25 +103,32 @@ export default function SearchPage() {
     }
   };
 
+  const searchContext: PlaybackContext = {
+    id: `search-${activeFilter}-${query.trim() || "query"}`,
+    type: "search",
+    title: `Search: "${query.trim() || "Results"}" (${activeFilter.toUpperCase()})`,
+    trackIds: results.map((r) => r.id),
+  };
+
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto pb-16">
       {/* Search Input Box */}
       <div className="relative">
-        <div className="relative flex items-center bg-white/5 border border-white/10 rounded-2xl p-2 sm:p-3 focus-within:border-inisai-accent transition-all shadow-inner">
+        <div className="relative flex items-center bg-white/[0.04] border border-white/10 rounded-2xl p-2.5 sm:p-3.5 focus-within:border-inisai-accent transition-all shadow-inner">
           <Search className="w-5 h-5 text-inisai-accent ml-2 flex-shrink-0" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search Tamil songs (e.g. Chinna Thamarai, Naa Ready, Ilaiyaraaja, Anirudh)..."
+            placeholder="Search Tamil songs, artists, YouTube Music (e.g. Chinna Thamarai, Naa Ready, Ilaiyaraaja)..."
             className="w-full bg-transparent px-3 text-white placeholder-inisai-muted/60 text-sm sm:text-base outline-none"
             autoFocus
           />
           {query && (
             <button
               onClick={() => setQuery("")}
-              className="p-1 rounded-full text-white/50 hover:text-white mr-1"
+              className="p-1 rounded-full text-white/50 hover:text-white mr-1 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -120,24 +137,37 @@ export default function SearchPage() {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 flex-wrap gap-y-2">
         <button
           onClick={() => setActiveFilter("all")}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeFilter === "all"
               ? "bg-inisai-accent text-white shadow-md shadow-inisai-accent/30"
-              : "bg-white/5 text-white/60 hover:bg-white/10"
+              : "bg-white/5 text-white/70 hover:bg-white/10"
           }`}
         >
-          All Online Sources
+          <Music className="w-3.5 h-3.5" />
+          <span>All Online Sources</span>
+        </button>
+
+        <button
+          onClick={() => setActiveFilter("youtube")}
+          className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeFilter === "youtube"
+              ? "bg-rose-600 text-white shadow-md shadow-rose-600/30"
+              : "bg-white/5 text-white/70 hover:bg-white/10"
+          }`}
+        >
+          <Youtube className="w-3.5 h-3.5 text-rose-500 group-hover:text-white" />
+          <span>YouTube Music</span>
         </button>
 
         <button
           onClick={() => setActiveFilter("local")}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+          className={`flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
             activeFilter === "local"
-              ? "bg-inisai-accent text-white shadow-md shadow-inisai-accent/30"
-              : "bg-white/5 text-white/60 hover:bg-white/10"
+              ? "bg-inisai-teal text-black shadow-md shadow-inisai-teal/30 font-bold"
+              : "bg-white/5 text-white/70 hover:bg-white/10"
           }`}
         >
           <Disc3 className="w-3.5 h-3.5 text-inisai-teal" />
@@ -155,7 +185,7 @@ export default function SearchPage() {
             </span>
             <button
               onClick={clearRecentSearches}
-              className="text-white/40 hover:text-rose-400"
+              className="text-white/40 hover:text-rose-400 cursor-pointer"
             >
               Clear All
             </button>
@@ -168,7 +198,7 @@ export default function SearchPage() {
                   setQuery(term);
                   saveRecentSearch(term);
                 }}
-                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs text-white/80 transition-colors"
+                className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs text-white/80 transition-colors cursor-pointer"
               >
                 {term}
               </button>
@@ -179,9 +209,11 @@ export default function SearchPage() {
 
       {/* Search Results */}
       {isLoading ? (
-        <div className="py-12 flex flex-col items-center justify-center text-inisai-muted space-y-2">
+        <div className="py-16 flex flex-col items-center justify-center text-inisai-muted space-y-2">
           <div className="w-8 h-8 rounded-full border-2 border-inisai-accent border-t-transparent animate-spin" />
-          <p className="text-xs">Searching InIsai & Tamil music catalogs...</p>
+          <p className="text-xs">
+            Searching {activeFilter === "youtube" ? "YouTube Music" : "InIsai & Tamil catalogs"}...
+          </p>
         </div>
       ) : query && results.length === 0 ? (
         <div className="py-16 text-center text-inisai-muted space-y-2">
@@ -193,7 +225,9 @@ export default function SearchPage() {
       ) : results.length > 0 ? (
         <div className="space-y-2">
           <div className="flex justify-between items-center text-xs text-inisai-muted pb-1">
-            <span>Found {results.length} songs</span>
+            <span>
+              Found {results.length} songs {activeFilter === "youtube" ? "on YouTube Music" : ""}
+            </span>
             <span>Click to play</span>
           </div>
           {results.map((track, idx) => (
@@ -205,12 +239,7 @@ export default function SearchPage() {
                 track={track}
                 index={idx}
                 playlistContext={results}
-                context={{
-                  id: `search-${query.trim() || "query"}`,
-                  type: "search",
-                  title: `Search: "${query.trim() || track.title}"`,
-                  trackIds: results.map((r) => r.id),
-                }}
+                context={searchContext}
               />
             </div>
           ))}
@@ -219,18 +248,19 @@ export default function SearchPage() {
         /* Empty State Suggestions */
         <div className="pt-8 text-center text-inisai-muted space-y-4">
           <Sparkles className="w-8 h-8 mx-auto text-inisai-accent opacity-50" />
-          <h3 className="text-sm font-semibold text-white/80">Explore Tamil & World Music</h3>
+          <h3 className="text-sm font-semibold text-white/80">Explore Tamil, Indian & World Music</h3>
           <p className="text-xs max-w-sm mx-auto leading-relaxed">
-            Search for any song or artist: &ldquo;Chinna Thamarai&rdquo;, &ldquo;Anirudh&rdquo;, &ldquo;A.R. Rahman&rdquo;, &ldquo;Yuvan&rdquo;, &ldquo;Ilaiyaraaja&rdquo;, &ldquo;Harris Jayaraj&rdquo;, or load your device files.
+            Search songs across streaming catalogs, YouTube Music, or load tracks stored directly on your phone or PC.
           </p>
           <div className="flex flex-wrap justify-center gap-2 pt-2">
             {[
               "Chinna Thamarai",
               "Naa Ready",
               "Arabic Kuthu",
+              "Nilaave Vaa",
               "Malarndhum Malaraadha",
-              "Ilaiyaraaja Hits",
-              "Kanne Kalaimane",
+              "Ilaiyaraaja Melodies",
+              "A.R. Rahman Live",
             ].map((suggestion) => (
               <button
                 key={suggestion}
@@ -238,7 +268,7 @@ export default function SearchPage() {
                   setQuery(suggestion);
                   saveRecentSearch(suggestion);
                 }}
-                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/70 hover:text-white transition-all"
+                className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/70 hover:text-white transition-all cursor-pointer"
               >
                 {suggestion}
               </button>

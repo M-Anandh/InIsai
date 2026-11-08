@@ -1,6 +1,6 @@
 export type RepeatMode = "off" | "all" | "one";
 
-export type AudioSourceType = "local" | "jamendo" | "curated" | "public_api";
+export type AudioSourceType = "local" | "jamendo" | "curated" | "public_api" | "youtube";
 
 export type PlaybackContextType =
   | "search"
@@ -51,6 +51,8 @@ export interface Track {
   bitrate?: string;
   isPlayable: boolean;
   addedAt?: string;
+  youtubeVideoId?: string;
+  sourceAttribution?: string;
 }
 
 export interface Playlist {

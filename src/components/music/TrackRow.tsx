@@ -5,6 +5,7 @@ import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { ArtworkImage } from "@/components/ui/ArtworkImage";
 import { formatDuration } from "@/lib/utils";
 import { Play, Pause, Heart, Plus, Trash2, ListPlus } from "lucide-react";
 
@@ -63,13 +64,10 @@ export const TrackRow: React.FC<TrackRowProps> = ({
 
         {/* Thumbnail with overlay play */}
         <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-white/5">
-          <img
+          <ArtworkImage
             src={artworkSrc}
             alt={track.title}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            referrerPolicy="no-referrer"
+            type="track"
           />
           <div
             className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
