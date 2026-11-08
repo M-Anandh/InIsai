@@ -218,21 +218,24 @@ export const usePlayerStore = create<PlayerState>()(
             error: null,
           });
 
-          // For YouTube tracks, audio playback happens via the official YouTube Iframe Player
-          if (track.sourceType === "youtube") {
+          // Resolve playable stream URL
+          const resolvedStream = await musicSourceManager.resolveStreamUrl(track);
+          const { crossfadeDuration } = get().settings;
+
+          if (resolvedStream) {
+            await audioEngine.playTrack(track, resolvedStream, crossfadeDuration);
+            set({ isPlaying: true, isLoading: false });
+          } else if (track.sourceType === "youtube") {
+            // If no direct MP3/AAC stream was resolved, embedded player handles playback
             audioEngine.pause();
             set({
               isPlaying: true,
               isLoading: false,
               duration: track.duration || 180,
               currentTime: 0,
-              isFullScreenOpen: true, // open fullscreen player for seamless embedded video viewing
             });
           } else {
-            // Resolve playable stream URL
-            const resolvedStream = await musicSourceManager.resolveStreamUrl(track);
-            const { crossfadeDuration } = get().settings;
-            await audioEngine.playTrack(track, resolvedStream, crossfadeDuration);
+            await audioEngine.playTrack(track, track.streamUrl, crossfadeDuration);
           }
 
           // Update history

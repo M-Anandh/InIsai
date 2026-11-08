@@ -6,31 +6,31 @@
    CINEMATIC MIDNIGHT (DARK THEME)
    ========================================================================= */
 :root {
-  --background: #080a12;
-  --surface: #101522;
-  --surface-elevated: #171d2c;
-  --surface-muted: #1e2436;
-  --card: #121624;
-  --card-hover: #181d30;
+  --background: #06080f;
+  --surface: #0e121d;
+  --surface-elevated: #151a28;
+  --surface-muted: #1b2133;
+  --card: #101422;
+  --card-hover: #171d30;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --glass: rgba(16, 21, 34, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --accent-primary: #9565ff;
-  --accent-secondary: #20c7e8;
-  --accent-glow: rgba(149, 101, 255, 0.25);
+  --glass: rgba(14, 18, 29, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #06b6d4;
+  --accent-glow: rgba(139, 92, 246, 0.32);
   --foreground: #ffffff;
-  --text-secondary: #a5aabd;
+  --text-secondary: #94a3b8;
   --text-muted: #64748b;
-  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --hero-gradient: linear-gradient(135deg, rgba(23, 29, 44, 0.85) 0%, rgba(16, 21, 34, 0.95) 100%);
+  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  --hero-gradient: linear-gradient(135deg, rgba(21, 26, 40, 0.85) 0%, rgba(14, 18, 29, 0.95) 100%);
 }
 
 /* =========================================================================
    PEARL EDITORIAL MUSIC STUDIO (LIGHT THEME)
    ========================================================================= */
 html.light {
-  --background: #f8f9fc;
+  --background: #f8fafc;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
   --surface-muted: #f1f5f9;
@@ -38,11 +38,11 @@ html.light {
   --card-hover: #f8fafc;
   --border: #e2e8f0;
   --border-strong: #cbd5e1;
-  --glass: rgba(255, 255, 255, 0.88);
+  --glass: rgba(255, 255, 255, 0.92);
   --glass-border: #e2e8f0;
-  --accent-primary: #7c3aed;
-  --accent-secondary: #0284c7;
-  --accent-glow: rgba(124, 58, 237, 0.15);
+  --accent-primary: #6366f1;
+  --accent-secondary: #0ea5e9;
+  --accent-glow: rgba(99, 102, 241, 0.18);
   --foreground: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;

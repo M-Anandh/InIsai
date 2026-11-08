@@ -67,7 +67,37 @@ export class MusicSourceManager {
         console.warn(`Error resolving stream for ${track.id}:`, err);
       }
     }
-    return track.streamUrl;
+
+    if (track.streamUrl) return track.streamUrl;
+
+    // Automatic MP3/AAC audio fallback: If track has no stream URL (e.g. from YouTube bridge),
+    // search high-fidelity catalog for exact song + artist match so it plays natively as pure audio!
+    try {
+      const cleanTitle = track.title
+        .replace(/\(Official.*?\)/gi, "")
+        .replace(/\[Official.*?\]/gi, "")
+        .replace(/\(Audio\)/gi, "")
+        .replace(/\(Video\)/gi, "")
+        .replace(/\(Lyrics\)/gi, "")
+        .trim();
+      const query = `${cleanTitle} ${track.artist}`.trim();
+      const res = await fetch(`/api/music/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        const match = (data.results || []).find((r: Track) => Boolean(r.streamUrl));
+        if (match && match.streamUrl) {
+          track.streamUrl = match.streamUrl;
+          if (!track.artworkUrl || track.artworkUrl.includes("ytimg")) {
+            track.artworkUrl = match.artworkUrl;
+          }
+          return match.streamUrl;
+        }
+      }
+    } catch (err) {
+      console.warn("Failed resolving fallback audio stream:", err);
+    }
+
+    return track.streamUrl || "";
   }
 
   public async resolveLyrics(track: Track): Promise<string | null> {

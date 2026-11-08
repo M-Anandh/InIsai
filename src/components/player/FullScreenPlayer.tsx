@@ -22,6 +22,7 @@ import {
   Mic2,
   Sliders,
   Radio,
+  Video,
 } from "lucide-react";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { LyricsView } from "./LyricsView";
@@ -55,6 +56,7 @@ export const FullScreenPlayer: React.FC = () => {
   const { isLiked, toggleLikeTrack } = useAuthStore();
   const mounted = useMounted();
   const [imgError, setImgError] = React.useState(false);
+  const [mediaMode, setMediaMode] = React.useState<"audio" | "video">("audio");
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -86,11 +88,13 @@ export const FullScreenPlayer: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-inisai-dark/95 backdrop-blur-3xl text-white overflow-hidden transition-all duration-300">
-      {/* Dynamic Ambient Blur Backdrop */}
+      {/* Dynamic Ambient Blur Backdrop & Aurora Glow */}
       <div
-        className="absolute inset-0 opacity-25 filter blur-3xl scale-125 -z-10 bg-cover bg-center pointer-events-none transition-all duration-700"
+        className="absolute inset-0 opacity-35 filter blur-3xl scale-125 -z-10 bg-cover bg-center pointer-events-none transition-all duration-700"
         style={{ backgroundImage: `url(${currentTrack.artworkUrl})` }}
       />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/60 via-inisai-dark/80 to-black/95 pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-gradient-to-tr from-inisai-accent/25 via-fuchsia-500/15 to-inisai-teal/20 rounded-full filter blur-[90px] pointer-events-none -z-10 animate-pulse-slow" />
 
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/5 bg-black/40 backdrop-blur-md">
@@ -175,9 +179,38 @@ export const FullScreenPlayer: React.FC = () => {
         {activeDrawerTab === "equalizer" && <EqualizerDrawer />}
 
         {activeDrawerTab === "nowPlaying" && (
-          <div className="flex flex-col items-center justify-center max-w-lg w-full mx-auto space-y-6">
-            {/* Visual Media: YouTube Player or Artwork Card */}
-            {currentTrack.sourceType === "youtube" && currentTrack.youtubeVideoId ? (
+          <div className="flex flex-col items-center justify-center max-w-lg w-full mx-auto space-y-5">
+            {/* BitChord-Style Audio/Video Mode Switcher (if video is available) */}
+            {currentTrack.youtubeVideoId && (
+              <div className="flex items-center space-x-1 p-1 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-md">
+                <button
+                  onClick={() => setMediaMode("audio")}
+                  className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    mediaMode === "audio"
+                      ? "bg-inisai-accent text-white shadow-md shadow-inisai-accent/30"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <Radio className="w-3.5 h-3.5" />
+                  <span>Audio Mode</span>
+                </button>
+
+                <button
+                  onClick={() => setMediaMode("video")}
+                  className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    mediaMode === "video"
+                      ? "bg-rose-600 text-white shadow-md shadow-rose-600/30"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  <Video className="w-3.5 h-3.5" />
+                  <span>Watch Video</span>
+                </button>
+              </div>
+            )}
+
+            {/* Visual Media: YouTube Player or High-Res Artwork Card */}
+            {mediaMode === "video" && currentTrack.youtubeVideoId ? (
               <div className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-red-500/10 border border-white/10 bg-black relative">
                 <iframe
                   src={`https://www.youtube.com/embed/${currentTrack.youtubeVideoId}?autoplay=1&enablejsapi=1&rel=0`}
@@ -188,11 +221,11 @@ export const FullScreenPlayer: React.FC = () => {
                   allowFullScreen
                 />
                 <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-red-600/90 backdrop-blur-md text-[10px] font-bold text-white shadow">
-                  YouTube Player
+                  YouTube Video
                 </div>
               </div>
             ) : (
-              <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/20 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
+              <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/30 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
                 <ArtworkImage
                   src={currentTrack.artworkUrl}
                   alt={currentTrack.title}
@@ -200,7 +233,7 @@ export const FullScreenPlayer: React.FC = () => {
                   className={`w-full h-full object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
                 />
                 <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] uppercase font-mono tracking-wider text-inisai-teal border border-white/10">
-                  {currentTrack.sourceType}
+                  {currentTrack.sourceType === "youtube" ? "MP3 Audio" : currentTrack.sourceType}
                 </div>
               </div>
             )}
