@@ -17,7 +17,7 @@ export const MobileNav: React.FC = () => {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-inisai-dark/90 backdrop-blur-2xl border-t border-slate-200/80 dark:border-white/[0.08] px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none shadow-2xl transition-colors duration-200">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 glass-panel border-t border-slate-200/80 dark:border-white/[0.08] px-2 py-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] flex items-center justify-around select-none shadow-2xl transition-colors duration-200">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         const Icon = item.icon;
@@ -25,9 +25,9 @@ export const MobileNav: React.FC = () => {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
+            className={`flex flex-col items-center justify-center min-w-[52px] min-h-[48px] px-2.5 rounded-2xl transition-all ${
               isActive
-                ? "text-inisai-accent font-semibold bg-inisai-accent/10"
+                ? "text-inisai-accent font-semibold bg-inisai-accent/15"
                 : "text-slate-500 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white"
             }`}
           >

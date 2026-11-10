@@ -1,11 +1,11 @@
 {
   "name": "InIsai — Music Player (இனிசை)",
   "short_name": "InIsai",
-  "description": "Every Beat, Your World. Premium PWA music player with Tamil melodies and local audio playback.",
+  "description": "Every Beat, Your World. Modern installable music player powered by YouTube Music discovery & local audio playback.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#08090d",
-  "theme_color": "#08090d",
+  "background_color": "#0B0A10",
+  "theme_color": "#0B0A10",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
@@ -31,15 +31,14 @@
   "categories": ["music", "entertainment", "audio"],
   "shortcuts": [
     {
-      "name": "Explore Music",
-      "url": "/explore",
-      "description": "Discover Tamil, English, and Classical music"
+      "name": "Search Music",
+      "url": "/search",
+      "description": "Search songs, artists, albums, and playlists"
     },
     {
-      "name": "Local Music",
-      "url": "/local",
-      "description": "Play audio files stored on your device"
+      "name": "Liked Songs",
+      "url": "/liked",
+      "description": "Open your saved favorite songs"
     }
   ]
 }
-

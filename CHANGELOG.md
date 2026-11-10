@@ -2,6 +2,19 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 7] - 2026-11-10
+### Mobile-First Top Bar, Search Sync & PWA Shell v2
+
+#### Added / Fixed
+- **Single-Line Mobile Top Bar (`src/components/layout/Header.tsx`, `InisaiLogo.tsx`)**:
+  - Removed overlapping desktop badges and tagline on small mobile screens (`< 768px`), displaying compact App Icon + `InIsai` (`text-slate-900 dark:text-[#F6F3EE]` fixing Light mode wordmark contrast), expandable mobile full-width Search toggle, Theme Icon toggle, and compact Profile/Login avatar (`>= 40px` touch targets, zero wrap down to `360px`).
+  - Added `?q=` URL parameter synchronization in `src/app/search/page.tsx` with `Suspense`.
+- **Install Experience & PWA Manifest (`PWAInstaller.tsx`, `manifest.webmanifest`, `sw.js`)**:
+  - Moved mobile "Install App" out of the top bar into a one-time dismissible Home banner and permanent entry inside Settings.
+  - Updated `manifest.webmanifest` colors to `#0B0A10` Obsidian Ink and configured `Search` and `Liked Songs` shortcuts; bumped service worker (`inisai-pwa-v2`) skipping stream CDNs cleanly.
+- **Secondary Page Light-Theme Harmony (`globals.css`, `MobileNav.tsx`)**:
+  - Updated glass bottom navigation touch areas (`>= 48px`) with safe-area padding and ensured headings/cards across `/library`, `/liked`, `/playlists`, `/history`, `/local`, `/offline`, and `/profile` stay high contrast in both themes.
+
 ## [Phase 6] - 2026-11-10
 ### Design System, Dual Palettes, View Transitions & Motion Grammar
 

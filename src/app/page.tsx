@@ -7,6 +7,7 @@ import { INISAI_OFFICIAL_COLLECTIONS } from "@/music/collections";
 import { TrackCard } from "@/components/music/TrackCard";
 import { MusicCarousel } from "@/components/music/MusicCarousel";
 import { CoverImage } from "@/components/ui/CoverImage";
+import { PWAInstaller } from "@/components/pwa/PWAInstaller";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { Track, PlaybackContext, Shelf } from "@/types";
@@ -145,7 +146,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="space-y-8 sm:space-y-10 pb-16">
+      {/* Dismissible Mobile / Desktop PWA Install Banner */}
+      <PWAInstaller variant="banner" />
+
       {/* 1. Aurora Glass Featured Hero Banner */}
       {dynamicFeaturedTrack && (
         <div className="relative rounded-3xl overflow-hidden glass-panel border border-slate-200/80 dark:border-white/10 p-6 sm:p-10 shadow-xl dark:shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 group">

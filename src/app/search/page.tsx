@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Track, AlbumSummary, ArtistSummary, PlaylistSummary, PlaybackContext } from "@/types";
 import { TrackRow } from "@/components/music/TrackRow";
 import { CoverImage } from "@/components/ui/CoverImage";
@@ -47,8 +48,18 @@ const TRENDING_SEARCHES = [
   "A. R. Rahman",
 ];
 
-export default function SearchPage() {
-  const [query, setQuery] = useState("");
+function SearchContent() {
+  const searchParams = useSearchParams();
+  const initialQ = searchParams.get("q") || "";
+  const [query, setQuery] = useState(initialQ);
+
+  useEffect(() => {
+    const qp = searchParams.get("q");
+    if (qp && qp !== query) {
+      setQuery(qp);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -613,5 +624,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-inisai-muted text-xs">Loading Search...</div>}>
+      <SearchContent />
+    </Suspense>
   );
 }

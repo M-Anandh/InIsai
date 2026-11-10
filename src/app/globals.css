@@ -165,12 +165,51 @@ html.light .bg-inisai-dark {
   background-color: #FBF7F1 !important;
 }
 
-html.light .bg-inisai-surface {
+html.light .bg-inisai-surface,
+html.light .bg-inisai-card {
   background-color: #FFFFFF !important;
+  border-color: rgba(27, 24, 36, 0.09) !important;
+  box-shadow: var(--shadow-card);
 }
 
 html.light .text-inisai-muted {
   color: #524B63 !important;
+}
+
+html.light main h1,
+html.light main h2,
+html.light main h3,
+html.light main h4 {
+  color: #1B1824;
+}
+
+html.light main .text-white {
+  color: #1B1824;
+}
+
+html.light main .bg-inisai-accent,
+html.light main .bg-inisai-accent .text-white,
+html.light main [class*="bg-gradient-to"] .text-white,
+html.light main [class*="bg-gradient-to"].text-white,
+html.light main button.bg-inisai-accent {
+  color: #FFFFFF !important;
+}
+
+html.light main .bg-white\/5,
+html.light main .bg-white\/\[0\.02\],
+html.light main .bg-white\/\[0\.03\],
+html.light main .bg-white\/\[0\.04\] {
+  background-color: rgba(27, 24, 36, 0.04) !important;
+}
+
+html.light main .bg-white\/10 {
+  background-color: rgba(27, 24, 36, 0.07) !important;
+}
+
+html.light main .border-white\/5,
+html.light main .border-white\/10,
+html.light main .border-white\/15 {
+  border-color: rgba(27, 24, 36, 0.1) !important;
 }
 
 /* Horizontal Carousel Edge Mask */

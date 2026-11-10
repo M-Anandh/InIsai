@@ -1,9 +1,13 @@
-// InIsai PWA Service Worker
-const CACHE_NAME = "inisai-pwa-v1";
+// InIsai PWA Service Worker v2
+const CACHE_NAME = "inisai-pwa-v2";
 const OFFLINE_URL = "/offline.html";
 
 const PRECACHE_ASSETS = [
   "/",
+  "/search",
+  "/explore",
+  "/library",
+  "/liked",
   "/offline.html",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
@@ -14,7 +18,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        console.warn("Precache failed partially:", err);
+        console.warn("Precache partial note:", err);
       });
     })
   );
@@ -37,52 +41,50 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  // Only handle GET requests
   if (event.request.method !== "GET") return;
-
   const url = new URL(event.request.url);
 
-  // Skip audio streaming URLs from caching automatically to avoid huge storage bloat
+  // Never cache external streaming CDNs or YouTube media frames
   if (
     url.pathname.endsWith(".mp3") ||
+    url.pathname.endsWith(".mp4") ||
     url.pathname.endsWith(".wav") ||
     url.pathname.endsWith(".ogg") ||
-    url.hostname.includes("archive.org") ||
-    url.hostname.includes("pixabay.com") ||
-    url.hostname.includes("jamendo.com")
+    url.hostname.includes("saavncdn.com") ||
+    url.hostname.includes("youtube.com") ||
+    url.hostname.includes("googlevideo.com") ||
+    url.hostname.includes("ytimg.com")
   ) {
     return;
   }
 
-  // Handle navigation requests
+  // Handle navigation requests with network-first + offline shell fallback
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(async () => {
         const cache = await caches.open(CACHE_NAME);
-        const cachedOffline = await cache.match(OFFLINE_URL);
-        return cachedOffline || new Response("InIsai is currently offline.");
+        return (await cache.match(event.request)) || (await cache.match(OFFLINE_URL)) || new Response("InIsai is offline.");
       })
     );
     return;
   }
 
-  // Stale-while-revalidate for other assets
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchPromise = fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
+  // Stale-while-revalidate for static UI assets only
+  if (url.origin === self.location.origin && !url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const clone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedResponse);
 
-      return cachedResponse || fetchPromise;
-    })
-  );
+        return cachedResponse || fetchPromise;
+      })
+    );
+  }
 });
-

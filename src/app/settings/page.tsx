@@ -12,6 +12,7 @@ import {
   exportTasteProfileJson,
   ComputedTasteSummary,
 } from "@/lib/personalization/signal-tracker";
+import { PWAInstaller } from "@/components/pwa/PWAInstaller";
 import {
   Settings,
   Sliders,
@@ -411,6 +412,14 @@ export default function SettingsPage() {
           <HardDrive className="w-5 h-5 text-inisai-emerald" />
           <span>Storage & Offline Caching</span>
         </h2>
+
+        <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-200 dark:border-white/5">
+          <div>
+            <p className="font-semibold text-slate-900 dark:text-white">Install InIsai PWA</p>
+            <p className="text-slate-500 dark:text-inisai-muted">Install as a standalone music app on your home screen</p>
+          </div>
+          <PWAInstaller />
+        </div>
 
         <div className="flex items-center justify-between text-xs">
           <div>
