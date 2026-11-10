@@ -721,4 +721,24 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(hasTamilScript("Believer Imagine Dragons"), false);
     });
   });
+
+  // 15. Phase 5: Dynamic Artwork Palette Clamping
+  describe("Phase 5: BitChord-Inspired Dynamic Palette Extraction", () => {
+    test("should clamp extreme dark/bright colors into readable accent bounds", () => {
+      function clampColorForContrast(r, g, b) {
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const factor = max < 110 ? 150 / Math.max(1, max) : max > 235 ? 210 / max : 1;
+        const nr = Math.min(245, Math.max(40, Math.round(r * factor)));
+        const ng = Math.min(245, Math.max(40, Math.round(g * factor)));
+        const nb = Math.min(245, Math.max(40, Math.round(b * factor)));
+        if (max - min < 20) return "#7A5CFF";
+        return `rgb(${nr}, ${ng}, ${nb})`;
+      }
+
+      assert.equal(clampColorForContrast(10, 10, 10), "#7A5CFF");
+      assert.equal(clampColorForContrast(255, 255, 255), "#7A5CFF");
+      assert.equal(clampColorForContrast(250, 80, 40), "rgb(210, 67, 40)");
+    });
+  });
 });

@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useRef } from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
 import {
   Play,
@@ -18,7 +19,6 @@ import {
   Maximize2,
   Sliders,
 } from "lucide-react";
-import { ArtworkImage } from "@/components/ui/ArtworkImage";
 
 export const MiniPlayer: React.FC = () => {
   const {
@@ -33,146 +33,191 @@ export const MiniPlayer: React.FC = () => {
     settings,
     setVolume,
     toggleMute,
+    isFullScreenOpen,
     setFullScreenOpen,
     setActiveDrawerTab,
   } = usePlayerStore();
 
   const { isLiked, toggleLikeTrack } = useAuthStore();
-
   const mounted = useMounted();
-  const [imgError, setImgError] = React.useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  if (!mounted || !currentTrack) return null;
+  if (!mounted || !currentTrack || isFullScreenOpen) return null;
 
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
   const liked = isLiked(currentTrack.id);
 
-  const artworkSrc =
-    !imgError && currentTrack.artworkUrl
-      ? currentTrack.artworkUrl
-      : "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80";
+  const haptic = () => {
+    try {
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(10);
+      }
+    } catch {}
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (t) touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const t = e.changedTouches[0];
+    if (!t) return;
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+
+    if (Math.abs(dy) > 40 && dy < 0 && Math.abs(dy) > Math.abs(dx)) {
+      // Swipe up to expand player
+      setActiveDrawerTab("nowPlaying");
+      setFullScreenOpen(true);
+    } else if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
+      haptic();
+      if (dx < 0) nextTrack();
+      else prevTrack();
+    }
+  };
 
   return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-inisai-dark/90 backdrop-blur-2xl border-t border-slate-200/80 dark:border-white/[0.08] shadow-2xl transition-colors duration-200">
-      {/* Interactive Progress Scrubber */}
-      <div
-        className="w-full h-1 bg-slate-200 dark:bg-white/10 cursor-pointer group relative hover:h-1.5 transition-all"
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          const clickX = e.clientX - rect.left;
-          const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-          seek(ratio * duration);
-        }}
-        title="Seek position"
-      >
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="fixed bottom-[76px] md:bottom-3 left-3 right-3 md:left-[268px] md:right-4 z-40 rounded-2xl glass-panel border border-slate-200/80 dark:border-white/[0.12] shadow-2xl overflow-hidden transition-all duration-300 select-none"
+      role="region"
+      aria-label="Mini Music Player"
+    >
+      <div className="px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-3">
+        {/* Track Info & Cover (Tap to expand) */}
         <div
-          className="h-full bg-gradient-to-r from-inisai-accent via-purple-500 to-inisai-teal transition-all group-hover:h-1.5"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2">
-        {/* Track Info & Artwork */}
-        <div
-          className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1 max-w-[150px] xs:max-w-xs sm:max-w-sm cursor-pointer select-none"
           onClick={() => {
             setActiveDrawerTab("nowPlaying");
             setFullScreenOpen(true);
           }}
+          className="flex items-center space-x-3 min-w-0 flex-1 cursor-pointer group"
         >
-          <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-md flex-shrink-0 bg-gradient-to-tr from-purple-950/40 to-black/60 border border-slate-200 dark:border-white/10 group">
-            <ArtworkImage
+          <div className="relative w-11 h-11 rounded-xl overflow-hidden shadow-md flex-shrink-0 border border-slate-200/60 dark:border-white/10">
+            <CoverImage
               src={currentTrack.artworkUrl}
               alt={currentTrack.title}
+              youtubeVideoId={currentTrack.youtubeVideoId}
               type="track"
-              className={`w-full h-full object-cover ${isPlaying && currentTrack.sourceType !== "youtube" ? "animate-spin-slow" : ""}`}
+              aspect="square"
             />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 items-center justify-center transition-opacity">
               <Maximize2 className="w-4 h-4 text-white" />
             </div>
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center space-x-1.5">
-              <h4 className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate hover:underline">
-                {currentTrack.title}
-              </h4>
-              {currentTrack.sourceType === "youtube" && (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600/90 text-white flex-shrink-0">
-                  YT
-                </span>
-              )}
-            </div>
+            <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+              {currentTrack.title}
+            </h4>
             <p className="text-[11px] sm:text-xs text-slate-500 dark:text-inisai-muted truncate">
               {currentTrack.artist}
             </p>
           </div>
+        </div>
+
+        {/* Mobile Compact Controls (<= 3 touch targets cleanly) */}
+        <div className="flex md:hidden items-center space-x-1 flex-shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              haptic();
+              togglePlay();
+            }}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            className="w-11 h-11 rounded-full bg-inisai-accent text-white flex items-center justify-center shadow-md active:scale-95 transition-transform cursor-pointer"
+          >
+            {isPlaying ? (
+              <Pause className="w-5 h-5 fill-current" />
+            ) : (
+              <Play className="w-5 h-5 fill-current translate-x-0.5" />
+            )}
+          </button>
 
           <button
             onClick={(e) => {
               e.stopPropagation();
-              toggleLikeTrack(currentTrack);
+              haptic();
+              nextTrack();
             }}
-            className="hidden sm:block p-1 text-slate-400 dark:text-white/50 hover:text-rose-500 transition-colors cursor-pointer"
-            title={liked ? "Unlike" : "Like"}
+            aria-label="Next Track"
+            className="w-11 h-11 rounded-full flex items-center justify-center text-slate-700 dark:text-white/80 hover:bg-slate-200/70 dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
           >
-            <Heart
-              className={`w-4 h-4 ${
-                liked ? "fill-rose-500 text-rose-500" : ""
-              }`}
-            />
+            <SkipForward className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Center Controls */}
-        <div className="flex flex-col items-center justify-center space-y-1">
-          <div className="flex items-center space-x-3 sm:space-x-5">
+        {/* Desktop Center Transport Controls */}
+        <div className="hidden md:flex flex-col items-center justify-center space-y-0.5 flex-shrink-0">
+          <div className="flex items-center space-x-4">
             <button
-              onClick={prevTrack}
-              className="text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-colors p-1 cursor-pointer"
-              title="Previous Track"
+              onClick={() => {
+                haptic();
+                prevTrack();
+              }}
+              aria-label="Previous Track"
+              className="p-1.5 text-slate-600 dark:text-white/75 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             >
-              <SkipBack className="w-5 h-5" />
+              <SkipBack className="w-4 h-4" />
             </button>
 
             <button
-              onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-inisai-accent dark:bg-white text-white dark:text-black flex items-center justify-center shadow-lg shadow-inisai-accent/20 dark:shadow-white/10 hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-              title={isPlaying ? "Pause" : "Play"}
+              onClick={() => {
+                haptic();
+                togglePlay();
+              }}
+              aria-label={isPlaying ? "Pause" : "Play"}
+              className="w-9 h-9 rounded-full bg-inisai-accent dark:bg-white text-white dark:text-black flex items-center justify-center shadow-md hover:scale-105 active:scale-95 transition-transform cursor-pointer"
             >
               {isPlaying ? (
-                <Pause className="w-5 h-5 fill-current" />
+                <Pause className="w-4 h-4 fill-current" />
               ) : (
-                <Play className="w-5 h-5 fill-current translate-x-0.5" />
+                <Play className="w-4 h-4 fill-current translate-x-0.5" />
               )}
             </button>
 
             <button
-              onClick={nextTrack}
-              className="text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white transition-colors p-1 cursor-pointer"
-              title="Next Track"
+              onClick={() => {
+                haptic();
+                nextTrack();
+              }}
+              aria-label="Next Track"
+              className="p-1.5 text-slate-600 dark:text-white/75 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             >
-              <SkipForward className="w-5 h-5" />
+              <SkipForward className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Time indicator (desktop) */}
-          <div className="hidden sm:flex items-center space-x-2 text-[11px] font-mono text-slate-500 dark:text-inisai-muted">
+          <div className="flex items-center space-x-1.5 text-[10px] font-mono text-slate-500 dark:text-inisai-muted">
             <span>{formatDuration(currentTime)}</span>
             <span>/</span>
             <span>{formatDuration(duration)}</span>
           </div>
         </div>
 
-        {/* Right Tools (Volume, Lyrics, Queue, Equalizer, Fullscreen) */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2.5">
+        {/* Desktop Right Tools & Fine-Pointer Volume */}
+        <div className="hidden md:flex items-center space-x-1.5 flex-shrink-0">
+          <button
+            onClick={() => {
+              haptic();
+              toggleLikeTrack(currentTrack);
+            }}
+            aria-label={liked ? "Unlike" : "Like"}
+            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-rose-500 transition-colors cursor-pointer"
+          >
+            <Heart className={`w-4 h-4 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />
+          </button>
+
           <button
             onClick={() => {
               setActiveDrawerTab("lyrics");
               setFullScreenOpen(true);
             }}
-            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            title="Lyrics"
+            aria-label="Open Lyrics"
+            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <Mic2 className="w-4 h-4" />
           </button>
@@ -182,8 +227,8 @@ export const MiniPlayer: React.FC = () => {
               setActiveDrawerTab("queue");
               setFullScreenOpen(true);
             }}
-            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            title="Queue"
+            aria-label="Open Queue"
+            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <ListMusic className="w-4 h-4" />
           </button>
@@ -193,16 +238,17 @@ export const MiniPlayer: React.FC = () => {
               setActiveDrawerTab("equalizer");
               setFullScreenOpen(true);
             }}
-            className="hidden sm:block p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            title="Equalizer & Audio FX"
+            aria-label="Audio Effects"
+            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <Sliders className="w-4 h-4" />
           </button>
 
-          {/* Volume slider (desktop) */}
-          <div className="hidden md:flex items-center space-x-2 pl-2 border-l border-slate-200 dark:border-white/10">
+          {/* Volume Slider strictly on fine-pointer desktop devices */}
+          <div className="hidden [@media(pointer:fine)]:flex items-center space-x-1.5 pl-2 border-l border-slate-200 dark:border-white/10">
             <button
               onClick={toggleMute}
+              aria-label={settings.isMuted ? "Unmute" : "Mute"}
               className="text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white cursor-pointer"
             >
               {settings.isMuted || settings.volume === 0 ? (
@@ -216,9 +262,10 @@ export const MiniPlayer: React.FC = () => {
               min="0"
               max="1"
               step="0.01"
+              aria-label="Volume"
               value={settings.isMuted ? 0 : settings.volume}
               onChange={(e) => setVolume(Number(e.target.value))}
-              className="w-20 accent-inisai-accent h-1 bg-slate-200 dark:bg-white/20 rounded-lg cursor-pointer"
+              className="w-16 accent-inisai-accent h-1 bg-slate-200 dark:bg-white/20 rounded-lg cursor-pointer"
             />
           </div>
 
@@ -227,12 +274,29 @@ export const MiniPlayer: React.FC = () => {
               setActiveDrawerTab("nowPlaying");
               setFullScreenOpen(true);
             }}
-            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-            title="Expand Full Player"
+            aria-label="Expand Player"
+            className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/70 dark:hover:bg-white/10 transition-colors cursor-pointer"
           >
             <Maximize2 className="w-4 h-4" />
           </button>
         </div>
+      </div>
+
+      {/* Thin Bottom Interactive Scrubber Line */}
+      <div
+        className="w-full h-1 bg-slate-200/80 dark:bg-white/10 cursor-pointer group"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (duration <= 0) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          seek(ratio * duration);
+        }}
+      >
+        <div
+          className="h-full bg-gradient-to-r from-[#FF8A3D] via-[#FF3D77] to-[#7A5CFF] transition-all duration-150"
+          style={{ width: `${progressPercent}%` }}
+        />
       </div>
     </div>
   );

@@ -2,6 +2,19 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 5] - 2026-11-10
+### BitChord-Inspired Player UI, Dynamic Artwork Palette & Gestures
+
+#### Added
+- **Dynamic Artwork Palette Extractor (`src/lib/theme/palette-extractor.ts`)**:
+  - Safely extracts dominant album colors with WCAG AA saturation/lightness clamping and deterministic fallback, transitioning `--accent-dynamic` and Now Playing aurora over 600ms.
+- **Floating Glass `MiniPlayer.tsx`**:
+  - Floating pill bar 12px above mobile nav with thin gradient progress line, ≤ 3 compact mobile controls, tap & swipe-up expansion, swipe-left/right track skipping, and removal of noisy "YT" badge.
+- **BitChord-Inspired `FullScreenPlayer.tsx`**:
+  - Clean header with top-left ChevronDown collapse (`44×44px`), centered context title, `⋯` overflow menu (`Stats for Nerds`, Video Toggle, Sources), swipe-down dismissal, hover/drag preview tooltip scrubber with buffered indicator, one-row Title + Heart button with burst haptic, keyboard shortcuts (`Space`, `Left`/`Right`, `M`, `L`, `Esc`), and bottom sheet actions (`Lyrics`, `Queue`, `FX`, `Sleep`).
+- **Drag-to-Reorder `QueueView.tsx`**:
+  - HTML5 drag & drop reordering, arrow controls, and live `/api/yt/related` suggestions.
+
 ## [Phase 4] - 2026-11-10
 ### Word-Synced Lyrics, Multi-Provider LRCLIB + YTMusic Fallback & Apple Music Styling
 
