@@ -2,6 +2,21 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 8] - 2026-11-10
+### Documentation, Live Browser QA Bug Fixes & Production Verification
+
+#### Fixed & Verified
+- **Stale `c.saavncdn.com` Artwork URLs Removed (`src/music/curated-data.ts`)**:
+  - Cleared the 4 remaining ORB-blocked hardcoded artwork URLs (`Kesariya`, `Kanne Kalaimane`, `Gayatri Mantra`, `Vande Mataram`) so `<CoverImage>` renders clean deterministic gradients with zero `ERR_BLOCKED_BY_ORB` network errors on Home.
+- **YouTube Music Cold-Connect Timeouts, Collection Latency & Cache Poisoning (`src/music/providers/ytmusic-server.ts`, `src/app/api/yt/collections/route.ts`)**:
+  - Enabled `dns.setDefaultResultOrder("ipv4first")`, added bounded per-RPC `withTimeout` guards across all YT Music endpoints, skipped redundant general search when `typeFilter === "song"`, and stopped caching partial `< 4` home shelves for 30 minutes when transient timeouts occur.
+  - Optimized `/api/yt/collections` with an in-memory 1h cache and prioritized 4-query resolution (dropping cold load latency from `83.6s` to `< 1s`, e.g., `653ms` cold / `10ms` warm for `ilaiyaraaja-maestro-hits` with 35 tracks).
+- **Non-Blocking Font Loading (`src/components/ui/FontLoader.tsx`, `src/app/layout.tsx`)**:
+  - Moved Google Fonts stylesheet loading out of blocking `<head>` `<link rel="stylesheet">` into async client-side `FontLoader` so offline or throttled font requests never delay initial paint or document `load` events.
+- **Documentation & End-to-End QA (`README.md`, `tests/inisai.test.mjs`)**:
+  - Updated `README.md` with full v2.0 architecture, provider registry, dual-engine playback, personalization, lyrics, and compliance boundaries.
+  - Verified `32/32` unit tests, `npx tsc --noEmit`, `npm run build` (`32` routes), Desktop `1280×800` (`28/28` steps, `0` page/console/network errors), Mobile `375×812` (`14/14` steps, `0` page/console errors), and live collection playback + automatic fallback recovery via REA Chromium.
+
 ## [Phase 7] - 2026-11-10
 ### Mobile-First Top Bar, Search Sync & PWA Shell v2
 

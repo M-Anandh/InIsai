@@ -159,3 +159,4 @@ export const INISAI_OFFICIAL_COLLECTIONS: OfficialCollectionDefinition[] = [
     targetCount: 25,
   },
 ];
+

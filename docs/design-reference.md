@@ -68,3 +68,4 @@ Designed cleanly for high legibility without raw inversion:
   - One-line mobile top bar (App Icon + "InIsai", expandable search button, theme toggle, avatar — no wrapping pills).
   - Floating MiniPlayer positioned cleanly `12px` above the bottom tab bar with swipe left/right track skipping and tap/swipe-up expansion.
   - Now Playing bottom sheet uses top-left ChevronDown collapse (no verbose "Close" pill), centered "Now Playing" label, top-right `⋯` overflow menu, drag handle + swipe-down dismissal, heart button beside the title, and bottom action sheet triggers (`Lyrics`, `Queue`, `FX`, `Sleep`).
+

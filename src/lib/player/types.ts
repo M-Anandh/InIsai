@@ -37,3 +37,4 @@ export interface PlaybackEngine {
   getVisualizerData?(): Uint8Array | null;
   stop(): void;
 }
+

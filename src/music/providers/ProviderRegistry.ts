@@ -171,3 +171,4 @@ export class ProviderRegistry {
 }
 
 export const providerRegistry = ProviderRegistry.getInstance();
+

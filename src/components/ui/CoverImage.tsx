@@ -160,3 +160,4 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     </div>
   );
 };
+

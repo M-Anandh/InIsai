@@ -98,3 +98,4 @@ export async function extractArtworkPalette(
     img.src = artworkUrl;
   });
 }
+

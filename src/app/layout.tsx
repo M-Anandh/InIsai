@@ -8,6 +8,7 @@ import { FullScreenPlayer } from "@/components/player/FullScreenPlayer";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { ThemeSync } from "@/components/ui/ThemeSync";
+import { FontLoader } from "@/components/ui/FontLoader";
 
 export const metadata: Metadata = {
   title: "InIsai — Every Beat, Your World",
@@ -65,20 +66,11 @@ export default function RootLayout({
             `,
           }}
         />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
         <link rel="preconnect" href="https://i.ytimg.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://lh3.googleusercontent.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="min-h-screen bg-[#FBF7F1] dark:bg-[#0B0A10] text-[#1B1824] dark:text-[#F6F3EE] flex flex-col antialiased selection:bg-inisai-accent selection:text-white">
+        <FontLoader />
         <ThemeSync />
         <PlayerProvider>
           <div className="flex flex-1 min-h-screen">

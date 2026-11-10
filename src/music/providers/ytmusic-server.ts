@@ -1,6 +1,28 @@
+import dns from "node:dns";
 import { Innertube } from "youtubei.js";
 import { Track, AlbumSummary, ArtistSummary, PlaylistSummary, Shelf } from "@/types";
 import { normalizeTrackSignature } from "./ProviderRegistry";
+
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {
+  // Ignore on runtimes without mutable DNS ordering
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch(() => {
+        clearTimeout(timer);
+        resolve(fallback);
+      });
+  });
+}
 
 // Lightweight TTL LRU Cache in module scope
 interface CacheEntry<T> {
@@ -213,8 +235,9 @@ export async function ytSuggest(query: string): Promise<string[]> {
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
-    const sections: any = await yt.music.getSearchSuggestions(clean);
+    const yt = await withTimeout(getClient(), 4500, null as unknown as Innertube);
+    if (!yt) return [];
+    const sections: any = await withTimeout(yt.music.getSearchSuggestions(clean), 3500, null);
     const list: string[] = [];
 
     if (Array.isArray(sections)) {
@@ -297,12 +320,14 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
+    const yt = await withTimeout(getClient(), 5000, null as unknown as Innertube);
+    if (!yt) return await ytDataApiFallback(clean);
 
-    // Run primary general search + targeted song search in parallel for fastest comprehensive accuracy
+    // For song-only batch lookups (collections, quick-picks), skip redundant general search
+    const songOnly = typeFilter === "song";
     const [generalRes, songsRes] = await Promise.allSettled([
-      yt.music.search(clean),
-      yt.music.search(clean, { type: "song" }),
+      songOnly ? Promise.resolve(null) : withTimeout(yt.music.search(clean), 5500, null),
+      withTimeout(yt.music.search(clean, { type: "song" }), 5500, null),
     ]);
 
     const songCandidates: Array<{ track: Track; type: string }> = [];
@@ -373,8 +398,12 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
     if (songCandidates.length === 0 && clean.split(" ").length > 2) {
       const retryQuery = clean.split(" ").slice(0, 2).join(" ");
       try {
-        const retrySongs = await yt.music.search(retryQuery, { type: "song" });
-        for (const item of retrySongs.songs?.contents || []) {
+        const retrySongs: any = await withTimeout(
+          yt.music.search(retryQuery, { type: "song" }),
+          4000,
+          null
+        );
+        for (const item of retrySongs?.songs?.contents || []) {
           const t = normalizeTrackItem(item);
           if (t) songCandidates.push({ track: t, type: "song" });
         }
@@ -441,8 +470,9 @@ export async function ytRelated(videoId: string): Promise<Track[]> {
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
-    const upNext: any = await yt.music.getUpNext(videoId);
+    const yt = await withTimeout(getClient(), 4500, null as unknown as Innertube);
+    if (!yt) return [];
+    const upNext: any = await withTimeout(yt.music.getUpNext(videoId), 4500, null);
     const tracks: Track[] = [];
     for (const item of upNext?.contents || []) {
       const t = normalizeTrackItem(item);
@@ -463,19 +493,20 @@ export async function ytHomeShelves(): Promise<Shelf[]> {
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
+    const yt = await withTimeout(getClient(), 5000, null as unknown as Innertube);
+    if (!yt) return [];
 
-    // Fetch real YouTube Music explore + regional & maestro discovery queries in parallel
+    // Fetch real YouTube Music explore + regional & maestro discovery queries with bounded timeout
     const [exploreRes, tamilTrendRes, tamilNewRes, anirudhRes, ilaiyaraajaRes, arrRes, yuvanRes, globalRes] =
       await Promise.allSettled([
-        yt.music.getExplore(),
-        yt.music.search("top tamil songs trending hits 2026", { type: "song" }),
-        yt.music.search("new tamil movie songs latest releases", { type: "song" }),
-        yt.music.search("Anirudh Ravichander hit songs", { type: "song" }),
-        yt.music.search("Ilaiyaraaja evergreen tamil hits", { type: "song" }),
-        yt.music.search("A R Rahman tamil hits", { type: "song" }),
-        yt.music.search("Yuvan Shankar Raja melody hits", { type: "song" }),
-        yt.music.search("global top pop songs trending", { type: "song" }),
+        withTimeout(yt.music.getExplore(), 5500, null),
+        withTimeout(yt.music.search("top tamil songs trending hits 2026", { type: "song" }), 5500, null),
+        withTimeout(yt.music.search("new tamil movie songs latest releases", { type: "song" }), 5500, null),
+        withTimeout(yt.music.search("Anirudh Ravichander hit songs", { type: "song" }), 5500, null),
+        withTimeout(yt.music.search("Ilaiyaraaja evergreen tamil hits", { type: "song" }), 5500, null),
+        withTimeout(yt.music.search("A R Rahman tamil hits", { type: "song" }), 5500, null),
+        withTimeout(yt.music.search("Yuvan Shankar Raja melody hits", { type: "song" }), 5500, null),
+        withTimeout(yt.music.search("global top pop songs trending", { type: "song" }), 5500, null),
       ]);
 
     const extractSongs = (settled: PromiseSettledResult<any>, limit = 15): Track[] => {
@@ -557,7 +588,12 @@ export async function ytHomeShelves(): Promise<Shelf[]> {
     }
 
     const nonEmpty = shelves.filter((s) => s.items.length > 0);
-    cache.set(cacheKey, nonEmpty, 1800); // 30-min cache
+    // Do not poison 30-min cache when upstream timeouts yield only partial shelves
+    if (nonEmpty.length >= 4) {
+      cache.set(cacheKey, nonEmpty, 1800);
+    } else if (nonEmpty.length > 0) {
+      cache.set(cacheKey, nonEmpty, 45);
+    }
     return nonEmpty;
   } catch (err) {
     console.warn("ytHomeShelves failure:", err);
@@ -571,8 +607,10 @@ export async function ytArtistDetails(channelId: string) {
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
-    const artist: any = await yt.music.getArtist(channelId);
+    const yt = await withTimeout(getClient(), 4500, null as unknown as Innertube);
+    if (!yt) return null;
+    const artist: any = await withTimeout(yt.music.getArtist(channelId), 6000, null);
+    if (!artist) return null;
     const name = artist?.header?.title?.text || "Artist";
     const description = artist?.header?.description?.text || "";
     const artworkUrl = extractHighResArtwork(artist?.header);
@@ -630,8 +668,10 @@ export async function ytAlbumDetails(albumId: string) {
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
-    const album: any = await yt.music.getAlbum(albumId);
+    const yt = await withTimeout(getClient(), 4500, null as unknown as Innertube);
+    if (!yt) return null;
+    const album: any = await withTimeout(yt.music.getAlbum(albumId), 6000, null);
+    if (!album) return null;
     const title = album?.header?.title?.text || "Album";
     const artist = album?.header?.subtitle?.text || "Artist";
     const artworkUrl = extractHighResArtwork(album?.header);
@@ -662,8 +702,10 @@ export async function ytPlaylistDetails(playlistId: string) {
   if (cached) return cached;
 
   try {
-    const yt = await getClient();
-    const pl: any = await yt.music.getPlaylist(playlistId);
+    const yt = await withTimeout(getClient(), 4500, null as unknown as Innertube);
+    if (!yt) return null;
+    const pl: any = await withTimeout(yt.music.getPlaylist(playlistId), 6000, null);
+    if (!pl) return null;
     const title = pl?.header?.title?.text || "Playlist";
     const author = pl?.header?.subtitle?.text || "YouTube Music";
     const artworkUrl = extractHighResArtwork(pl?.header);
@@ -690,8 +732,9 @@ export async function ytLyrics(videoId: string): Promise<string | null> {
   if (cached !== null) return cached;
 
   try {
-    const yt = await getClient();
-    const res: any = await yt.music.getLyrics(videoId);
+    const yt = await withTimeout(getClient(), 4000, null as unknown as Innertube);
+    if (!yt) return null;
+    const res: any = await withTimeout(yt.music.getLyrics(videoId), 4500, null);
     const text = res?.description?.text || null;
     if (text) cache.set(cacheKey, text, 3600);
     return text;

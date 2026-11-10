@@ -55,3 +55,4 @@ export class LocalProvider implements SourceProvider {
     return this.adapter.getStreamUrl(track);
   }
 }
+
