@@ -57,6 +57,37 @@ export const FullScreenPlayer: React.FC = () => {
   const mounted = useMounted();
   const [imgError, setImgError] = React.useState(false);
   const [mediaMode, setMediaMode] = React.useState<"audio" | "video">("audio");
+  const videoSlotRef = React.useRef<HTMLDivElement | null>(null);
+  const engineId = usePlayerStore((s) => s.engineId);
+
+  React.useEffect(() => {
+    const syncRect = () => {
+      if (isFullScreenOpen && mediaMode === "video" && engineId === "youtube" && videoSlotRef.current) {
+        const rect = videoSlotRef.current.getBoundingClientRect();
+        import("@/lib/player/EngineCoordinator").then(({ engineCoordinator }) => {
+          engineCoordinator.setYouTubeViewportRect({
+            top: rect.top,
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          });
+        });
+      } else {
+        import("@/lib/player/EngineCoordinator").then(({ engineCoordinator }) => {
+          engineCoordinator.setYouTubeViewportRect(null);
+        });
+      }
+    };
+
+    syncRect();
+    window.addEventListener("resize", syncRect);
+    return () => {
+      window.removeEventListener("resize", syncRect);
+      import("@/lib/player/EngineCoordinator").then(({ engineCoordinator }) => {
+        engineCoordinator.setYouTubeViewportRect(null);
+      });
+    };
+  }, [isFullScreenOpen, mediaMode, engineId, activeDrawerTab]);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -180,8 +211,8 @@ export const FullScreenPlayer: React.FC = () => {
 
         {activeDrawerTab === "nowPlaying" && (
           <div className="flex flex-col items-center justify-center max-w-lg w-full mx-auto space-y-5">
-            {/* BitChord-Style Audio/Video Mode Switcher (if video is available) */}
-            {currentTrack.youtubeVideoId && (
+            {/* BitChord-Style Audio/Video Mode Switcher (if YouTube IFrame Engine active) */}
+            {currentTrack.youtubeVideoId && engineId === "youtube" && (
               <div className="flex items-center space-x-1 p-1 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md shadow-md">
                 <button
                   onClick={() => setMediaMode("audio")}
@@ -209,20 +240,13 @@ export const FullScreenPlayer: React.FC = () => {
               </div>
             )}
 
-            {/* Visual Media: YouTube Player or High-Res Artwork Card */}
-            {mediaMode === "video" && currentTrack.youtubeVideoId ? (
-              <div className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-red-500/10 border border-white/10 bg-black relative">
-                <iframe
-                  src={`https://www.youtube.com/embed/${currentTrack.youtubeVideoId}?autoplay=1&enablejsapi=1&rel=0`}
-                  title={currentTrack.title}
-                  className="w-full h-full border-0"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-                <div className="absolute top-2 left-2 px-2.5 py-1 rounded-full bg-red-600/90 backdrop-blur-md text-[10px] font-bold text-white shadow">
-                  YouTube Video
-                </div>
+            {/* Visual Media: Persistent YouTube Player Viewport Slot or High-Res Artwork Card */}
+            {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
+              <div
+                ref={videoSlotRef}
+                className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-red-500/10 border border-white/10 bg-black relative flex items-center justify-center"
+              >
+                <span className="text-xs text-white/40 font-mono">Loading YouTube Official Player...</span>
               </div>
             ) : (
               <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-2xl shadow-inisai-accent/30 border border-white/10 group bg-gradient-to-tr from-purple-950/40 to-black/60">
@@ -232,9 +256,6 @@ export const FullScreenPlayer: React.FC = () => {
                   type="track"
                   className={`w-full h-full object-cover ${isPlaying ? "scale-105" : "scale-100"} transition-transform duration-700`}
                 />
-                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] uppercase font-mono tracking-wider text-inisai-teal border border-white/10">
-                  {currentTrack.sourceType === "youtube" ? "MP3 Audio" : currentTrack.sourceType}
-                </div>
               </div>
             )}
 

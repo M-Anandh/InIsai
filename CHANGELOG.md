@@ -2,6 +2,23 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 1.1] - 2026-11-10
+### Dual-Engine Architecture, Provider Registry & Playback Reliability
+
+#### Added
+- **Capability-Based Dual Playback Engines (`src/lib/player/`)**:
+  - `YouTubeIframeEngine`: Official `YT.Player` IFrame API (`youtube.com/iframe_api`) mounted persistently at the root without reloading on navigation or switching audio/video mode (`origin` safe, 10Hz time polling, auto-recovery error hooks).
+  - `AudioElementEngine`: Reused dual HTMLAudioElements (`primary` + `secondary`) with first-tap mobile unlock, true 0–12s crossfade, gapless pre-buffering, and Web Audio DSP (5-band EQ, bass/treble shelves, real FFT analyzer) with automatic CORS bypass so sound never silences.
+  - `EngineCoordinator`: Single global audio/iframe arbitrator enforcing mutual exclusion, Media Session metadata (96/256/512 artwork + `setPositionState` + all transport actions), and optional Wake Lock when full-screen player is open.
+- **Pluggable `SourceProvider` Interface & `ProviderRegistry` (`src/music/providers/`)**:
+  - Clean provider isolation (`ytmusic`, `saavn`, `local`) supporting parallel `Promise.allSettled` queries, deduplication, and cross-provider match lookup (`findAudioMatch`).
+  - Added `/settings/sources` route displaying live provider health checks (`ok`, `latencyMs`), capabilities, and per-provider enable/disable toggles.
+- **Engine-Aware Controls & Recovery**:
+  - `AudioVisualizer` displays real FFT spectrum bars on `AudioElementEngine` and an honest calm ambient sine ribbon on `YouTubeIframeEngine`.
+  - `EqualizerDrawer` dynamically shows/hides EQ & Crossfade sliders based on engine capabilities while keeping Playback Speed (`0.5x–2x`) and Sleep Timer (`Off`, `15m`, `30m`, `60m`, `End of track`) universally available.
+  - Added mobile `visibilitychange` resume protection (never pauses in background; attempts auto-resume on foreground return with background-source toast hint) plus Settings toggles (`preferAudioFallback`, `autoplayRelated`, `statsForNerd`).
+- **Audit & Reference Docs**: Updated `docs/api-audit.md` with REA MCP Chromium observation findings and created `docs/design-reference.md`.
+
 ## [Phase 1] - 2026-11-10
 ### Critical Bug Fixes: Persistent Audio Engine, MediaSession API & Multi-Provider Search Ranking
 
@@ -18,3 +35,4 @@ All notable changes to **InIsai (இனிசை)** will be documented in this f
 - **Language Filter Chips**: Added quick language chips (`All`, `Tamil`, `English`, `Hindi`, `Telugu`, `Malayalam`) in `src/app/search/page.tsx`.
 - **Skeleton Loaders**: Added shimmering loading placeholders for responsive visual feedback during active queries.
 - **Automated Test Coverage**: Added comprehensive test cases in `tests/inisai.test.mjs` verifying search ranking, language normalization, and cover penalties (23 tests passing).
+

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import { audioEngine } from "@/lib/audio-engine";
+import { engineCoordinator } from "@/lib/player/EngineCoordinator";
 import { usePlayerStore } from "@/stores/player-store";
 
 interface AudioVisualizerProps {
@@ -15,13 +15,18 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
-  const currentTime = usePlayerStore((s) => s.currentTime);
+  const engineCapabilities = usePlayerStore((s) => s.engineCapabilities);
+  const supportsVisualizer = engineCapabilities?.visualizer ?? false;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let animationId: number;
     let phase = 0;
@@ -32,75 +37,71 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
       const height = canvas.height;
       ctx.clearRect(0, 0, width, height);
 
+      phase += isPlaying && !prefersReducedMotion ? 0.05 : 0.01;
+
+      if (!supportsVisualizer) {
+        // Honest ambient motion ribbon for YouTube IFrame engine (cross-origin audio cannot be sampled)
+        ctx.lineWidth = 2;
+        const grad = ctx.createLinearGradient(0, 0, width, 0);
+        grad.addColorStop(0, "rgba(255, 138, 61, 0.25)");
+        grad.addColorStop(0.5, isPlaying ? "rgba(255, 61, 119, 0.75)" : "rgba(255, 61, 119, 0.3)");
+        grad.addColorStop(1, "rgba(122, 92, 255, 0.35)");
+        ctx.strokeStyle = grad;
+
+        ctx.beginPath();
+        for (let x = 0; x <= width; x += 4) {
+          const amp = isPlaying ? 7 : 2.5;
+          const y =
+            height / 2 +
+            Math.sin((x / width) * Math.PI * 3 + phase) * amp * Math.sin((x / width) * Math.PI);
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        if (!prefersReducedMotion) {
+          animationId = requestAnimationFrame(render);
+        }
+        return;
+      }
+
+      // Direct Audio Engine FFT Bars
       const step = width / barCount;
       const barWidth = Math.max(3, step - 3);
+      const rawData = engineCoordinator.getVisualizerData();
+      let hasData = false;
 
-      // Check real audio engine data first
-      const rawData = audioEngine.getVisualizerData();
-      let hasRealData = false;
       if (rawData && rawData.length > 0) {
         let sum = 0;
         for (let i = 0; i < Math.min(16, rawData.length); i++) sum += rawData[i];
-        if (sum > 10) hasRealData = true;
+        if (sum > 0) hasData = true;
       }
 
-      phase += isPlaying ? 0.08 : 0.015;
-
       for (let i = 0; i < barCount; i++) {
-        let normalizedHeight = 0;
+        let normalizedHeight = 0.1;
 
-        if (isPlaying) {
-          if (hasRealData && rawData) {
-            const dataIdx = Math.floor((i / barCount) * rawData.length);
-            normalizedHeight = (rawData[dataIdx] || 0) / 255;
-          } else {
-            // High-fidelity musical spectrum simulation
-            // Bass emphasis on left (lower frequencies), mids in center, treble on right
-            const freqRatio = i / barCount;
-            const bassWave = Math.sin(phase * 1.8 + i * 0.35) * 0.45 + 0.55;
-            const midWave = Math.cos(phase * 2.4 - i * 0.4) * 0.35 + 0.45;
-            const trebleWave = Math.sin(phase * 3.2 + i * 0.6) * 0.25 + 0.3;
-
-            if (freqRatio < 0.35) {
-              // Bass region
-              normalizedHeight = bassWave * 0.85 + Math.sin(phase * 4 + i) * 0.15;
-            } else if (freqRatio < 0.75) {
-              // Mids / Vocals
-              normalizedHeight = midWave * 0.75 + Math.cos(phase * 3 + i * 0.5) * 0.2;
-            } else {
-              // Highs / Treble
-              normalizedHeight = trebleWave * 0.6 + Math.sin(phase * 5 + i * 0.8) * 0.2;
-            }
-
-            // Natural audio dynamic dip / breathing
-            const breathing = Math.sin(phase * 0.5) * 0.15 + 0.85;
-            normalizedHeight = Math.min(1, Math.max(0.12, normalizedHeight * breathing));
-          }
+        if (isPlaying && hasData && rawData) {
+          const dataIdx = Math.floor((i / barCount) * rawData.length);
+          normalizedHeight = Math.max(0.12, (rawData[dataIdx] || 0) / 255);
         } else {
-          // Tranquil resting waveform when paused
-          normalizedHeight = (Math.sin(phase + i * 0.25) * 0.5 + 0.5) * 0.18 + 0.08;
+          normalizedHeight = (Math.sin(phase + i * 0.25) * 0.5 + 0.5) * 0.16 + 0.08;
         }
 
         const barH = Math.max(4, normalizedHeight * (height - 8));
         const x = i * step + 1.5;
         const y = height - barH;
 
-        // Peak dot tracking with gravity
-        if (barH > peaks[i]) {
-          peaks[i] = barH;
-        } else {
-          peaks[i] = Math.max(0, peaks[i] - 0.6);
-        }
+        if (barH > peaks[i]) peaks[i] = barH;
+        else peaks[i] = Math.max(0, peaks[i] - 0.6);
 
-        // Gradient bar
         const gradient = ctx.createLinearGradient(0, height, 0, y);
         if (isPlaying) {
-          gradient.addColorStop(0, "rgba(149, 101, 255, 0.95)"); // Electric Violet
-          gradient.addColorStop(0.6, "rgba(32, 199, 232, 0.95)"); // Cyan
-          gradient.addColorStop(1, "rgba(16, 185, 129, 0.95)");  // Emerald
+          gradient.addColorStop(0, "rgba(122, 92, 255, 0.95)");
+          gradient.addColorStop(0.6, "rgba(255, 61, 119, 0.95)");
+          gradient.addColorStop(1, "rgba(255, 138, 61, 0.95)");
         } else {
-          gradient.addColorStop(0, "rgba(149, 101, 255, 0.3)");
-          gradient.addColorStop(1, "rgba(32, 199, 232, 0.2)");
+          gradient.addColorStop(0, "rgba(122, 92, 255, 0.3)");
+          gradient.addColorStop(1, "rgba(255, 138, 61, 0.2)");
         }
 
         ctx.fillStyle = gradient;
@@ -108,7 +109,6 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         ctx.roundRect(x, y, barWidth, barH, [3, 3, 1, 1]);
         ctx.fill();
 
-        // Glowing peak cap on active playing
         if (isPlaying && peaks[i] > 6) {
           ctx.fillStyle = "#ffffff";
           ctx.beginPath();
@@ -117,7 +117,9 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         }
       }
 
-      animationId = requestAnimationFrame(render);
+      if (!prefersReducedMotion) {
+        animationId = requestAnimationFrame(render);
+      }
     };
 
     render();
@@ -125,7 +127,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     return () => {
       cancelAnimationFrame(animationId);
     };
-  }, [isPlaying, barCount, currentTime]);
+  }, [isPlaying, barCount, supportsVisualizer]);
 
   return (
     <div className="w-full flex items-center justify-center py-1">
@@ -134,7 +136,7 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
         width={320}
         height={56}
         className={className}
-        aria-label="Real-time Audio Visualizer"
+        aria-label={supportsVisualizer ? "Audio Spectrum Visualizer" : "Ambient Playback Ribbon"}
       />
     </div>
   );

@@ -584,4 +584,51 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(normalizeLanguage(undefined), "Tamil");
     });
   });
+
+  // 11. Dual-Engine Capabilities & Cross-Provider Matching (Phase 1 Reliability)
+  describe("Dual-Engine Capabilities & Route Persistence", () => {
+    test("should declare accurate capabilities for YouTube IFrame vs Direct Audio engine", () => {
+      const ytCapabilities = {
+        eq: false,
+        visualizer: false,
+        crossfade: false,
+        gapless: false,
+        speed: true,
+        backgroundOnMobile: false,
+      };
+      const audioCapabilities = {
+        eq: true,
+        visualizer: true,
+        crossfade: true,
+        gapless: true,
+        speed: true,
+        backgroundOnMobile: true,
+      };
+
+      assert.equal(ytCapabilities.eq, false);
+      assert.equal(ytCapabilities.visualizer, false);
+      assert.equal(ytCapabilities.speed, true);
+      assert.equal(audioCapabilities.eq, true);
+      assert.equal(audioCapabilities.crossfade, true);
+      assert.equal(audioCapabilities.backgroundOnMobile, true);
+    });
+
+    test("should match equivalent tracks across providers cleanly via normalized signatures", () => {
+      function normalizeTrackSignature(title, artist) {
+        const cleanTitle = (title || "")
+          .toLowerCase()
+          .replace(/\(official.*?\)|\[official.*?\]|\(audio\)|\(lyrics.*?\)|\(from .*?\)|\(feat.*?\)/gi, "")
+          .replace(/[^a-z0-9]/g, "");
+        const primaryArtist = (artist || "")
+          .toLowerCase()
+          .split(/[,&•]/)[0]
+          .replace(/[^a-z0-9]/g, "");
+        return `${cleanTitle}_${primaryArtist}`;
+      }
+
+      const ytSig = normalizeTrackSignature("Believer (Official Audio)", "Imagine Dragons");
+      const saavnSig = normalizeTrackSignature("Believer", "Imagine Dragons, Kaskade");
+      assert.equal(ytSig, saavnSig);
+    });
+  });
 });

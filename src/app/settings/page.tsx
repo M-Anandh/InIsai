@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { settings, setCrossfade, setPlaybackRate, toggleEqualizer } =
+  const { settings, setCrossfade, setPlaybackRate, toggleEqualizer, setPreference } =
     usePlayerStore();
   const { user, isAuthenticated, signOut, updateProfile } = useAuthStore();
   const mounted = useMounted();
@@ -93,21 +93,87 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
             <div>
-              <p className="font-semibold text-white">Default Playback Rate</p>
+              <p className="font-semibold text-slate-900 dark:text-white">Default Playback Rate</p>
               <p className="text-inisai-muted">Audio speed multiplier</p>
             </div>
             <select
               value={settings.playbackRate}
               onChange={(e) => setPlaybackRate(Number(e.target.value))}
-              className="bg-black/50 border border-white/10 text-white px-2 py-1 rounded-xl text-xs outline-none cursor-pointer"
+              className="bg-slate-100 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-2.5 py-1.5 rounded-xl text-xs outline-none cursor-pointer"
             >
+              <option value="0.5">0.5x</option>
               <option value="0.75">0.75x</option>
               <option value="1">1.0x (Normal)</option>
               <option value="1.25">1.25x</option>
               <option value="1.5">1.5x</option>
+              <option value="2">2.0x</option>
             </select>
+          </div>
+
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Prefer background-friendly audio source</p>
+              <p className="text-inisai-muted">Automatically match direct audio streams when mobile screen locks</p>
+            </div>
+            <button
+              onClick={() => setPreference("preferAudioFallback", !settings.preferAudioFallback)}
+              className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                settings.preferAudioFallback
+                  ? "bg-inisai-accent text-white"
+                  : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-white/50"
+              }`}
+            >
+              {settings.preferAudioFallback ? "Enabled" : "Off"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Autoplay Related Tracks</p>
+              <p className="text-inisai-muted">Queue continuous radio recommendations when queue finishes</p>
+            </div>
+            <button
+              onClick={() => setPreference("autoplayRelated", settings.autoplayRelated === false)}
+              className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                settings.autoplayRelated !== false
+                  ? "bg-inisai-accent text-white"
+                  : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-white/50"
+              }`}
+            >
+              {settings.autoplayRelated !== false ? "On" : "Off"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Stats for Nerds</p>
+              <p className="text-inisai-muted">Display engine telemetry, video quality & latency in player</p>
+            </div>
+            <button
+              onClick={() => setPreference("statsForNerd", !settings.statsForNerd)}
+              className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                settings.statsForNerd
+                  ? "bg-inisai-teal text-black"
+                  : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-white/50"
+              }`}
+            >
+              {settings.statsForNerd ? "Shown" : "Hidden"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Music Source Providers</p>
+              <p className="text-inisai-muted">Inspect live API latency and enable/disable catalog sources</p>
+            </div>
+            <Link
+              href="/settings/sources"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-900 dark:text-white font-semibold transition-colors"
+            >
+              Manage Sources
+            </Link>
           </div>
         </div>
       </section>

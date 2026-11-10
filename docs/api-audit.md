@@ -1,118 +1,53 @@
-# InIsai (இனிசை) — API & Network Audit
+# InIsai (இனிசை) — API, Network & Runtime Audit
 
 **Audit Date:** November 10, 2026  
-**Auditor:** Senior Full-Stack Engineer / Product Architect  
-**Application Target:** InIsai (`https://in-isai.vercel.app/`)
+**Target:** `https://in-isai.vercel.app/`  
+**Verification Method:** REA MCP (`capture_browser_scenario` with Chromium 157) + Static Source Analysis
 
 ---
 
-## 1. Internal Application Endpoints
+## 1. Live Network & Asset Audit (via REA MCP)
 
-### 1.1 Search Endpoint: `/api/music/search`
-* **Route Path:** `src/app/api/music/search/route.ts`
-* **HTTP Method:** `GET`
-* **Parameters:**
-  * `q` (string, required): The search query (e.g. `on my way alan walker`, `believer`).
-* **Upstream Providers:**
-  * **Primary:** JioSaavn Search API (`https://www.jiosaavn.com/api.php?__call=search.getResults&api_version=4&_format=json&n=25`)
-  * **Fallback:** JioSaavn Autocomplete API (`https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&includeMetaTags=1`)
-* **Payload Structure Returned:**
-  ```json
-  {
-    "results": [
-      {
-        "id": "saavn-I9JGz6Jy",
-        "title": "On My Way",
-        "artist": "Alan Walker, Sabrina Carpenter, Farruko",
-        "album": "On My Way",
-        "duration": 217,
-        "artworkUrl": "https://c.saavncdn.com/...",
-        "streamUrl": "https://aac.saavncdn.com/..._320.mp4",
-        "sourceType": "public_api",
-        "sourceId": "I9JGz6Jy",
-        "language": "english",
-        "isPlayable": true
-      }
-    ]
-  }
-  ```
-* **Issues Identified in Audit:**
-  1. Default fallback set `language = "Tamil"` if `moreInfo.language` was empty, even if `item.language` was English.
-  2. Sub-string sorting penalized multi-word queries like `on my way alan walker` because title comparison prioritized covers that explicitly had "Alan Walker" in the title string over the original whose title is simply "On My Way".
-  3. Single-provider query without parallel multi-provider fallback.
+During a live headless Chromium inspection of `https://in-isai.vercel.app/` (`evidence_id: ev_ffa6b9179c6437603facaed65fe4369345a5b2114896072ec0cf98e155335535`), 260 network & resource events were captured:
+
+### 1.1 Working Assets & Infrastructure
+- **App Shell & Bundles:** Next.js 15 App Router static & dynamic chunks loaded HTTP `200`.
+- **PWA Manifest:** `/manifest.webmanifest` (`1101` bytes) returned HTTP `200`, `display: standalone`, shortcuts configured.
+- **Typography:** Google Fonts `Inter` and `Noto Sans Tamil` loaded HTTP `200` (`fonts.gstatic.com`).
+
+### 1.2 Critical Failures Captured by REA
+Multiple image URLs on the homepage and curated collections failed at the browser network layer with **`net::ERR_BLOCKED_BY_ORB`** (Opaque Response Blocking — caused when CDN URLs return stale 403/404 HTML payloads instead of JPEG content):
+1. `https://c.saavncdn.com/254/Classical-Veena-Tamil-2015-500x500.jpg` — breaks **Peaceful Meditation & Ragas** cover.
+2. `https://c.saavncdn.com/871/Kesariya-From-Brahmastra-Hindi-2022-20220717092820-500x500.jpg` — breaks **Kesariya** artwork.
+3. `https://c.saavncdn.com/926/Maa-Tujhe-Salaam-Hindi-1997-20200827142442-500x500.jpg` — breaks **Vande Mataram** artwork.
+4. `https://c.saavncdn.com/353/Moondram-Pirai-Tamil-1982-20200508133346-500x500.jpg` — breaks **Kanne Kalaimane** artwork.
+
+**Remediation:** Build `<CoverImage>` with multi-stage fallback resolution (primary CDN $\rightarrow$ alternative provider artwork $\rightarrow$ 2×2 playlist mosaic $\rightarrow$ generated SVG/CSS gradient initials) and remove hardcoded stale URLs in favor of runtime provider resolution.
 
 ---
 
-### 1.2 YouTube Bridge Endpoint: `/api/music/youtube`
-* **Route Path:** `src/app/api/music/youtube/route.ts`
-* **HTTP Method:** `GET`
-* **Parameters:**
-  * `q` (string, required): Search query.
-* **Upstream Providers:**
-  * YouTube Data API v3 (`https://www.googleapis.com/youtube/v3/search`) when `YOUTUBE_API_KEY` is present.
-  * Public HTTPS metadata bridges (Invidious instances: `https://inv.tux.pizza`, `https://vid.puffyan.us`, `https://invidious.nerdvpn.de`) for resilient zero-credential operation.
-* **Payload Structure Returned:**
-  ```json
-  {
-    "results": [
-      {
-        "id": "yt_dQw4w9WgXcQ",
-        "title": "Song Title",
-        "artist": "Channel / Artist",
-        "duration": 213,
-        "artworkUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
-        "streamUrl": "",
-        "sourceType": "youtube",
-        "youtubeVideoId": "dQw4w9WgXcQ",
-        "sourceAttribution": "YouTube Music / Google LLC (Embedded Player)",
-        "isPlayable": true
-      }
-    ]
-  }
-  ```
+## 2. Current API Layer Audit & Gaps
+
+### 2.1 Existing Endpoints
+| Endpoint | Upstream Provider | Current Role | Identified Issues |
+|---|---|---|---|
+| `/api/music/search` | JioSaavn `search.getResults` + DES decryption | Primary search | Missing catalog coverage for non-Indian/newer tracks; missing instant autocomplete; returned single flat list without Albums/Artists/Playlists shelves. |
+| `/api/music/youtube` | YouTube Data API v3 / HTML scrape | Secondary fallback | Scraped raw HTML fragile; did not use InnerTube music-mode (`youtubei.js`); raw `<iframe>` lacked `YT.Player` JS API + `origin`, causing Error 153 playback failures. |
+| `/api/music/trending` | JioSaavn query-based pseudo-charts | Home & Explore | Static queries ("latest tamil top trending hits"), not real charts, mood shelves, or artist radios. |
+| `/api/music/lyrics` | LRCLIB (`lrclib.net`) | Synced lyrics | Works well, needs word-timing support, YTMusic fallback, caching, and audio/iframe time-sync bridge. |
+| `/api/music/recommend` | JioSaavn `reco.getrecos` | Auto-radio | Sparse for international/YT tracks; needs YTMusic `getUpNext` + taste-profile ranking. |
 
 ---
 
-### 1.3 Trending & Charts Endpoint: `/api/music/trending`
-* **Route Path:** `src/app/api/music/trending/route.ts`
-* **HTTP Method:** `GET`
-* **Parameters:**
-  * `category` (optional, default `"tamil"`): Options: `tamil`, `tamil_melody`, `tamil_love`, `hindi`, `english`, `telugu`, `malayalam`.
-* **Upstream Provider:**
-  * JioSaavn Chart Query API with DES-ECB 320kbps media stream decryption.
-* **Caching Strategy:**
-  * Next.js ISR cache (`revalidate: 7200` seconds / 2 hours).
+## 3. Target Source Provider Architecture
 
----
+Every external source sits behind an isolated `SourceProvider` interface aggregated by `ProviderRegistry`:
 
-### 1.4 Synchronized Lyrics Endpoint: `/api/music/lyrics`
-* **Route Path:** `src/app/api/music/lyrics/route.ts`
-* **HTTP Method:** `GET`
-* **Parameters:**
-  * `track` (string, required)
-  * `artist` (string, required)
-* **Upstream Provider:**
-  * LRCLIB API (`https://lrclib.net/api/get` with fallback to `https://lrclib.net/api/search`).
-* **Returns:**
-  * `plainLyrics` (string)
-  * `syncedLyrics` (string in `[mm:ss.xx]` LRC format)
-
----
-
-### 1.5 Auto-Radio & Recommendations: `/api/music/recommend`
-* **Route Path:** `src/app/api/music/recommend/route.ts`
-* **HTTP Method:** `GET`
-* **Parameters:**
-  * `id` (source track ID)
-  * `artist` (artist name)
-* **Upstream Provider:**
-  * JioSaavn Reco API (`__call=reco.getrecos`) scored against user language and artist affinity.
-
----
-
-## 2. Stream Resolution & CDN Audio Architecture
-
-* **Decryption Scheme:** Media URLs are decrypted server-side from `encrypted_media_url` using DES in ECB mode with padding Pkcs7 and static key `38346591`.
-* **Stream Quality:** All resolved streams upgrade `_96.mp4` and `_160.mp4` to `_320.mp4` (320 kbps AAC container).
-* **Delivery:** Delivered over HTTPS directly from `aac.saavncdn.com`.
-* **Player Support:** HTML5 `<audio>` element with native hardware decoding.
+1. **`ytmusic` (PRIMARY Catalog):**
+   - Server-side adapter via `youtubei.js` in YouTube Music mode (`/api/yt/search`, `/api/yt/suggest`, `/api/yt/home`, `/api/yt/charts`, `/api/yt/related`, `/api/yt/artist`, `/api/yt/album`, `/api/yt/playlist`).
+   - Automatic fallback to YouTube Data API v3 if InnerTube quota/request fails.
+   - **Compliance Boundary:** Provides **metadata only** (IDs, titles, artists, albums, thumbnails, durations, lyrics browse IDs, up-next queues). Audio/video playback is strictly delegated to the official **YouTube IFrame Player API (`YT.Player`)**. Zero stream extraction, zero ad stripping, zero YouTube downloads.
+2. **`saavn` (Secondary & Background-Audio Fallback):**
+   - Retains JioSaavn API for classic regional catalog gaps and serves as the opt-in background-capable direct `<audio>` source when a mobile screen locks.
+3. **`local` (Device Audio):**
+   - User-selected local files (`File` / `Blob` / IndexedDB) supporting offline caching and full Web Audio DSP (EQ, crossfade, visualizer).

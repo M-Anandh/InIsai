@@ -1,6 +1,17 @@
 export type RepeatMode = "off" | "all" | "one";
 
-export type AudioSourceType = "local" | "jamendo" | "curated" | "public_api" | "youtube";
+export type SourceProviderId = "ytmusic" | "saavn" | "local";
+
+export type EngineId = "youtube" | "audio";
+
+export type AudioSourceType =
+  | "ytmusic"
+  | "youtube"
+  | "saavn"
+  | "public_api"
+  | "curated"
+  | "local"
+  | "jamendo";
 
 export type PlaybackContextType =
   | "search"
@@ -28,31 +39,81 @@ export interface FolderImportStats {
   errors: number;
 }
 
+export interface LyricsWord {
+  time: number;
+  text: string;
+}
 
 export interface LyricsLine {
   time: number; // in seconds
   text: string;
+  words?: LyricsWord[];
 }
 
 export interface Track {
   id: string;
   title: string;
   artist: string;
+  artistId?: string;
   album?: string;
+  albumId?: string;
   duration: number; // in seconds
   artworkUrl: string;
   streamUrl: string;
   sourceType: AudioSourceType;
+  providerId?: SourceProviderId;
   sourceId: string;
   language?: string;
   genre?: string;
   syncedLyrics?: string; // Raw LRC format
   plainLyrics?: string;
+  lyricsBrowseId?: string;
   bitrate?: string;
   isPlayable: boolean;
   addedAt?: string;
   youtubeVideoId?: string;
   sourceAttribution?: string;
+  isExplicit?: boolean;
+  releaseYear?: string;
+  versions?: Track[]; // Collapsed alternative versions
+}
+
+export interface AlbumSummary {
+  id: string;
+  title: string;
+  artist: string;
+  artistId?: string;
+  artworkUrl: string;
+  year?: string;
+  trackCount?: number;
+  providerId: SourceProviderId;
+}
+
+export interface ArtistSummary {
+  id: string;
+  name: string;
+  artworkUrl: string;
+  subscribers?: string;
+  providerId: SourceProviderId;
+}
+
+export interface PlaylistSummary {
+  id: string;
+  title: string;
+  author?: string;
+  artworkUrl: string;
+  trackCount?: number;
+  providerId: SourceProviderId;
+}
+
+export interface Shelf {
+  id: string;
+  title: string;
+  subtitle?: string;
+  items: Track[];
+  albums?: AlbumSummary[];
+  artists?: ArtistSummary[];
+  playlists?: PlaylistSummary[];
 }
 
 export interface Playlist {
@@ -80,6 +141,15 @@ export interface UserProfile {
   createdAt?: string;
 }
 
+export interface EngineCapabilities {
+  eq: boolean;
+  visualizer: boolean;
+  crossfade: boolean;
+  gapless: boolean;
+  speed: boolean;
+  backgroundOnMobile: boolean;
+}
+
 export interface PlayerSettings {
   volume: number; // 0 to 1
   isMuted: boolean;
@@ -93,5 +163,8 @@ export interface PlayerSettings {
   equalizerEnabled: boolean;
   selectedEqPreset: string;
   sleepTimerMinutes: number | null; // null or minutes remaining
+  preferAudioFallback?: boolean; // Resolve matching background audio when available
+  autoplayRelated?: boolean; // Smart radio continuation when queue finishes
+  statsForNerd?: boolean; // Technical telemetry overlay
+  videoMode?: boolean; // Optional toggle in Now Playing when YT track active
 }
-
