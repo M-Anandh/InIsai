@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
+import dns from "node:dns";
+
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {}
 
 const DES_KEY = CryptoJS.enc.Utf8.parse("38346591");
 
@@ -52,43 +57,61 @@ function expandQuery(query: string): string {
   return cleaned;
 }
 
+function normalizeLanguage(lang: string | undefined): string {
+  if (!lang) return "Tamil";
+  const l = lang.toLowerCase().trim();
+  if (l.includes("eng")) return "English";
+  if (l.includes("tam")) return "Tamil";
+  if (l.includes("hin")) return "Hindi";
+  if (l.includes("tel")) return "Telugu";
+  if (l.includes("mal")) return "Malayalam";
+  if (l.includes("kan")) return "Kannada";
+  return lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase();
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("q") || "";
 
   if (!query.trim()) {
-    return NextResponse.json({ results: [] });
+    return NextResponse.json({ results: [], topResult: null });
   }
 
   try {
     const formattedQuery = expandQuery(query);
+    const headers = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Cookie": "L=english%2Ctamil%2Chindi%2Ctelugu%2Cmalayalam; gdpr_acceptance=true",
+      "Accept-Language": "en-US,en;q=0.9,ta;q=0.8,hi;q=0.7",
+    };
 
-    // 1. Fetch from JioSaavn API
+    // 1. Fetch from JioSaavn API with broad language cookie support
     const searchUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(
       formattedQuery
-    )}&_format=json&_marker=0&api_version=4&n=25`;
+    )}&_format=json&_marker=0&api_version=4&n=30`;
 
     const res = await fetch(searchUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      },
+      headers,
       next: { revalidate: 3600 },
     });
 
-    const data = await res.json();
-    let rawSongs = data.results || [];
+    let rawSongs: any[] = [];
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      rawSongs = data.results || [];
+    }
 
     // Fallback if empty and query differed from original
     if (rawSongs.length === 0 && formattedQuery !== query.trim()) {
       const fallbackUrl = `https://www.jiosaavn.com/api.php?__call=search.getResults&q=${encodeURIComponent(
         query.trim()
-      )}&_format=json&_marker=0&api_version=4&n=25`;
-      const fallbackRes = await fetch(fallbackUrl, {
-        headers: { "User-Agent": "Mozilla/5.0" },
-      });
-      const fallbackData = await fallbackRes.json();
-      rawSongs = fallbackData.results || [];
+      )}&_format=json&_marker=0&api_version=4&n=30`;
+      const fallbackRes = await fetch(fallbackUrl, { headers });
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json().catch(() => ({}));
+        rawSongs = fallbackData.results || [];
+      }
     }
 
     // Fallback to autocomplete if still empty
@@ -96,11 +119,11 @@ export async function GET(req: NextRequest) {
       const autoUrl = `https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&cc=in&includeMetaTags=1&query=${encodeURIComponent(
         formattedQuery
       )}`;
-      const autoRes = await fetch(autoUrl, {
-        headers: { "User-Agent": "Mozilla/5.0" },
-      });
-      const autoData = await autoRes.json();
-      rawSongs = autoData.songs?.data || [];
+      const autoRes = await fetch(autoUrl, { headers });
+      if (autoRes.ok) {
+        const autoData = await autoRes.json().catch(() => ({}));
+        rawSongs = autoData.songs?.data || [];
+      }
     }
 
     const tracks = rawSongs.map((item: any) => {
@@ -144,6 +167,10 @@ export async function GET(req: NextRequest) {
 
       const album = decodeHtmlEntities(moreInfo.album || item.album || "");
 
+      // Correctly read top-level item.language first, then fall back to more_info
+      const rawLanguage = item.language || moreInfo.language;
+      const language = normalizeLanguage(rawLanguage);
+
       return {
         id: `saavn-${item.id}`,
         title,
@@ -154,24 +181,93 @@ export async function GET(req: NextRequest) {
         streamUrl,
         sourceType: "public_api",
         sourceId: item.id?.toString() || "",
-        language: moreInfo.language || "Tamil",
+        language,
         isPlayable: Boolean(streamUrl),
       };
     });
 
-    // If tracks are found, sort to prioritize exact title/artist matches
+    // 2. Ranking Algorithm: Score and prioritize exact title/artist matches and penalize covers
     const qLower = query.toLowerCase().trim();
-    tracks.sort((a: any, b: any) => {
-      const aTitleMatch = a.title.toLowerCase().includes(qLower);
-      const bTitleMatch = b.title.toLowerCase().includes(qLower);
-      if (aTitleMatch && !bTitleMatch) return -1;
-      if (!aTitleMatch && bTitleMatch) return 1;
-      return 0;
+    const qTokens = qLower.split(/[\s,+-]+/).filter((t) => t.length > 1);
+    const wantsCoverOrRemix = /cover|remix|slowed|lofi|instrumental|karaoke|tribute|reverb|acoustic/i.test(qLower);
+
+    const scoredTracks = tracks.map((track) => {
+      let score = 0;
+      const titleLower = track.title.toLowerCase();
+      const artistLower = track.artist.toLowerCase();
+
+      // Exact title match gets massive boost
+      if (titleLower === qLower) {
+        score += 160;
+      } else if (titleLower.startsWith(qLower) || qLower.startsWith(titleLower)) {
+        score += 90;
+      } else if (titleLower.includes(qLower)) {
+        score += 60;
+      }
+
+      // Check artist match
+      if (artistLower.includes(qLower)) {
+        score += 100;
+      }
+
+      // Check token intersections
+      let matchedTokens = 0;
+      for (const token of qTokens) {
+        if (titleLower.includes(token)) {
+          score += 25;
+          matchedTokens++;
+        }
+        if (artistLower.includes(token)) {
+          score += 35;
+          matchedTokens++;
+        }
+      }
+      if (matchedTokens >= qTokens.length && qTokens.length > 1) {
+        score += 50;
+      }
+
+      // Playable stream boost
+      if (track.isPlayable) {
+        score += 20;
+      }
+
+      // Heavy penalty for cover/remix/slowed/lofi if user didn't ask for it
+      if (!wantsCoverOrRemix) {
+        if (/cover|tribute|karaoke|instrumental|slowed|lofi|reverb|piano version/i.test(titleLower)) {
+          score -= 90;
+        }
+        if (/remix|mix|mashup|edit/i.test(titleLower) && !/remix/i.test(qLower)) {
+          score -= 40;
+        }
+      }
+
+      return { track, score };
     });
 
-    return NextResponse.json({ results: tracks });
+    // Sort descending by score
+    scoredTracks.sort((a, b) => b.score - a.score);
+
+    // Deduplicate by clean title + primary artist
+    const uniqueTracks: any[] = [];
+    const seenSignatures = new Set<string>();
+
+    for (const item of scoredTracks) {
+      const sig = `${item.track.title.toLowerCase().replace(/[^a-z0-9]/g, "")}_${item.track.artist.toLowerCase().slice(0, 10)}`;
+      if (!seenSignatures.has(sig)) {
+        seenSignatures.add(sig);
+        uniqueTracks.push(item.track);
+      }
+    }
+
+    const topResult = uniqueTracks.length > 0 ? uniqueTracks[0] : null;
+
+    return NextResponse.json({
+      results: uniqueTracks,
+      topResult,
+      count: uniqueTracks.length,
+    });
   } catch (error: any) {
     console.error("Music search API error:", error);
-    return NextResponse.json({ results: [], error: error.message }, { status: 500 });
+    return NextResponse.json({ results: [], topResult: null, error: error.message }, { status: 500 });
   }
 }

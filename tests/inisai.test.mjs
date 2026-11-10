@@ -479,4 +479,109 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(res.strategy, "inisai_branded_fallback");
     });
   });
+
+  // 10. Search Ranking & Provider Intelligence (Phase 1)
+  describe("Search Ranking & Language Intelligence (Phase 1)", () => {
+    function scoreTrack(query, track) {
+      let score = 0;
+      const qLower = query.toLowerCase().trim();
+      const qTokens = qLower.split(/[\s,+-]+/).filter((t) => t.length > 1);
+      const titleLower = track.title.toLowerCase();
+      const artistLower = track.artist.toLowerCase();
+      const wantsSpecial = /cover|remix|slowed|lofi|instrumental|karaoke|tribute/i.test(qLower);
+
+      if (titleLower === qLower) score += 160;
+      else if (titleLower.startsWith(qLower) || qLower.startsWith(titleLower)) score += 90;
+      else if (titleLower.includes(qLower)) score += 60;
+
+      if (artistLower.includes(qLower)) score += 100;
+
+      let matchedTokens = 0;
+      for (const token of qTokens) {
+        if (titleLower.includes(token)) {
+          score += 25;
+          matchedTokens++;
+        }
+        if (artistLower.includes(token)) {
+          score += 35;
+          matchedTokens++;
+        }
+      }
+      if (matchedTokens >= qTokens.length && qTokens.length > 1) {
+        score += 50;
+      }
+
+      if (track.isPlayable) score += 20;
+
+      if (!wantsSpecial) {
+        if (/cover|tribute|karaoke|instrumental|slowed|lofi|reverb/i.test(titleLower)) score -= 90;
+        if (/remix|mix|mashup/i.test(titleLower) && !/remix/i.test(qLower)) score -= 40;
+      }
+
+      return score;
+    }
+
+    test("should rank official 'On My Way' (Alan Walker) higher than cover tracks", () => {
+      const query = "on my way alan walker";
+      const official = {
+        title: "On My Way",
+        artist: "Alan Walker, Sabrina Carpenter, Farruko",
+        isPlayable: true,
+      };
+      const cover = {
+        title: "On My Way (Instrumental Alan Walker Cover Mix)",
+        artist: "Maxence Luchi",
+        isPlayable: true,
+      };
+      const remix = {
+        title: "On My Way (Da Tweekaz Remix)",
+        artist: "Alan Walker, Sabrina Carpenter, Farruko",
+        isPlayable: true,
+      };
+
+      const scoreOfficial = scoreTrack(query, official);
+      const scoreCover = scoreTrack(query, cover);
+      const scoreRemix = scoreTrack(query, remix);
+
+      assert.ok(scoreOfficial > scoreCover, `Official score (${scoreOfficial}) should beat cover (${scoreCover})`);
+      assert.ok(scoreOfficial > scoreRemix, `Official score (${scoreOfficial}) should beat remix (${scoreRemix})`);
+    });
+
+    test("should rank official 'Believer' (Imagine Dragons) higher than cover tracks", () => {
+      const query = "imagine dragons believer";
+      const official = {
+        title: "Believer",
+        artist: "Imagine Dragons",
+        isPlayable: true,
+      };
+      const cover = {
+        title: "Believer (Imagine Dragons cover)",
+        artist: "Popular Artist",
+        isPlayable: true,
+      };
+
+      const scoreOfficial = scoreTrack(query, official);
+      const scoreCover = scoreTrack(query, cover);
+
+      assert.ok(scoreOfficial > scoreCover, `Official score (${scoreOfficial}) should beat cover (${scoreCover})`);
+    });
+
+    test("should correctly normalize song languages", () => {
+      function normalizeLanguage(lang) {
+        if (!lang) return "Tamil";
+        const l = lang.toLowerCase().trim();
+        if (l.includes("eng")) return "English";
+        if (l.includes("tam")) return "Tamil";
+        if (l.includes("hin")) return "Hindi";
+        if (l.includes("tel")) return "Telugu";
+        if (l.includes("mal")) return "Malayalam";
+        return lang.charAt(0).toUpperCase() + lang.slice(1).toLowerCase();
+      }
+
+      assert.equal(normalizeLanguage("english"), "English");
+      assert.equal(normalizeLanguage("tamil"), "Tamil");
+      assert.equal(normalizeLanguage("HINDI"), "Hindi");
+      assert.equal(normalizeLanguage(undefined), "Tamil");
+    });
+  });
 });
