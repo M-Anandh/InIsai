@@ -11,25 +11,32 @@ const config: Config = {
     extend: {
       colors: {
         inisai: {
-          dark: "#080A12",
-          surface: "#101522",
-          surfaceElevated: "#171D2C",
-          card: "#121624",
-          cardHover: "#181D30",
+          dark: "#0B0A10",
+          surface: "#13111B",
+          surfaceElevated: "#1C1928",
+          card: "#13111B",
+          cardHover: "#1C1928",
           border: "rgba(255, 255, 255, 0.08)",
-          glass: "rgba(255, 255, 255, 0.05)",
-          glassBorder: "rgba(255, 255, 255, 0.10)",
-          muted: "#A5AABD",
-          accent: "#9565FF", // Aurora Violet
-          accentGlow: "rgba(149, 101, 255, 0.35)",
-          teal: "#20C7E8",   // Electric Cyan
-          secondary: "#20C7E8",
+          glass: "rgba(255, 255, 255, 0.06)",
+          glassBorder: "rgba(255, 255, 255, 0.12)",
+          muted: "#B9B2C6",
+          subtle: "#7C7690",
+          accent: "#7A5CFF", // Indigo Brand Accent
+          turmeric: "#FF8A3D",
+          rose: "#FF3D77",
+          teal: "#20C7E8",
+          secondary: "#FF3D77",
           emerald: "#10b981",
-          rose: "#f43f5e",
-          amber: "#f59e0b",
+          amber: "#FF8A3D",
         },
       },
       fontFamily: {
+        display: [
+          "Plus Jakarta Sans",
+          "Inter",
+          "Noto Sans Tamil",
+          "sans-serif",
+        ],
         sans: [
           "Inter",
           "-apple-system",
@@ -39,14 +46,14 @@ const config: Config = {
           "Noto Sans Tamil",
           "sans-serif",
         ],
-        tamil: ["Noto Sans Tamil", "sans-serif"],
+        tamil: ["Noto Sans Tamil", "Inter", "sans-serif"],
+      },
+      transitionTimingFunction: {
+        editorial: "cubic-bezier(0.22, 1, 0.36, 1)",
       },
       animation: {
         "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "spin-slow": "spin 12s linear infinite",
-      },
-      backdropBlur: {
-        xs: "2px",
       },
     },
   },
@@ -54,4 +61,3 @@ const config: Config = {
 };
 
 export default config;
-

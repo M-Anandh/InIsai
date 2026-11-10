@@ -36,14 +36,14 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      theme: "dark",
+      theme: "system",
       isAuthenticated: false,
       isLoading: false,
       likedTrackIds: [],
       userPlaylists: [],
 
       initialize: async () => {
-        const savedTheme = get().theme || get().user?.theme || "dark";
+        const savedTheme = get().theme || get().user?.theme || "system";
         if (typeof document !== "undefined") {
           const root = document.documentElement;
           let effectiveTheme = savedTheme;

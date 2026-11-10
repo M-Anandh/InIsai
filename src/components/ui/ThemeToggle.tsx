@@ -12,40 +12,58 @@ export const ThemeToggle: React.FC<{ className?: string; showLabelOnMobile?: boo
   const { user, theme, toggleTheme } = useAuthStore();
   const mounted = useMounted();
 
-  const currentTheme = mounted ? theme || user?.theme || "dark" : "dark";
-  const isLight = currentTheme === "light";
+  const resolvedTheme = (() => {
+    if (!mounted) return "dark";
+    const active = theme || user?.theme || "system";
+    if (active === "system" && typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return active === "light" ? "light" : "dark";
+  })();
+
+  const isLight = resolvedTheme === "light";
 
   const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Instant, direct 1-click toggle between Dark and Light
-    if (isLight) {
-      toggleTheme("dark");
+
+    const nextMode = isLight ? "dark" : "light";
+    const doc = document as any;
+
+    if (typeof document !== "undefined") {
+      document.documentElement.style.setProperty("--theme-x", `${e.clientX}px`);
+      document.documentElement.style.setProperty("--theme-y", `${e.clientY}px`);
+    }
+
+    if (doc.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      doc.startViewTransition(() => {
+        toggleTheme(nextMode);
+      });
     } else {
-      toggleTheme("light");
+      toggleTheme(nextMode);
     }
   };
-
-  const label = isLight ? "Light" : "Dark";
 
   return (
     <button
       onClick={handleToggle}
-      className={`flex items-center justify-center space-x-1.5 px-3 py-1.5 min-h-[36px] rounded-xl text-xs font-semibold transition-all border active:scale-95 cursor-pointer select-none shadow-sm ${
+      className={`flex items-center justify-center space-x-1.5 min-w-[40px] min-h-[40px] px-2.5 rounded-xl text-xs font-semibold transition-all border active:scale-95 cursor-pointer select-none shadow-sm ${
         isLight
-          ? "bg-amber-500/10 border-amber-500/30 text-amber-700 hover:bg-amber-500/20"
-          : "bg-white/5 border-white/10 text-inisai-accent hover:text-white hover:bg-white/10"
+          ? "bg-amber-500/10 border-amber-600/25 text-amber-800 hover:bg-amber-500/20"
+          : "bg-white/5 border-white/10 text-inisai-turmeric hover:text-white hover:bg-white/10"
       } ${className}`}
-      title={`Theme: ${label} (Click to toggle ${isLight ? "Dark" : "Light"} mode)`}
-      aria-label="Toggle Theme Mode"
+      title={`Switch to ${isLight ? "Dark" : "Light"} theme`}
+      aria-label={`Switch to ${isLight ? "Dark" : "Light"} theme`}
     >
-      {isLight ? (
-        <Sun className="w-4 h-4 text-amber-500 animate-spin-slow" />
-      ) : (
-        <Moon className="w-4 h-4 text-purple-400" />
-      )}
+      <div className="relative w-4 h-4 flex items-center justify-center">
+        {isLight ? (
+          <Sun className="w-4 h-4 text-amber-600 transition-transform duration-300 rotate-0" />
+        ) : (
+          <Moon className="w-4 h-4 text-[#FF8A3D] transition-transform duration-300 rotate-0" />
+        )}
+      </div>
       <span className={`${showLabelOnMobile ? "inline" : "hidden sm:inline"} capitalize text-[11px]`}>
-        {label}
+        {isLight ? "Light" : "Dark"}
       </span>
     </button>
   );

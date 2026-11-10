@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { MiniPlayer } from "@/components/player/MiniPlayer";
 import { FullScreenPlayer } from "@/components/player/FullScreenPlayer";
 import { PlayerProvider } from "@/components/player/PlayerProvider";
+import { PageTransition } from "@/components/layout/PageTransition";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 
 export const metadata: Metadata = {
@@ -25,11 +26,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#08090d",
+  themeColor: "#0B0A10",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -46,10 +46,10 @@ export default function RootLayout({
             __html: `
               try {
                 const stored = localStorage.getItem('inisai_auth_storage') || localStorage.getItem('inisai-auth-storage');
-                let theme = 'dark';
+                let theme = 'system';
                 if (stored) {
                   const parsed = JSON.parse(stored);
-                  theme = parsed?.state?.theme || parsed?.state?.user?.theme || 'dark';
+                  theme = parsed?.state?.theme || parsed?.state?.user?.theme || 'system';
                 }
                 if (theme === 'system') {
                   theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -71,12 +71,14 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <link rel="preconnect" href="https://i.ytimg.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://lh3.googleusercontent.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-inisai-dark text-white flex flex-col antialiased selection:bg-inisai-accent selection:text-white transition-colors duration-200">
+      <body className="min-h-screen bg-[#FBF7F1] dark:bg-[#0B0A10] text-[#1B1824] dark:text-[#F6F3EE] flex flex-col antialiased selection:bg-inisai-accent selection:text-white">
         <ThemeSync />
         <PlayerProvider>
           <div className="flex flex-1 min-h-screen">
@@ -84,16 +86,16 @@ export default function RootLayout({
             <Sidebar />
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 pb-36 md:pb-24">
+            <div className="flex-1 flex flex-col min-w-0 pb-40 md:pb-28">
               <Header />
-              <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
-                {children}
+              <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full overflow-x-hidden">
+                <PageTransition>{children}</PageTransition>
               </main>
 
               {/* Copyright & Creator Attribution Footer */}
-              <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-white/5 text-xs text-inisai-muted flex flex-col sm:flex-row items-center justify-between gap-2">
+              <footer className="mt-auto px-4 sm:px-8 py-6 border-t border-slate-200 dark:border-white/5 text-xs text-slate-500 dark:text-inisai-muted flex flex-col sm:flex-row items-center justify-between gap-2">
                 <p>
-                  © 2026 <span className="font-semibold text-white">InIsai (இனிசை)</span> — Every Beat, Your World.
+                  © 2026 <span className="font-semibold text-slate-900 dark:text-white">InIsai (இனிசை)</span> — Every Beat, Your World.
                 </p>
                 <p className="flex items-center space-x-1.5">
                   <span>Created with ❤️ by</span>

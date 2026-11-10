@@ -3,79 +3,182 @@
 @tailwind utilities;
 
 /* =========================================================================
-   CINEMATIC MIDNIGHT (DARK THEME)
+   OBSIDIAN INK & AURORA GRADIENT (DARK THEME — DEFAULT TOKENS)
    ========================================================================= */
 :root {
-  --background: #06080f;
-  --surface: #0e121d;
-  --surface-elevated: #151a28;
-  --surface-muted: #1b2133;
-  --card: #101422;
-  --card-hover: #171d30;
+  --background: #0B0A10;
+  --surface: #13111B;
+  --surface-elevated: #1C1928;
+  --surface-muted: #242034;
+  --card: #13111B;
+  --card-hover: #1C1928;
   --border: rgba(255, 255, 255, 0.08);
   --border-strong: rgba(255, 255, 255, 0.16);
-  --glass: rgba(14, 18, 29, 0.78);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --accent-primary: #8b5cf6;
-  --accent-secondary: #06b6d4;
-  --accent-glow: rgba(139, 92, 246, 0.32);
-  --foreground: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
-  --hero-gradient: linear-gradient(135deg, rgba(21, 26, 40, 0.85) 0%, rgba(14, 18, 29, 0.95) 100%);
+  --glass: rgba(19, 17, 27, 0.72);
+  --glass-solid: #13111B;
+  --glass-border: rgba(255, 255, 255, 0.10);
+
+  --accent-turmeric: #FF8A3D;
+  --accent-rose: #FF3D77;
+  --accent-indigo: #7A5CFF;
+  --accent-primary: #7A5CFF;
+  --accent-dynamic: #7A5CFF;
+  --brand-gradient: linear-gradient(135deg, #FF8A3D 0%, #FF3D77 50%, #7A5CFF 100%);
+
+  --foreground: #F6F3EE;
+  --text-secondary: #B9B2C6;
+  --text-muted: #7C7690;
+  --shadow-card: 0 12px 32px -6px rgba(0, 0, 0, 0.55);
+
+  transition: --accent-dynamic 600ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* =========================================================================
-   PEARL EDITORIAL MUSIC STUDIO (LIGHT THEME)
+   CREAM STUDIO (DESIGNED LIGHT THEME — HIGH CONTRAST)
    ========================================================================= */
 html.light {
-  --background: #f8fafc;
-  --surface: #ffffff;
-  --surface-elevated: #ffffff;
-  --surface-muted: #f1f5f9;
-  --card: #ffffff;
-  --card-hover: #f8fafc;
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --glass: rgba(255, 255, 255, 0.92);
-  --glass-border: #e2e8f0;
-  --accent-primary: #6366f1;
-  --accent-secondary: #0ea5e9;
-  --accent-glow: rgba(99, 102, 241, 0.18);
-  --foreground: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
-  --hero-gradient: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  --background: #FBF7F1;
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: #F3EDE4;
+  --card: #FFFFFF;
+  --card-hover: #FFFDF9;
+  --border: rgba(27, 24, 36, 0.09);
+  --border-strong: rgba(27, 24, 36, 0.18);
+  --glass: rgba(255, 255, 255, 0.84);
+  --glass-solid: #FFFFFF;
+  --glass-border: rgba(27, 24, 36, 0.10);
+
+  --accent-turmeric: #D95F12;
+  --accent-rose: #D91B57;
+  --accent-indigo: #5D3DF2;
+  --accent-primary: #5D3DF2;
+
+  --foreground: #1B1824;
+  --text-secondary: #524B63;
+  --text-muted: #7C7690;
+  --shadow-card: 0 4px 20px -2px rgba(27, 24, 36, 0.06), 0 2px 8px -1px rgba(27, 24, 36, 0.04);
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background-color: var(--background);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans Tamil', sans-serif;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 0.25s ease, color 0.25s ease;
+  touch-action: manipulation;
+  transition: background-color 250ms cubic-bezier(0.22, 1, 0.36, 1),
+              color 250ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Glassmorphism & Aurora Utilities */
+h1, h2, h3, .font-display {
+  font-family: 'Plus Jakarta Sans', 'Inter', 'Noto Sans Tamil', sans-serif;
+}
+
+.fluid-h1 {
+  font-size: clamp(1.75rem, 3vw + 1rem, 3rem);
+  line-height: 1.1;
+}
+
+.fluid-h2 {
+  font-size: clamp(1.2rem, 1.5vw + 0.8rem, 1.65rem);
+  line-height: 1.2;
+}
+
+/* =========================================================================
+   GLASSMORPHISM & REDUCED TRANSPARENCY FALLBACK
+   ========================================================================= */
 .glass-panel {
   background: var(--glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
 
-.aurora-glow {
-  box-shadow: 0 8px 32px 0 var(--accent-glow);
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel {
+    background: var(--glass-solid) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
-.cyan-glow {
-  box-shadow: 0 8px 32px 0 rgba(32, 199, 232, 0.22);
+/* Editorial Route Entrance Animation */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Clean Carousels */
+.animate-page-enter {
+  animation: pageEnter 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-enter,
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* View Transitions Circular Theme Reveal */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  animation: themeReveal 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes themeReveal {
+  from {
+    clip-path: circle(0px at var(--theme-x, 90%) var(--theme-y, 40px));
+  }
+  to {
+    clip-path: circle(150vmax at var(--theme-x, 90%) var(--theme-y, 40px));
+  }
+}
+
+/* Light Mode Contrast Overrides for Residual Utility Classes */
+html.light body {
+  background-color: #FBF7F1 !important;
+  color: #1B1824 !important;
+}
+
+html.light .bg-inisai-dark {
+  background-color: #FBF7F1 !important;
+}
+
+html.light .bg-inisai-surface {
+  background-color: #FFFFFF !important;
+}
+
+html.light .text-inisai-muted {
+  color: #524B63 !important;
+}
+
+/* Horizontal Carousel Edge Mask */
+.carousel-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 24px, black calc(100% - 24px), transparent 100%);
+}
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
@@ -84,113 +187,9 @@ body {
   scrollbar-width: none;
 }
 
-/* Light Theme Component Overrides */
-html.light body {
-  background-color: var(--background);
-  color: var(--foreground);
-}
-
-html.light h1,
-html.light h2,
-html.light h3,
-html.light h4 {
-  color: #0f172a;
-}
-
-html.light input[type="text"],
-html.light input[type="search"] {
-  color: #0f172a !important;
-}
-
-html.light input::placeholder {
-  color: #94a3b8 !important;
-}
-
-html.light .bg-inisai-dark {
-  background-color: #f8f9fc !important;
-}
-
-html.light [class*="bg-inisai-dark"] {
-  background-color: #f8f9fc !important;
-}
-
-html.light .bg-inisai-card,
-html.light .bg-inisai-surface {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-  box-shadow: var(--shadow-card);
-}
-
-html.light .bg-inisai-cardHover:hover,
-html.light .bg-inisai-surfaceElevated:hover {
-  background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
-}
-
-html.light aside,
-html.light header,
-html.light nav {
-  background-color: rgba(255, 255, 255, 0.94) !important;
-  border-color: #e2e8f0 !important;
-}
-
-html.light .text-inisai-muted {
-  color: #64748b !important;
-}
-
-html.light .bg-white\/5,
-html.light .bg-white\/\[0\.03\],
-html.light .bg-white\/\[0\.04\] {
-  background-color: rgba(15, 23, 42, 0.04) !important;
-}
-
-html.light .bg-white\/10,
-html.light .bg-white\/\[0\.08\] {
-  background-color: rgba(15, 23, 42, 0.07) !important;
-}
-
-html.light .border-white\/5,
-html.light .border-white\/10,
-html.light .border-white\/\[0\.08\] {
-  border-color: #e2e8f0 !important;
-}
-
-/* Completely suppress Next.js developer tools indicator badge overlay */
+/* Suppress Next.js dev overlays cleanly */
 nextjs-portal,
 [data-nextjs-dev-indicator],
 [data-nextjs-toast] {
   display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* Custom smooth dark scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-/* Range input styling for audio sliders */
-input[type="range"] {
-  accent-color: #9565ff;
-}
-html.light input[type="range"] {
-  accent-color: #7c3aed;
 }

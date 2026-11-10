@@ -2,6 +2,21 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 6] - 2026-11-10
+### Design System, Dual Palettes, View Transitions & Motion Grammar
+
+#### Added
+- **Editorial Design System Tokens (`tailwind.config.ts` & `src/app/globals.css`)**:
+  - Obsidian Dark palette (`#0B0A10` ink, `#13111B` surface, `#1C1928` raised, `#F6F3EE` text, turmeric `#FF8A3D`, rose `#FF3D77`, indigo `#7A5CFF`, 135° brand gradient) and designed Cream Studio Light palette (`#FBF7F1` cream, white raised surfaces with soft shadows, `#1B1824` ink, darkened accessible accents).
+  - Glass panels with `backdrop-filter: blur(24px) saturate(160%)` and `prefers-reduced-transparency: reduce` fallback.
+  - Typography upgrade pairing `Plus Jakarta Sans` + `Inter` + `Noto Sans Tamil` with fluid `clamp()` scaling.
+- **Zero-Flash System Theme & Circular Reveal (`ThemeToggle.tsx`, `ThemeSync.tsx`, `layout.tsx`)**:
+  - Inline `<head>` script defaulting to `System` theme before first paint, synchronizing `<meta name="theme-color">` and iOS status bar style cleanly.
+  - View Transitions API circular wipe on theme switches (with smooth 250ms fallback and `prefers-reduced-motion` guard).
+- **Motion & Navigation Transitions (`PageTransition.tsx`, `MusicCarousel.tsx`)**:
+  - Smooth 250ms `cubic-bezier(0.22, 1, 0.36, 1)` route transitions wrapping main content without ever remounting `PlayerProvider`.
+  - Horizontal snap-scroll carousels with subtle edge fades.
+
 ## [Phase 5] - 2026-11-10
 ### BitChord-Inspired Player UI, Dynamic Artwork Palette & Gestures
 
