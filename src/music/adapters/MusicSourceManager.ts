@@ -113,12 +113,14 @@ export class MusicSourceManager {
       } catch {}
     }
 
-    // Live search on LRCLIB API
+    // Live search on multi-provider lyrics API (LRCLIB + YTMusic fallback)
     try {
       const res = await fetch(
         `/api/music/lyrics?track=${encodeURIComponent(
           track.title
-        )}&artist=${encodeURIComponent(track.artist)}`
+        )}&artist=${encodeURIComponent(track.artist)}&duration=${Math.round(
+          track.duration || 0
+        )}&videoId=${encodeURIComponent(track.youtubeVideoId || "")}`
       );
       if (res.ok) {
         const data = await res.json();

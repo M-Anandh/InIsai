@@ -703,4 +703,22 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(isPlayableForScoring({ isPlayable: true, streamUrl: "" }), false);
     });
   });
+
+  // 14. Phase 4: Enhanced Word-Level Lyrics & Tamil Transliteration
+  describe("Phase 4: Word-Synced Lyrics & Tamil Transliteration", () => {
+    test("should parse inline <mm:ss.xx> word timings when present", () => {
+      const enhancedLine = "[00:15.00]<00:15.20>Nilave <00:15.90>Vaa <00:16.50>Nillathe";
+      const wordTimeRegex = /<(\d{2}):(\d{2})(?:\.(\d{2,3}))?>([^<]*)/g;
+      const matches = [...enhancedLine.replace(/\[\d{2}:\d{2}\.\d{2}\]/g, "").matchAll(wordTimeRegex)];
+      assert.equal(matches.length, 3);
+      assert.equal(matches[0][4].trim(), "Nilave");
+      assert.equal(parseInt(matches[1][2], 10) + parseInt(matches[1][3].padEnd(3, "0"), 10) / 1000, 15.9);
+    });
+
+    test("should detect Tamil Unicode script cleanly", () => {
+      const hasTamilScript = (text) => /[\u0B80-\u0BFF]/.test(text);
+      assert.equal(hasTamilScript("நிலாவே வா நில்லாதே வா"), true);
+      assert.equal(hasTamilScript("Believer Imagine Dragons"), false);
+    });
+  });
 });

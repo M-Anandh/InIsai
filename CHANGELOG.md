@@ -2,6 +2,19 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 4] - 2026-11-10
+### Word-Synced Lyrics, Multi-Provider LRCLIB + YTMusic Fallback & Apple Music Styling
+
+#### Added
+- **Multi-Provider Lyrics Endpoint (`src/app/api/music/lyrics/route.ts`)**:
+  - Added duration-matched `LRCLIB /api/get` exact matching, scored `/api/search`, and YouTube Music native lyrics fallback (`ytLyrics`) with `s-maxage=86400` caching.
+- **Word-Level Timing & Tamil Transliteration (`src/lib/lyrics-parser.ts`)**:
+  - Enhanced `parseLrc` to parse inline `<mm:ss.xx>` word tags with fallback proportional word interpolation across active line durations.
+  - Added `hasTamilScript` detection and phonetic `transliterateTamil` converter.
+- **Apple-Style Synchronized Lyrics Experience (`src/components/player/LyricsView.tsx`)**:
+  - Implemented smooth `requestAnimationFrame` clock interpolation synced smoothly with both `YouTubeIframeEngine` (10Hz poll + `rAF`) and `AudioElementEngine`.
+  - Bright, scaled active line (`text-2xl/3xl`), dimmed & subtly blurred neighbors clearing on hover, tap-to-seek on any line, crisp Noto Sans Tamil display, `அ→Aa` transliteration toggle, and `±0.5s` sync calibration nudge.
+
 ## [Phase 3] - 2026-11-10
 ### Personalisation, On-Device Taste Profile & Privacy Controls
 
