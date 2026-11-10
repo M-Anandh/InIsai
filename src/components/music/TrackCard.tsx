@@ -47,18 +47,20 @@ export const TrackCard: React.FC<TrackCardProps> = ({
   return (
     <div
       onClick={handlePlayClick}
-      className={`group relative bg-inisai-surface/60 hover:bg-inisai-surfaceElevated/80 backdrop-blur-md p-3 rounded-2xl border border-white/5 hover:border-inisai-accent/40 transition-all duration-300 cursor-pointer flex flex-col space-y-2.5 shadow-sm hover:shadow-xl hover:shadow-inisai-accent/15 ${
+      className={`group relative bg-white/80 dark:bg-inisai-surface/65 hover:bg-white dark:hover:bg-inisai-surfaceElevated backdrop-blur-md p-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] hover:border-inisai-accent/40 transition-all duration-300 cursor-pointer flex flex-col space-y-2.5 shadow-sm hover:shadow-xl ${
         carouselItem
           ? "w-36 xs:w-44 sm:w-48 flex-shrink-0 snap-start"
           : "w-full"
       }`}
     >
       {/* Artwork Container */}
-      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-tr from-purple-950/40 via-black/40 to-slate-900 border border-white/5 shadow-inner">
+      <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-200 dark:bg-black/40 border border-slate-200/60 dark:border-white/5 shadow-inner">
         <ArtworkImage
-          src={artworkSrc}
+          src={track.artworkUrl}
           alt={track.title}
+          youtubeVideoId={track.youtubeVideoId}
           type="track"
+          aspect="square"
           className={`group-hover:scale-105 transition-transform duration-500 ${
             isCurrent && isPlaying ? "opacity-90" : ""
           }`}
@@ -109,13 +111,13 @@ export const TrackCard: React.FC<TrackCardProps> = ({
       <div className="flex flex-col min-w-0">
         <h4
           className={`text-sm font-semibold truncate ${
-            isCurrent ? "text-inisai-accent" : "text-white"
+            isCurrent ? "text-inisai-accent" : "text-slate-900 dark:text-white"
           }`}
           title={track.title}
         >
           {track.title}
         </h4>
-        <p className="text-xs text-inisai-muted truncate mt-0.5" title={track.artist}>
+        <p className="text-xs text-slate-500 dark:text-inisai-muted truncate mt-0.5" title={track.artist}>
           {track.artist}
         </p>
       </div>

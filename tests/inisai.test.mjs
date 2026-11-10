@@ -631,4 +631,49 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(ytSig, saavnSig);
     });
   });
+
+  // 12. Phase 2: CoverImage Candidate Chain & Search Query Normalization
+  describe("Phase 2: CoverImage Fallback Chain & Query Cleaning", () => {
+    test("should build progressive fallback artwork URLs cleanly and never expose broken text", () => {
+      function buildCoverCandidates(src, youtubeVideoId) {
+        const urls = [];
+        if (src && src.trim()) {
+          urls.push(src);
+          if (src.includes("lh3.googleusercontent.com")) {
+            urls.push(src.replace(/=w\d+-h\d+[^&]*/i, "=w300-h300-l90-rj"));
+          }
+          if (src.includes("c.saavncdn.com")) {
+            urls.push(src.replace("500x500", "150x150"));
+          }
+        }
+        if (youtubeVideoId) {
+          urls.push(`https://i.ytimg.com/vi/${youtubeVideoId}/hqdefault.jpg`);
+          urls.push(`https://i.ytimg.com/vi/${youtubeVideoId}/mqdefault.jpg`);
+        }
+        return Array.from(new Set(urls));
+      }
+
+      const candidates = buildCoverCandidates(
+        "https://lh3.googleusercontent.com/abc=w544-h544-l90-rj",
+        "ZM8rAsTT7yE"
+      );
+      assert.equal(candidates.length, 4);
+      assert.ok(candidates[1].includes("w300-h300"));
+      assert.ok(candidates[2].includes("hqdefault.jpg"));
+      assert.equal(buildCoverCandidates("", undefined).length, 0);
+    });
+
+    test("should strip noisy suffixes from search queries without altering core keywords", () => {
+      function cleanSearchQueryNoise(q) {
+        return q
+          .replace(/\b(mp3|song download|download|full song|video song|official audio|official video)\b/gi, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      assert.equal(cleanSearchQueryNoise("Hukum full song mp3 download"), "Hukum");
+      assert.equal(cleanSearchQueryNoise("On My Way Alan Walker official audio"), "On My Way Alan Walker");
+      assert.equal(cleanSearchQueryNoise("Jailer 2"), "Jailer 2");
+    });
+  });
 });

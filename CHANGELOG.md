@@ -2,6 +2,24 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 2] - 2026-11-10
+### YouTube-Music-First Search, Official Collections & Cover Resilience
+
+#### Added
+- **YouTube Music InnerTube Metadata Adapter (`src/music/providers/ytmusic-server.ts`)**:
+  - Isolated `youtubei.js` adapter (`retrieve_player: false` metadata-only compliance) with 500-entry LRU cache and YouTube Data API v3 fallback.
+  - Serverless API routes: `/api/yt/suggest`, `/api/yt/search`, `/api/yt/home`, `/api/yt/charts`, `/api/yt/related`, `/api/yt/artist`, `/api/yt/album`, `/api/yt/playlist`, `/api/yt/collections`.
+  - Section 3.4 validated: Top #1 match verified live for `on my way alan walker`, `believer imagine dragons`, `kolaveri`, `nilaave vaa`, `hukum`, and `jailer 2`.
+- **Categorized Search Experience (`src/app/search/page.tsx`)**:
+  - Instant search suggestions (`150ms` debounce, `AbortController`) and multi-section results (Top Result card, Songs with collapsed "More versions" expander, Videos/Live, Albums, Artists, Playlists).
+  - Unfiltered default search with category/language chips (`All · Songs · Albums · Artists · Playlists · Tamil · English · Hindi · Telugu · Malayalam`), empty-state trending suggestions, and "Did you mean" recovery.
+- **Official Collections & Detail Routes (`src/music/collections.ts`)**:
+  - Rebuilt 11 official collections resolved live at runtime (`Ilaiyaraaja — Maestro Hits`, `Ilaiyaraaja — Melody Gold`, `Anirudh — Mass & Melody`, `Top Tamil 2026`, `Tamil Trending Now`, `A. R. Rahman Essentials`, `Yuvan — Feel`, `Tamil 90s Love`, `Kuthu & Dance`, `Late-Night Drive`, `Peaceful Meditation & Ragas`).
+  - Added `/artist/[id]`, `/album/[id]`, and `/playlist/[id]` dynamic App Router pages.
+- **Resilient `<CoverImage>` Component (`src/components/ui/CoverImage.tsx`)**:
+  - Replaced broken `c.saavncdn.com/254/...` artwork (`ERR_BLOCKED_BY_ORB`) and enforced multi-stage `onError` fallback (`alt CDN size` -> `YT thumbnail` -> `2×2 mosaic` -> deterministic gradient monogram; zero broken alt text).
+  - Upgraded `TrackRow` (`64px` touch rows, playing eq indicator, `⋯` overflow menu for mobile queue/like actions).
+
 ## [Phase 1.1] - 2026-11-10
 ### Dual-Engine Architecture, Provider Registry & Playback Reliability
 
