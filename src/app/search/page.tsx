@@ -7,6 +7,7 @@ import { TrackRow } from "@/components/music/TrackRow";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { usePlayerStore } from "@/stores/player-store";
 import { providerRegistry } from "@/music/providers/ProviderRegistry";
+import { recordSignal } from "@/lib/personalization/signal-tracker";
 import {
   Search,
   X,
@@ -81,6 +82,7 @@ export default function SearchPage() {
       ...recentSearches.filter((s) => s.toLowerCase() !== clean.toLowerCase()),
     ].slice(0, 8);
     setRecentSearches(updated);
+    recordSignal("search", null, clean);
     try {
       localStorage.setItem("inisai_recent_searches", JSON.stringify(updated));
     } catch {}

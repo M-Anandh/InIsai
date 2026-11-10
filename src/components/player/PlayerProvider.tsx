@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useRef } from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { engineCoordinator } from "@/lib/player/EngineCoordinator";
+import { recordSignal } from "@/lib/personalization/signal-tracker";
 
 interface PlayerContextValue {
   audioReady: boolean;
@@ -54,6 +55,9 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       },
       () => {
         const state = usePlayerStore.getState();
+        if (state.currentTrack) {
+          recordSignal(state.repeatMode === "one" ? "repeat" : "completion", state.currentTrack);
+        }
         if (state.repeatMode === "one") {
           state.seek(0);
           engineCoordinator.play();

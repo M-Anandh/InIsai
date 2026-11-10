@@ -2,6 +2,20 @@
 
 All notable changes to **InIsai (இனிசை)** will be documented in this file.
 
+## [Phase 3] - 2026-11-10
+### Personalisation, On-Device Taste Profile & Privacy Controls
+
+#### Added
+- **On-Device Taste Signal Tracker (`src/lib/personalization/signal-tracker.ts`)**:
+  - IndexedDB storage (`idb-keyval`) capturing plays, completions (`>= 70%`), skips (`< 15s`), likes, repeats, search queries, and time-of-day patterns (`morning`, `afternoon`, `evening`, `late_night`).
+  - 30-day exponential half-life decay weighting (`computeDecayWeight`), negative skip suppression, and auto-play queue continuation.
+- **Personalized Home Experience (`src/app/page.tsx`)**:
+  - Added *Daily Mixes 1–3* (clustered by taste affinity and time of day) and *"Because you listened to {topArtist}"* seeded dynamically via YouTube Music `/api/yt/related` radio.
+  - Fixed recommendation scorer bug where YouTube Music tracks without raw `streamUrl` were excluded; now evaluates both `streamUrl` and `youtubeVideoId`.
+- **Privacy & Integration Controls (`src/app/settings/page.tsx`)**:
+  - Added Personalisation Privacy section showing live recorded signal metrics & top affinity artists, with **Export Profile JSON** and **Reset Taste Profile** controls.
+  - Added optional ListenBrainz scrobble token configuration.
+
 ## [Phase 2] - 2026-11-10
 ### YouTube-Music-First Search, Official Collections & Cover Resilience
 

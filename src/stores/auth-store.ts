@@ -242,6 +242,11 @@ export const useAuthStore = create<AuthState>()(
           : [...likedTrackIds, track.id];
 
         set({ likedTrackIds: updated });
+        if (!isCurrentlyLiked) {
+          import("@/lib/personalization/signal-tracker").then(({ recordSignal }) => {
+            recordSignal("like", track);
+          });
+        }
 
         if (isSupabaseConfigured() && isAuthenticated && user) {
           try {

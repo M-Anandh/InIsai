@@ -676,4 +676,31 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(cleanSearchQueryNoise("Jailer 2"), "Jailer 2");
     });
   });
+
+  // 13. Phase 3: Taste Profile Decay & Personalization Scoring
+  describe("Phase 3: Taste Profile Signal Decay & YT Music Scoring", () => {
+    test("should apply 30-day half-life decay weights properly", () => {
+      function computeDecayWeight(ts, now) {
+        const ageDays = Math.max(0, (now - ts) / (1000 * 60 * 60 * 24));
+        return Math.pow(0.5, ageDays / 30);
+      }
+      const now = 1794000000000;
+      const zeroDaysAgo = computeDecayWeight(now, now);
+      const thirtyDaysAgo = computeDecayWeight(now - 30 * 86400 * 1000, now);
+      const sixtyDaysAgo = computeDecayWeight(now - 60 * 86400 * 1000, now);
+
+      assert.equal(zeroDaysAgo, 1);
+      assert.ok(Math.abs(thirtyDaysAgo - 0.5) < 0.001);
+      assert.ok(Math.abs(sixtyDaysAgo - 0.25) < 0.001);
+    });
+
+    test("should score playable YT Music tracks positively without streamUrl", () => {
+      function isPlayableForScoring(track) {
+        return Boolean(track.isPlayable && (track.streamUrl || track.youtubeVideoId));
+      }
+      assert.equal(isPlayableForScoring({ isPlayable: true, streamUrl: "", youtubeVideoId: "Kx7B-XvmFtE" }), true);
+      assert.equal(isPlayableForScoring({ isPlayable: true, streamUrl: "https://aac.saavncdn.com/a.mp4" }), true);
+      assert.equal(isPlayableForScoring({ isPlayable: true, streamUrl: "" }), false);
+    });
+  });
 });

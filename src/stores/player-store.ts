@@ -10,6 +10,7 @@ import {
 } from "@/types";
 import { engineCoordinator } from "@/lib/player/EngineCoordinator";
 import { providerRegistry } from "@/music/providers/ProviderRegistry";
+import { recordSignal } from "@/lib/personalization/signal-tracker";
 
 export interface EQPresetDefinition {
   name: string;
@@ -256,9 +257,10 @@ export const usePlayerStore = create<PlayerState>()(
           engineCoordinator.prebufferNextTrack(updatedQueue[index + 1]);
         }
 
-        // Update listening history (deduplicated)
+        // Update listening history (deduplicated) & record taste signal
         const history = [trackToPlay, ...get().history.filter((t) => t.id !== trackToPlay.id)].slice(0, 60);
         set({ history });
+        recordSignal("play", trackToPlay);
 
         // Auto-Radio recommendation: if queue ends soon and autoplay is enabled
         if (updatedQueue.length <= 1 && !resolvedContext && settings.autoplayRelated !== false) {
@@ -329,7 +331,15 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       nextTrack: async () => {
-        const { queue, queueIndex, repeatMode, currentTrack, settings, sleepTimerEndOfTrack } = get();
+        const { queue, queueIndex, repeatMode, currentTrack, currentTime, duration, settings, sleepTimerEndOfTrack } = get();
+
+        if (currentTrack && currentTime > 0) {
+          if (currentTime < 15 && duration > 30) {
+            recordSignal("skip", currentTrack);
+          } else if (duration > 0 && currentTime / duration >= 0.7) {
+            recordSignal("completion", currentTrack);
+          }
+        }
 
         if (sleepTimerEndOfTrack) {
           engineCoordinator.pause();

@@ -14,7 +14,13 @@ import { buildUserMusicProfile } from "@/lib/recommendations/user-music-profile"
 import {
   selectDynamicFeaturedTrack,
   rankPersonalizedRecommendations,
+  buildDailyMixes,
 } from "@/lib/recommendations/recommendation-engine";
+import {
+  getAllSignals,
+  computeTasteSummary,
+  ComputedTasteSummary,
+} from "@/lib/personalization/signal-tracker";
 import {
   Play,
   Pause,
@@ -35,6 +41,8 @@ export default function HomePage() {
 
   const [ytShelves, setYtShelves] = useState<Shelf[]>([]);
   const [saavnTrending, setSaavnTrending] = useState<Track[]>([]);
+  const [seedRelated, setSeedRelated] = useState<Track[]>([]);
+  const [tasteSummary, setTasteSummary] = useState<ComputedTasteSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -43,9 +51,20 @@ export default function HomePage() {
     const fetchDiscoveryData = async () => {
       setIsLoading(true);
       try {
-        const [ytHomeRes, saavnRes] = await Promise.allSettled([
+        const signals = await getAllSignals();
+        const summary = computeTasteSummary(signals);
+        setTasteSummary(summary);
+
+        const seedVid = summary.seedVideoIds[0] || history[0]?.youtubeVideoId;
+
+        const [ytHomeRes, saavnRes, relatedRes] = await Promise.allSettled([
           fetch("/api/yt/home").then((r) => (r.ok ? r.json() : null)),
           fetch("/api/music/trending?category=tamil").then((r) => (r.ok ? r.json() : null)),
+          seedVid
+            ? fetch(`/api/yt/related?videoId=${encodeURIComponent(seedVid)}`).then((r) =>
+                r.ok ? r.json() : null
+              )
+            : Promise.resolve(null),
         ]);
 
         if (ytHomeRes.status === "fulfilled" && ytHomeRes.value?.shelves?.length > 0) {
@@ -53,6 +72,9 @@ export default function HomePage() {
         }
         if (saavnRes.status === "fulfilled" && saavnRes.value?.results?.length > 0) {
           setSaavnTrending(saavnRes.value.results);
+        }
+        if (relatedRes.status === "fulfilled" && relatedRes.value?.results?.length > 0) {
+          setSeedRelated(relatedRes.value.results);
         }
       } catch (err) {
         console.warn("Home discovery fetch note:", err);
@@ -62,25 +84,31 @@ export default function HomePage() {
     };
 
     fetchDiscoveryData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialize]);
 
   // Combine online and curated pool
   const allCandidates = useMemo(() => {
     const shelfTracks = ytShelves.flatMap((s) => s.items || []);
-    const pool = [...shelfTracks, ...saavnTrending, ...CURATED_TRACKS];
+    const pool = [...seedRelated, ...shelfTracks, ...saavnTrending, ...CURATED_TRACKS];
     const seen = new Set<string>();
     return pool.filter((t) => {
       if (seen.has(t.id)) return false;
       seen.add(t.id);
       return true;
     });
-  }, [ytShelves, saavnTrending]);
+  }, [ytShelves, saavnTrending, seedRelated]);
 
   // Build dynamic user profile
   const userAffinity = useMemo(() => {
     const likedTracks = allCandidates.filter((t) => likedTrackIds.includes(t.id));
-    return buildUserMusicProfile(user, history, likedTracks);
-  }, [user, history, likedTrackIds, allCandidates]);
+    return buildUserMusicProfile(user, history, likedTracks, tasteSummary);
+  }, [user, history, likedTrackIds, allCandidates, tasteSummary]);
+
+  // Daily Mixes & Discover Weekly-style recommendations
+  const dailyMixes = useMemo(() => {
+    return buildDailyMixes(allCandidates, userAffinity, history);
+  }, [allCandidates, userAffinity, history]);
 
   // Dynamically select featured track based on user affinity
   const dynamicFeaturedTrack = useMemo(() => {
@@ -280,6 +308,75 @@ export default function HomePage() {
           />
         ))}
       </MusicCarousel>
+
+      {/* 4b. Because you listened to {topArtist} (Seeded from YT Music Related Radio) */}
+      {seedRelated.length > 0 && (
+        <MusicCarousel
+          title={`Because you listened to ${tasteSummary?.topArtists?.[0]?.name || history[0]?.artist?.split(",")[0] || "your favorites"}`}
+          subtitle="Fresh related radio & similar soundscapes discovered for you"
+          icon={<Disc3 className="w-5 h-5 text-inisai-teal" />}
+        >
+          {seedRelated.slice(0, 12).map((track) => (
+            <TrackCard
+              key={`rel-${track.id}`}
+              track={track}
+              playlistContext={seedRelated}
+              context={{
+                id: "home-related-seed",
+                type: "home_recommendations",
+                title: "Because you listened",
+                trackIds: seedRelated.map((t) => t.id),
+              }}
+              carouselItem
+            />
+          ))}
+        </MusicCarousel>
+      )}
+
+      {/* 4c. Your Daily Mixes (Taste Profile Clusters) */}
+      {dailyMixes.length > 0 && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-inisai-teal" />
+              <span>Your Daily Mixes</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-inisai-muted">
+              Evolving 30-day decayed mixes tuned to your time of day
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {dailyMixes.map((mix) => (
+              <div
+                key={mix.id}
+                onClick={() =>
+                  playTrack(mix.tracks[0], mix.tracks, {
+                    id: mix.id,
+                    type: "home_recommendations",
+                    title: mix.title,
+                  })
+                }
+                className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 p-4 flex items-center space-x-4 cursor-pointer shadow-sm hover:shadow-xl transition-all"
+              >
+                <div
+                  className={`w-16 h-16 rounded-xl bg-gradient-to-br ${mix.gradient} flex items-center justify-center text-white font-extrabold text-sm shadow-inner flex-shrink-0`}
+                >
+                  <Play className="w-6 h-6 fill-white translate-x-0.5 group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent">
+                    {mix.title}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-inisai-muted line-clamp-2 mt-0.5">
+                    {mix.subtitle}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* 5. InIsai Official Collections (Runtime-Resolved 25+ Track Playlists) */}
       <section className="space-y-4">
