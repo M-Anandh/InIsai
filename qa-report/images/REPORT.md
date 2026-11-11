@@ -35,3 +35,4 @@ This upgrade resolves all production issues reported across the application:
 
 - **Automated Unit Tests:** `npm test` runs 59 tests across 30 test suites covering thumbnail normalization, artist name normalization, exact artist ranking, blocklists, theme transitions, and playback engines. **Status: 59 passed, 0 failed.**
 - **Production Build:** `npm run build` generates all 37 application routes cleanly with 0 TypeScript or lint errors.
+
