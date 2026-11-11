@@ -67,3 +67,4 @@ export const SWUpdateNotifier: React.FC = () => {
     </div>
   );
 };
+

@@ -16,3 +16,4 @@ export const useAddToPlaylistStore = create<AddToPlaylistState>((set) => ({
   open: (track: Track) => set({ isOpen: true, track }),
   close: () => set({ isOpen: false, track: null }),
 }));
+

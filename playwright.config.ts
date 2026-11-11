@@ -7,7 +7,6 @@ export default defineConfig({
   reporter: [["list"], ["html", { outputFolder: "qa-report/html-report", open: "never" }]],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || "https://in-isai.vercel.app",
-    channel: "chrome",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -48,3 +47,4 @@ export default defineConfig({
     },
   ],
 });
+

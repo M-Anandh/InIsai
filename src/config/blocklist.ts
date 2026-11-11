@@ -60,3 +60,4 @@ export function isTrackBlocked(track: { title?: string; artist?: string }): bool
 
   return false;
 }
+
