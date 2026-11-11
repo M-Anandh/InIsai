@@ -10,6 +10,8 @@ import { CoverImage } from "@/components/ui/CoverImage";
 import { PWAInstaller } from "@/components/pwa/PWAInstaller";
 import { usePlayerStore } from "@/stores/player-store";
 import { useAuthStore } from "@/stores/auth-store";
+import { useLanguageStore, AVAILABLE_LANGUAGES } from "@/stores/language-store";
+import { isTrackBlocked } from "@/config/blocklist";
 import { Track, PlaybackContext, Shelf } from "@/types";
 import { buildUserMusicProfile } from "@/lib/recommendations/user-music-profile";
 import {
@@ -36,46 +38,65 @@ import {
   Globe,
   Check,
   X,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
 } from "lucide-react";
+
+interface FeaturedMovieSong {
+  id: string;
+  title: string;
+  artist: string;
+  album?: string;
+  artworkUrl?: string;
+  filmTitle: string;
+  releaseStatus: "released" | "upcoming";
+  releaseLabel: string;
+  releaseDate?: string;
+  language: string;
+  youtubeVideoId?: string;
+  streamUrl?: string;
+  isPlayable: boolean;
+}
 
 export default function HomePage() {
   const { playTrack, currentTrack, isPlaying, togglePlay, history, addToQueue } =
     usePlayerStore();
   const { initialize, user, likedTrackIds } = useAuthStore();
+  const { selectedLanguages, toggleLanguage } = useLanguageStore();
 
   const [ytShelves, setYtShelves] = useState<Shelf[]>([]);
   const [saavnTrending, setSaavnTrending] = useState<Track[]>([]);
   const [seedRelated, setSeedRelated] = useState<Track[]>([]);
+  const [featuredSongs, setFeaturedSongs] = useState<FeaturedMovieSong[]>([]);
+  const [heroIndex, setHeroIndex] = useState(0);
+  const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [tasteSummary, setTasteSummary] = useState<ComputedTasteSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [preferredLanguages, setPreferredLanguages] = useState<string[]>(["Tamil", "Hindi", "English"]);
   const [langModalOpen, setLangModalOpen] = useState(false);
 
+  // Auto-rotate featured hero every 7.5 seconds when not hovered
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("inisai_preferred_languages");
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setPreferredLanguages(parsed);
-        }
-      }
-    } catch {}
-  }, []);
+    if (featuredSongs.length <= 1 || isHeroHovered) return;
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % Math.min(featuredSongs.length, 6));
+    }, 7500);
+    return () => clearInterval(interval);
+  }, [featuredSongs.length, isHeroHovered]);
 
-  const toggleLanguage = (lang: string) => {
-    let updated: string[];
-    if (preferredLanguages.includes(lang)) {
-      if (preferredLanguages.length === 1) return; // Keep at least one
-      updated = preferredLanguages.filter((l) => l !== lang);
-    } else {
-      updated = [...preferredLanguages, lang];
-    }
-    setPreferredLanguages(updated);
-    try {
-      localStorage.setItem("inisai_preferred_languages", JSON.stringify(updated));
-    } catch {}
-  };
+  // Refetch featured songs when selectedLanguages change
+  useEffect(() => {
+    const langQuery = selectedLanguages.map((l) => l.toLowerCase()).join(",");
+    fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.featured && data.featured.length > 0) {
+          setFeaturedSongs(data.featured);
+          setHeroIndex(0);
+        }
+      })
+      .catch(() => {});
+  }, [selectedLanguages]);
 
   useEffect(() => {
     initialize();
@@ -88,8 +109,9 @@ export default function HomePage() {
         setTasteSummary(summary);
 
         const seedVid = summary.seedVideoIds[0] || history[0]?.youtubeVideoId;
+        const langQuery = selectedLanguages.map((l) => l.toLowerCase()).join(",");
 
-        const [ytHomeRes, saavnRes, relatedRes] = await Promise.allSettled([
+        const [ytHomeRes, saavnRes, relatedRes, featRes] = await Promise.allSettled([
           fetch("/api/yt/home").then((r) => (r.ok ? r.json() : null)),
           fetch("/api/music/trending?category=tamil").then((r) => (r.ok ? r.json() : null)),
           seedVid
@@ -97,6 +119,9 @@ export default function HomePage() {
                 r.ok ? r.json() : null
               )
             : Promise.resolve(null),
+          fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`).then((r) =>
+            r.ok ? r.json() : null
+          ),
         ]);
 
         if (ytHomeRes.status === "fulfilled" && ytHomeRes.value?.shelves?.length > 0) {
@@ -107,6 +132,9 @@ export default function HomePage() {
         }
         if (relatedRes.status === "fulfilled" && relatedRes.value?.results?.length > 0) {
           setSeedRelated(relatedRes.value.results);
+        }
+        if (featRes.status === "fulfilled" && featRes.value?.featured?.length > 0) {
+          setFeaturedSongs(featRes.value.featured);
         }
       } catch (err) {
         console.warn("Home discovery fetch note:", err);
@@ -119,27 +147,47 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialize]);
 
+  // Convert featured movie songs to playable Track objects
+  const featuredTracks: Track[] = useMemo(() => {
+    return featuredSongs.map((f) => ({
+      id: f.id,
+      title: f.title,
+      artist: f.artist,
+      album: f.filmTitle,
+      artworkUrl: f.artworkUrl || "",
+      youtubeVideoId: f.youtubeVideoId,
+      streamUrl: f.streamUrl || "",
+      language: f.language,
+      duration: 210,
+      sourceId: f.youtubeVideoId || f.id,
+      isPlayable: true,
+      sourceType: f.youtubeVideoId ? "youtube" : "curated",
+      sourceAttribution: f.releaseLabel,
+    }));
+  }, [featuredSongs]);
+
   // Combine online and curated pool
   const allCandidates = useMemo(() => {
     const shelfTracks = ytShelves.flatMap((s) => s.items || []);
-    const pool = [...seedRelated, ...shelfTracks, ...saavnTrending, ...CURATED_TRACKS];
+    const pool = [...featuredTracks, ...seedRelated, ...shelfTracks, ...saavnTrending, ...CURATED_TRACKS];
     const seen = new Set<string>();
     return pool.filter((t) => {
       if (seen.has(t.id)) return false;
+      if (isTrackBlocked(t)) return false;
       seen.add(t.id);
       return true;
     });
-  }, [ytShelves, saavnTrending, seedRelated]);
+  }, [featuredTracks, ytShelves, saavnTrending, seedRelated]);
 
   // Build dynamic user profile
   const userAffinity = useMemo(() => {
     const likedTracks = allCandidates.filter((t) => likedTrackIds.includes(t.id));
     const profile = buildUserMusicProfile(user, history, likedTracks, tasteSummary);
-    for (const l of preferredLanguages) {
+    for (const l of selectedLanguages) {
       profile.preferredLanguages[l.toLowerCase()] = (profile.preferredLanguages[l.toLowerCase()] || 0) + 20;
     }
     return profile;
-  }, [user, history, likedTrackIds, allCandidates, tasteSummary, preferredLanguages]);
+  }, [user, history, likedTrackIds, allCandidates, tasteSummary, selectedLanguages]);
 
   // Daily Mixes & Discover Weekly-style recommendations
   const dailyMixes = useMemo(() => {
@@ -151,17 +199,31 @@ export default function HomePage() {
     return selectDynamicFeaturedTrack(allCandidates, userAffinity, history) || CURATED_TRACKS[0];
   }, [allCandidates, userAffinity, history]);
 
+  const activeFeaturedTrack: Track = useMemo(() => {
+    if (featuredTracks.length > 0) {
+      return featuredTracks[heroIndex % featuredTracks.length];
+    }
+    return dynamicFeaturedTrack;
+  }, [featuredTracks, heroIndex, dynamicFeaturedTrack]);
+
+  const activeFeaturedMeta: FeaturedMovieSong | null = useMemo(() => {
+    if (featuredSongs.length > 0) {
+      return featuredSongs[heroIndex % featuredSongs.length];
+    }
+    return null;
+  }, [featuredSongs, heroIndex]);
+
   // Dynamically rank "Made for you"
   const personalizedTracks = useMemo(() => {
     return rankPersonalizedRecommendations(allCandidates, userAffinity, history, 12);
   }, [allCandidates, userAffinity, history]);
 
-  const isHeroPlaying = currentTrack?.id === dynamicFeaturedTrack?.id && isPlaying;
+  const isHeroPlaying = currentTrack?.id === activeFeaturedTrack?.id && isPlaying;
 
   const heroContext: PlaybackContext = {
-    id: `home-hero-${dynamicFeaturedTrack?.id}`,
+    id: `home-hero-${activeFeaturedTrack?.id}`,
     type: "home_recommendations",
-    title: `Featured: ${dynamicFeaturedTrack?.title}`,
+    title: `Featured: ${activeFeaturedTrack?.title}`,
   };
 
   const personalizedContext: PlaybackContext = {
@@ -172,12 +234,25 @@ export default function HomePage() {
   };
 
   const handleHeroPlay = () => {
-    if (!dynamicFeaturedTrack) return;
-    if (currentTrack?.id === dynamicFeaturedTrack.id) {
+    if (!activeFeaturedTrack) return;
+    if (currentTrack?.id === activeFeaturedTrack.id) {
       togglePlay();
     } else {
-      playTrack(dynamicFeaturedTrack, allCandidates.slice(0, 20), heroContext);
+      const playQueue = featuredTracks.length > 0 ? featuredTracks : allCandidates.slice(0, 20);
+      playTrack(activeFeaturedTrack, playQueue, heroContext);
     }
+  };
+
+  const handleNextHero = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const count = Math.min(featuredSongs.length || 1, 6);
+    setHeroIndex((prev) => (prev + 1) % count);
+  };
+
+  const handlePrevHero = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const count = Math.min(featuredSongs.length || 1, 6);
+    setHeroIndex((prev) => (prev - 1 + count) % count);
   };
 
   return (
@@ -185,27 +260,39 @@ export default function HomePage() {
       {/* Dismissible Mobile / Desktop PWA Install Banner */}
       <PWAInstaller variant="banner" />
 
-      {/* 1. Aurora Glass Featured Hero Banner */}
-      {dynamicFeaturedTrack && (
-        <div className="relative rounded-3xl overflow-hidden glass-panel border border-slate-200/80 dark:border-white/10 p-6 sm:p-10 shadow-xl dark:shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 group">
+      {/* 1. Dynamic Featured Songs Hero Banner (Latest & Upcoming Movie Songs) */}
+      {activeFeaturedTrack && (
+        <div
+          onMouseEnter={() => setIsHeroHovered(true)}
+          onMouseLeave={() => setIsHeroHovered(false)}
+          className="relative rounded-3xl overflow-hidden glass-panel border border-slate-200/80 dark:border-white/10 p-6 sm:p-10 shadow-xl dark:shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 group transition-all"
+        >
           <div className="absolute -top-24 -left-24 w-96 h-96 bg-inisai-accent/20 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-inisai-teal/15 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-3 max-w-xl z-10 text-center md:text-left">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent/15 border border-inisai-accent/30 text-inisai-accent text-xs font-semibold backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Recommended For You</span>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent/15 border border-inisai-accent/30 text-inisai-accent text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>{activeFeaturedMeta?.releaseLabel || "Recommended For You"}</span>
+              </div>
+              {activeFeaturedMeta?.language && (
+                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-white/80">
+                  {activeFeaturedMeta.language}
+                </span>
+              )}
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {dynamicFeaturedTrack.title}
+              {activeFeaturedTrack.title}
             </h1>
             <p className="text-sm sm:text-base text-slate-600 dark:text-inisai-muted font-medium">
-              {dynamicFeaturedTrack.artist}
-              {dynamicFeaturedTrack.album && dynamicFeaturedTrack.album !== "YouTube Music" && ` • ${dynamicFeaturedTrack.album}`}
+              {activeFeaturedTrack.artist}
+              {(activeFeaturedMeta?.filmTitle || activeFeaturedTrack.album) &&
+                ` • ${activeFeaturedMeta?.filmTitle || activeFeaturedTrack.album}`}
             </p>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-white/70 max-w-md">
-              Every Beat, Your World — high fidelity streaming, word-synced lyrics, and intelligent personalization.
+              Every Beat, Your World — fresh releases, official high-fidelity audio, and synchronized lyrics.
             </p>
 
             <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
@@ -222,7 +309,7 @@ export default function HomePage() {
               </button>
 
               <button
-                onClick={() => addToQueue(dynamicFeaturedTrack)}
+                onClick={() => addToQueue(activeFeaturedTrack)}
                 className="flex items-center space-x-2 px-5 py-3 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-900 dark:text-white font-semibold text-sm transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
@@ -230,20 +317,54 @@ export default function HomePage() {
               </button>
 
               <Link
-                href="/local"
-                className="hidden sm:flex items-center space-x-2 px-4 py-3 rounded-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 font-semibold text-sm transition-colors cursor-pointer"
+                href="/new"
+                className="hidden sm:flex items-center space-x-1.5 px-4 py-3 rounded-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 font-semibold text-sm transition-colors cursor-pointer"
               >
-                <Disc3 className="w-4 h-4 text-inisai-teal" />
-                <span>Local Music</span>
+                <Flame className="w-4 h-4 text-inisai-turmeric" />
+                <span>New & Upcoming</span>
               </Link>
             </div>
+
+            {/* Hero Carousel Navigation Dots */}
+            {featuredSongs.length > 1 && (
+              <div className="flex items-center justify-center md:justify-start space-x-2 pt-3">
+                <button
+                  onClick={handlePrevHero}
+                  className="p-1 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-colors"
+                  aria-label="Previous featured song"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <div className="flex space-x-1.5">
+                  {featuredSongs.slice(0, 6).map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setHeroIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                        idx === heroIndex % Math.min(featuredSongs.length, 6)
+                          ? "w-6 bg-inisai-accent"
+                          : "w-2 bg-slate-300 dark:bg-white/20 hover:bg-slate-400 dark:hover:bg-white/40"
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={handleNextHero}
+                  className="p-1 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-colors"
+                  aria-label="Next featured song"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/15 flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500">
             <CoverImage
-              src={dynamicFeaturedTrack.artworkUrl}
-              alt={dynamicFeaturedTrack.title}
-              youtubeVideoId={dynamicFeaturedTrack.youtubeVideoId}
+              src={activeFeaturedTrack.artworkUrl}
+              alt={activeFeaturedTrack.title}
+              youtubeVideoId={activeFeaturedTrack.youtubeVideoId}
               type="track"
               aspect="square"
             />
@@ -318,7 +439,7 @@ export default function HomePage() {
           className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl bg-inisai-accent/15 border border-inisai-accent/30 text-xs font-semibold whitespace-nowrap text-inisai-accent hover:bg-inisai-accent/25 transition-all cursor-pointer shadow-sm"
         >
           <Globe className="w-3.5 h-3.5" />
-          <span>Languages ({preferredLanguages.length})</span>
+          <span>Languages ({selectedLanguages.length})</span>
         </button>
 
         {EXPLORE_CATEGORIES.slice(0, 8).map((cat) => (
@@ -338,6 +459,32 @@ export default function HomePage() {
           <span>Explore All</span>
         </Link>
       </div>
+
+      {/* 3b. New & Upcoming Movie Songs Shelf (Driven by User's Language Preference) */}
+      {featuredTracks.length > 0 && (
+        <MusicCarousel
+          title="New & Upcoming Movie Songs"
+          subtitle="Fresh theatrical drops & anticipated soundtracks in your languages"
+          icon={<Flame className="w-5 h-5 text-inisai-turmeric" />}
+          seeAllHref="/new"
+        >
+          {featuredTracks.map((track, idx) => (
+            <TrackCard
+              key={`feat-shelf-${track.id}`}
+              track={track}
+              index={idx}
+              playlistContext={featuredTracks}
+              context={{
+                id: "new-and-upcoming-shelf",
+                type: "home_recommendations",
+                title: "New & Upcoming Movie Songs",
+                trackIds: featuredTracks.map((t) => t.id),
+              }}
+              carouselItem
+            />
+          ))}
+        </MusicCarousel>
+      )}
 
       {/* 4. Made For You */}
       <MusicCarousel
@@ -477,43 +624,52 @@ export default function HomePage() {
               href={`/collection/${encodeURIComponent(col.id)}`}
               className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 p-3 flex flex-col space-y-3 shadow-sm hover:shadow-xl transition-all"
             >
-              <div
-                className={`relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-br ${col.gradient} p-4 flex flex-col justify-between text-white shadow-inner`}
-              >
-                <div className="flex items-center justify-between">
-                  <ListMusic className="w-6 h-6 opacity-80" />
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      fetch(`/api/yt/collections?id=${encodeURIComponent(col.id)}`)
-                        .then((r) => r.json())
-                        .then((data) => {
-                          if (data.tracks && data.tracks.length > 0) {
-                            playTrack(data.tracks[0], data.tracks, {
-                              id: `col-${col.id}`,
-                              type: "playlist",
-                              title: col.title,
-                              trackIds: data.tracks.map((t: any) => t.id),
-                            });
-                          }
-                        })
-                        .catch(() => {});
-                    }}
-                    className="w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 shadow-md cursor-pointer"
-                    title={`Play ${col.title}`}
-                    aria-label={`Play ${col.title}`}
-                  >
-                    <Play className="w-4 h-4 fill-white translate-x-0.5" />
-                  </button>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-75">
-                    InIsai Official
-                  </span>
-                  <p className="text-base sm:text-lg font-extrabold leading-tight line-clamp-2 drop-shadow">
-                    {col.title}
-                  </p>
+              <div className="relative aspect-square w-full rounded-xl overflow-hidden shadow-inner group/cover">
+                <CoverImage
+                  src={col.artworkUrl}
+                  alt={col.title}
+                  type="playlist"
+                  aspect="square"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/cover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 flex flex-col justify-between text-white">
+                  <div className="flex items-center justify-between">
+                    <span className="w-7 h-7 rounded-lg bg-black/40 backdrop-blur-md flex items-center justify-center">
+                      <ListMusic className="w-4 h-4 text-white/90" />
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fetch(`/api/yt/collections?id=${encodeURIComponent(col.id)}`)
+                          .then((r) => r.json())
+                          .then((data) => {
+                            if (data.tracks && data.tracks.length > 0) {
+                              playTrack(data.tracks[0], data.tracks, {
+                                id: `col-${col.id}`,
+                                type: "playlist",
+                                title: col.title,
+                                trackIds: data.tracks.map((t: any) => t.id),
+                              });
+                            }
+                          })
+                          .catch(() => {});
+                      }}
+                      className="w-9 h-9 rounded-full bg-inisai-accent/90 hover:bg-inisai-accent backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all hover:scale-110 active:scale-95 shadow-md cursor-pointer"
+                      title={`Play ${col.title}`}
+                      aria-label={`Play ${col.title}`}
+                    >
+                      <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                    </button>
+                  </div>
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-inisai-accent drop-shadow">
+                      InIsai Official
+                    </span>
+                    <p className="text-base sm:text-lg font-extrabold leading-tight line-clamp-2 text-white drop-shadow">
+                      {col.title}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div>
@@ -588,27 +744,19 @@ export default function HomePage() {
             </p>
 
             <div className="grid grid-cols-2 gap-2 pt-2">
-              {[
-                "Tamil",
-                "English",
-                "Hindi",
-                "Telugu",
-                "Malayalam",
-                "Kannada",
-                "Punjabi",
-              ].map((lang) => {
-                const isSelected = preferredLanguages.includes(lang);
+              {AVAILABLE_LANGUAGES.map((lang) => {
+                const isSelected = selectedLanguages.includes(lang.id);
                 return (
                   <button
-                    key={lang}
-                    onClick={() => toggleLanguage(lang)}
+                    key={lang.id}
+                    onClick={() => toggleLanguage(lang.id)}
                     className={`flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
                       isSelected
                         ? "bg-inisai-accent/15 border-inisai-accent text-inisai-accent"
                         : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 hover:border-slate-300"
                     }`}
                   >
-                    <span>{lang}</span>
+                    <span>{lang.nativeLabel} ({lang.label})</span>
                     {isSelected && <Check className="w-4 h-4 text-inisai-accent" />}
                   </button>
                 );

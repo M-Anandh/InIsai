@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import CryptoJS from "crypto-js";
 import { CURATED_TRACKS } from "@/music/curated-data";
+import { isTrackBlocked } from "@/config/blocklist";
 
 const DES_KEY = CryptoJS.enc.Utf8.parse("38346591");
 
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
         isPlayable: Boolean(streamUrl),
         bitrate: "320kbps",
       };
-    }).filter((t: any) => t.isPlayable);
+    }).filter((t: any) => t.isPlayable && !isTrackBlocked(t));
 
     return NextResponse.json(
       { category, count: tracks.length, results: tracks },
@@ -125,6 +126,7 @@ export async function GET(req: NextRequest) {
     console.warn("Trending fetch fallback triggered:", err?.message || err);
     // Graceful fallback to filtered curated catalog
     const fallbackTracks = CURATED_TRACKS.filter((t) => {
+      if (isTrackBlocked(t)) return false;
       if (category === "tamil" || category === "tamil_melody" || category === "tamil_love") {
         return t.language === "Tamil";
       }

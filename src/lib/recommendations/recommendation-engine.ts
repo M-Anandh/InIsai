@@ -2,12 +2,14 @@ import { Track } from "@/types";
 import { UserMusicAffinity } from "./user-music-profile";
 import { normalizeArtistName } from "@/lib/music-matching";
 import { CURATED_TRACKS } from "@/music/curated-data";
+import { isTrackBlocked } from "@/config/blocklist";
 
 export function scoreTrack(
   track: Track,
   affinity: UserMusicAffinity,
   recentTrackIds: Set<string>
 ): number {
+  if (isTrackBlocked(track)) return -999;
   const hasPlayableMedia = Boolean(track.streamUrl || track.youtubeVideoId);
   if (!track.isPlayable || !hasPlayableMedia) return -100;
 
@@ -65,9 +67,9 @@ export function selectDynamicFeaturedTrack(
   if (!candidates || candidates.length === 0) return null;
   const recentIds = new Set(history.slice(0, 3).map((t) => t.id));
   const validCandidates = candidates.filter(
-    (t) => !SPAM_TRACK_REGEX.test(t.title) && !SPAM_TRACK_REGEX.test(t.artist)
+    (t) => !isTrackBlocked(t) && !SPAM_TRACK_REGEX.test(t.title) && !SPAM_TRACK_REGEX.test(t.artist)
   );
-  const pool = validCandidates.length > 0 ? validCandidates : candidates;
+  const pool = validCandidates;
   const scored = pool
     .map((track) => ({ track, score: scoreTrack(track, affinity, recentIds) }))
     .sort((a, b) => b.score - a.score);
@@ -83,9 +85,9 @@ export function rankPersonalizedRecommendations(
   if (!candidates || candidates.length === 0) return [];
   const recentIds = new Set(history.slice(0, 6).map((t) => t.id));
   const validCandidates = candidates.filter(
-    (t) => !SPAM_TRACK_REGEX.test(t.title) && !SPAM_TRACK_REGEX.test(t.artist)
+    (t) => !isTrackBlocked(t) && !SPAM_TRACK_REGEX.test(t.title) && !SPAM_TRACK_REGEX.test(t.artist)
   );
-  const pool = validCandidates.length > 0 ? validCandidates : candidates;
+  const pool = validCandidates;
 
   const scored = pool
     .map((track) => ({ track, score: scoreTrack(track, affinity, recentIds) }))

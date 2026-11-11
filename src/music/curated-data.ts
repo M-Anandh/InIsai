@@ -203,25 +203,6 @@ That's that me espresso`,
 [00:15.00]ॐ भूर्भुवः स्वः
 [00:30.00]तत्सवितुर्वरेण्यं`,
   },
-  {
-    id: "inisai-tamil-04",
-    title: "Vande Mataram",
-    artist: "A. R. Rahman",
-    album: "Vande Mataram (Maa Tujhe Salaam)",
-    duration: 236,
-    artworkUrl: "",
-    streamUrl: "https://aac.saavncdn.com/926/ffb5eeefbed1ae6fd428873ff2d3fd96_320.mp4",
-    sourceType: "curated",
-    sourceId: "curated-tamil-04",
-    language: "Tamil",
-    genre: "Patriotic / Anthem",
-    isPlayable: true,
-    plainLyrics: `தாய் மண்ணே வணக்கம்!
-வந்தே மாதரம்... வந்தே மாதரம்...`,
-    syncedLyrics: `[00:00.00]♫ வந்தே மாதரம் ♫
-[00:15.00]தாய் மண்ணே வணக்கம்
-[00:30.00]வந்தே மாதரம்`,
-  },
 ];
 
 export const FEATURED_PLAYLISTS = [

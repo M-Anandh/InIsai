@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
         title: c.title,
         subtitle: c.subtitle,
         gradient: c.gradient,
+        artworkUrl: c.artworkUrl,
       })),
     });
   }

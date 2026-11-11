@@ -2,6 +2,7 @@ import dns from "node:dns";
 import { Innertube } from "youtubei.js";
 import { Track, AlbumSummary, ArtistSummary, PlaylistSummary, Shelf } from "@/types";
 import { normalizeTrackSignature } from "./ProviderRegistry";
+import { isTrackBlocked } from "@/config/blocklist";
 
 try {
   dns.setDefaultResultOrder("ipv4first");
@@ -424,6 +425,7 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
 
     for (const { track } of scored) {
       if (seenIds.has(track.id)) continue;
+      if (isTrackBlocked(track)) continue;
       seenIds.add(track.id);
 
       const sig = normalizeTrackSignature(track.title, track.artist);
@@ -515,7 +517,7 @@ export async function ytHomeShelves(): Promise<Shelf[]> {
       const seen = new Set<string>();
       for (const item of settled.value?.songs?.contents || []) {
         const t = normalizeTrackItem(item);
-        if (t && !seen.has(t.id)) {
+        if (t && !isTrackBlocked(t) && !seen.has(t.id)) {
           seen.add(t.id);
           list.push(t);
         }
@@ -575,7 +577,7 @@ export async function ytHomeShelves(): Promise<Shelf[]> {
         const tracks: Track[] = [];
         for (const item of sec?.contents || []) {
           const t = normalizeTrackItem(item);
-          if (t) tracks.push(t);
+          if (t && !isTrackBlocked(t)) tracks.push(t);
         }
         if (tracks.length > 0) {
           shelves.push({

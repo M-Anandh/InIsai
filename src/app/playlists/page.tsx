@@ -66,7 +66,7 @@ export default function PlaylistsPage() {
                 id: col.id,
                 name: col.title,
                 description: col.subtitle,
-                artworkUrl: "",
+                artworkUrl: col.artworkUrl,
                 tracks: [],
               }}
               href={`/collection/${encodeURIComponent(col.id)}`}
