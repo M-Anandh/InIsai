@@ -191,8 +191,10 @@ export function scoreTrackMatch(query: string, track: Track, itemType: string = 
 
   let score = 0;
 
-  // Prefer official audio 'song' items strongly over fan videos
-  if (itemType === "song") score += 70;
+  // Prefer official song items, but also boost verified official music videos which are reliable embeds
+  if (itemType === "song") score += 50;
+  if (/official (music )?video/i.test(titleLower)) score += 65;
+  if (/\(audio\)|\[audio\]|- topic/i.test(titleLower)) score -= 25;
 
   if (titleLower === qLower) score += 160;
   else if (titleLower.startsWith(qLower) || qLower.startsWith(titleLower)) score += 90;

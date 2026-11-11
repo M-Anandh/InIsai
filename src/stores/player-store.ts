@@ -281,7 +281,8 @@ export const usePlayerStore = create<PlayerState>()(
         const retryKey = `${failedTrack.id}`;
         if (!attemptedRecoveries.has(retryKey)) {
           attemptedRecoveries.add(retryKey);
-          // Attempt automatic alternate version match (cross-provider recovery)
+
+          // 1. Cross-provider fallback to Direct Audio (Saavn)
           const alternate = await providerRegistry.findAudioMatch(failedTrack, "saavn");
           if (alternate?.streamUrl) {
             get().setToastMessage("Primary stream restricted — switched to alternate audio");
@@ -291,6 +292,53 @@ export const usePlayerStore = create<PlayerState>()(
               bitrate: "Fallback Audio",
             });
             return;
+          }
+
+          // 2. Fallback to alternative YouTube embeddable official video (fixes Error 150/153 on Topic/Audio tracks)
+          if (failedTrack.youtubeVideoId) {
+            // Check pre-attached versions first
+            const altVersion = failedTrack.versions?.find(
+              (v) => v.youtubeVideoId && v.youtubeVideoId !== failedTrack.youtubeVideoId
+            );
+            if (altVersion?.youtubeVideoId) {
+              get().setToastMessage("Switched to embeddable official version");
+              await get().playTrack({
+                ...failedTrack,
+                youtubeVideoId: altVersion.youtubeVideoId,
+                sourceAttribution: "YouTube (Official Embed)",
+              });
+              return;
+            }
+
+            try {
+              const cleanTitle = (failedTrack.title || "")
+                .replace(/\(audio\)/gi, "")
+                .replace(/\[.*?\]/g, "")
+                .trim();
+              const q = `${cleanTitle} ${failedTrack.artist} official video`;
+              const res = await fetch(`/api/yt/search?q=${encodeURIComponent(q)}`);
+              if (res.ok) {
+                const data = await res.json();
+                const candidate =
+                  data.songs?.find(
+                    (s: Track) => s.youtubeVideoId && s.youtubeVideoId !== failedTrack.youtubeVideoId
+                  ) ||
+                  data.videos?.find(
+                    (v: Track) => v.youtubeVideoId && v.youtubeVideoId !== failedTrack.youtubeVideoId
+                  );
+
+                if (candidate?.youtubeVideoId) {
+                  get().setToastMessage("Embed restricted — switched to official video");
+                  await get().playTrack({
+                    ...failedTrack,
+                    id: `${failedTrack.id}-rec`,
+                    youtubeVideoId: candidate.youtubeVideoId,
+                    sourceAttribution: "YouTube (Official Embed)",
+                  });
+                  return;
+                }
+              }
+            } catch {}
           }
         }
 

@@ -11,7 +11,7 @@ import { formatDuration } from "@/lib/utils";
 import { extractArtworkPalette, DynamicPalette } from "@/lib/theme/palette-extractor";
 import { engineCoordinator } from "@/lib/player/EngineCoordinator";
 import { useHoldToSeek } from "@/hooks/use-hold-to-seek";
-import { AudioVisualizer } from "./AudioVisualizer";
+import { WaveVisualizer } from "./WaveVisualizer";
 import { LyricsView } from "./LyricsView";
 import { QueueView } from "./QueueView";
 import { EqualizerDrawer } from "./EqualizerDrawer";
@@ -502,19 +502,37 @@ export const FullScreenPlayer: React.FC = () => {
               </div>
             )}
 
-            {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork with Double-Tap Seek */}
-            <div className="w-full flex items-center justify-center my-auto py-1">
+            {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork with Ambient Glow & Double-Tap Seek */}
+            <div className="relative w-full flex items-center justify-center my-auto py-1">
+              {/* Ambient Light Aurora Glow (Behind Artwork) */}
+              <div
+                className={`absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${
+                  isPlaying ? "opacity-65 scale-110" : "opacity-30 scale-95"
+                }`}
+                style={{
+                  background: `radial-gradient(circle, ${palette.primary || "#7A5CFF"} 0%, ${palette.secondary || "#FF3D77"} 55%, transparent 75%)`,
+                }}
+              />
+              <div
+                className={`absolute -top-8 -right-8 w-60 h-60 rounded-full blur-3xl pointer-events-none transition-all duration-1000 delay-150 ${
+                  isPlaying ? "opacity-45 scale-105" : "opacity-20 scale-90"
+                }`}
+                style={{
+                  background: `radial-gradient(circle, ${palette.secondary || "#FF8A3D"} 0%, transparent 70%)`,
+                }}
+              />
+
               {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
                 <div
                   ref={videoSlotRef}
-                  className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center"
+                  className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center relative z-10"
                 >
                   <span className="text-xs text-white/40 font-mono">Syncing YouTube Video...</span>
                 </div>
               ) : (
                 <div
                   onClick={handleArtworkClick}
-                  className={`relative w-64 h-64 sm:w-80 sm:h-80 max-w-[78vw] max-h-[36vh] sm:max-h-[42vh] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
+                  className={`relative z-10 w-64 h-64 sm:w-80 sm:h-80 max-w-[78vw] max-h-[36vh] sm:max-h-[42vh] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
                     isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
                   }`}
                   style={{
@@ -598,9 +616,9 @@ export const FullScreenPlayer: React.FC = () => {
               </button>
             </div>
 
-            {/* Honest Engine-Aware Visualizer / Ambient Ribbon */}
-            <div className="w-full max-w-sm">
-              <AudioVisualizer className="w-full h-8" />
+            {/* Center-Mirrored Multi-Layer Wave Visualizer with Harmonic Glow */}
+            <div className="w-full max-w-sm my-0.5">
+              <WaveVisualizer className="w-full h-11" barCount={52} />
             </div>
 
             {/* Scrubber with Hover/Drag Preview Tooltip & Buffered Bar */}
