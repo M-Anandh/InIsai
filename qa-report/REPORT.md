@@ -119,3 +119,36 @@ All issues reported by the user have been investigated, root-caused, repaired at
 Total Tests: 53 | Passed: 53 | Failed: 0 | Duration: 280ms
 TypeScript Check: 0 Errors (Clean build)
 ```
+
+---
+
+## 4. Live Production E2E Playwright Audit & Evidence
+
+Conducted live against production deployment at `https://in-isai.vercel.app/` across Desktop (`1440x900`) and Mobile (`390x844`) in both Dark and Light modes.
+
+### Automated Test Results (12 / 12 Tests Passing)
+- **Desktop Dark:**
+  - `✔ 1. Featured Songs Hero renders latest movie songs with controls and artwork` (10.5s)
+  - `✔ 2. Official Collections display full cover images without broken gradients` (1.8s)
+  - `✔ 3. New & Upcoming Movie Songs shelf opens /new route with filters` (2.0s)
+  - `✔ 4. Light Theme renders with high-contrast text and legible logo` (5.5s)
+  - `✔ 5. Global Add to Playlist bottom-sheet opens cleanly without starting playback` (11.0s)
+  - `✔ 6. Fullscreen player displays wave visualizer and ambient glow` (11.9s)
+- **Mobile Dark:**
+  - `✔ 1. Featured Songs Hero renders latest movie songs with controls and artwork` (10.4s)
+  - `✔ 2. Official Collections display full cover images without broken gradients` (4.6s)
+  - `✔ 3. New & Upcoming Movie Songs shelf opens /new route with filters` (1.3s)
+  - `✔ 4. Light Theme renders with high-contrast text and legible logo` (7.0s)
+  - `✔ 5. Global Add to Playlist bottom-sheet opens cleanly without starting playback` (6.0s)
+  - `✔ 6. Fullscreen player displays wave visualizer and ambient glow` (5.5s)
+
+### Production Verification Artifacts (Screenshots)
+| Verification Item | Desktop Screenshot | Mobile Screenshot |
+|---|---|---|
+| **Featured Movie Songs Hero** | `qa-report/featured-hero-desktop-dark.png` | `qa-report/featured-hero-mobile-dark.png` |
+| **Official Collections Artwork** | `qa-report/collections-desktop-dark.png` | `qa-report/collections-mobile-dark.png` |
+| **New & Upcoming Theatrical Drops** | `qa-report/new-and-upcoming-desktop-dark.png` | `qa-report/new-and-upcoming-mobile-dark.png` |
+| **Light Theme High-Contrast Mode** | `qa-report/light-theme-desktop-dark.png` | `qa-report/light-theme-mobile-dark.png` |
+| **Global Add to Playlist Sheet** | `qa-report/add-to-playlist-desktop-dark.png` | `qa-report/add-to-playlist-mobile-dark.png` |
+| **Fullscreen Player (WaveVisualizer & Aurora)** | `qa-report/fullscreen-player-desktop-dark.png` | `qa-report/fullscreen-player-mobile-dark.png` |
+
