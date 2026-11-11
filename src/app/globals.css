@@ -37,16 +37,16 @@
    CREAM STUDIO (DESIGNED LIGHT THEME — HIGH CONTRAST)
    ========================================================================= */
 html.light {
-  --background: #FBF7F1;
-  --surface: #FFFFFF;
+  --background: #EFEAE2;
+  --surface: #FAF7F2;
   --surface-elevated: #FFFFFF;
-  --surface-muted: #F3EDE4;
-  --card: #FFFFFF;
-  --card-hover: #FFFDF9;
+  --surface-muted: #E5DFD5;
+  --card: #FAF7F2;
+  --card-hover: #FFFFFF;
   --border: rgba(27, 24, 36, 0.09);
   --border-strong: rgba(27, 24, 36, 0.18);
-  --glass: rgba(255, 255, 255, 0.84);
-  --glass-solid: #FFFFFF;
+  --glass: rgba(250, 247, 242, 0.88);
+  --glass-solid: #FAF7F2;
   --glass-border: rgba(27, 24, 36, 0.10);
 
   --accent-turmeric: #D95F12;
@@ -55,8 +55,8 @@ html.light {
   --accent-primary: #5D3DF2;
 
   --foreground: #1B1824;
-  --text-secondary: #524B63;
-  --text-muted: #7C7690;
+  --text-secondary: #4A4558;
+  --text-muted: #6B6578;
   --shadow-card: 0 4px 20px -2px rgba(27, 24, 36, 0.06), 0 2px 8px -1px rgba(27, 24, 36, 0.04);
 }
 

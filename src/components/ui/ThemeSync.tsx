@@ -29,7 +29,7 @@ export const ThemeSync: React.FC = () => {
       }
 
       // Sync PWA theme-color and iOS status bar cleanly
-      const themeColor = effectiveTheme === "light" ? "#FBF7F1" : "#0B0A10";
+      const themeColor = effectiveTheme === "light" ? "#EFEAE2" : "#0B0A10";
       let meta = document.querySelector('meta[name="theme-color"]');
       if (!meta) {
         meta = document.createElement("meta");

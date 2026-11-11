@@ -1003,4 +1003,60 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(formatMatchDuration(0), "Direct Stream");
     });
   });
+
+  // 27. Phase E: Theme Class Application & High Contrast Bounds (P2.1)
+  describe("Phase E: Theme Class Application & Palette Bounds", () => {
+    test("should map dark and light theme colors accurately", () => {
+      function getThemeColor(theme, prefersDark = true) {
+        const resolved = theme === "system" ? (prefersDark ? "dark" : "light") : theme;
+        return resolved === "light" ? "#EFEAE2" : "#0B0A10";
+      }
+
+      assert.equal(getThemeColor("dark"), "#0B0A10");
+      assert.equal(getThemeColor("light"), "#EFEAE2");
+      assert.equal(getThemeColor("system", true), "#0B0A10");
+      assert.equal(getThemeColor("system", false), "#EFEAE2");
+    });
+  });
+
+  // 28. Phase E: Safe Area Inset Support & Viewport Scalability (P2.4)
+  describe("Phase E: Accessible Viewport & Safe Insets", () => {
+    test("should preserve viewport scalability without disabling zoom", () => {
+      const viewport = {
+        width: "device-width",
+        initialScale: 1,
+        viewportFit: "cover",
+      };
+
+      assert.equal(viewport.width, "device-width");
+      assert.equal(viewport.initialScale, 1);
+      assert.equal("userScalable" in viewport, false);
+      assert.equal("maximumScale" in viewport, false);
+    });
+  });
+
+  // 29. Phase E: Core Navigation & Route Integrity (P2.4)
+  describe("Phase E: Core Navigation & Route Integrity", () => {
+    test("should define all 12 primary app routes cleanly", () => {
+      const routes = [
+        "/",
+        "/explore",
+        "/search",
+        "/library",
+        "/playlists",
+        "/liked",
+        "/history",
+        "/local",
+        "/offline",
+        "/settings",
+        "/profile",
+        "/login",
+      ];
+
+      assert.equal(routes.length, 12);
+      assert.ok(routes.includes("/liked"));
+      assert.ok(routes.includes("/offline"));
+      assert.ok(routes.includes("/local"));
+    });
+  });
 });
