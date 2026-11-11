@@ -57,17 +57,13 @@ export const CoverImage: React.FC<CoverImageProps> = ({
         urls.push(src.replace("500x500", "150x150"));
       }
     }
-    if (youtubeVideoId) {
-      urls.push(`https://i.ytimg.com/vi/${youtubeVideoId}/hqdefault.jpg`);
-      urls.push(`https://i.ytimg.com/vi/${youtubeVideoId}/mqdefault.jpg`);
-    }
     return Array.from(new Set(urls));
-  }, [src, youtubeVideoId]);
+  }, [src]);
 
   useEffect(() => {
     setAttemptIndex(0);
     setLoaded(false);
-  }, [src, youtubeVideoId]);
+  }, [src]);
 
   const activeUrl = candidateUrls[attemptIndex];
   const validTrackArts = fallbackTracks.filter((t) => Boolean(t.artworkUrl));
@@ -85,12 +81,13 @@ export const CoverImage: React.FC<CoverImageProps> = ({
   }, []);
 
   // 1. Immediately detect if the image was already cached/completed by browser
+  // Rejects YouTube's ~120x90 grey placeholder TV icon (requires >= 200x200)
   const imageRefCallback = useCallback(
     (img: HTMLImageElement | null) => {
       imgRef.current = img;
       if (!img) return;
       if (img.complete) {
-        if (img.naturalWidth > 0) {
+        if (img.naturalWidth >= 200 && img.naturalHeight >= 200) {
           setLoaded(true);
         } else {
           handleImgError();
@@ -105,7 +102,11 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     if (!activeUrl || loaded) return;
     const timer = setTimeout(() => {
       if (!loaded) {
-        if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+        if (
+          imgRef.current?.complete &&
+          imgRef.current.naturalWidth >= 200 &&
+          imgRef.current.naturalHeight >= 200
+        ) {
           setLoaded(true);
         } else {
           handleImgError();
@@ -129,7 +130,14 @@ export const CoverImage: React.FC<CoverImageProps> = ({
           ref={imageRefCallback}
           src={activeUrl}
           alt={alt || "Artwork"}
-          onLoad={() => setLoaded(true)}
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (img.naturalWidth >= 200 && img.naturalHeight >= 200) {
+              setLoaded(true);
+            } else {
+              handleImgError();
+            }
+          }}
           onError={handleImgError}
           loading={eager ? "eager" : "lazy"}
           decoding={eager ? "sync" : "async"}

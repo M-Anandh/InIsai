@@ -27,7 +27,7 @@ export class AudioElementEngine implements PlaybackEngine {
   private analyser: AnalyserNode | null = null;
   private connectedElements = new WeakSet<HTMLAudioElement>();
   private dspBypassed = false;
-  private visualizerBuffer: Uint8Array<ArrayBuffer> = new Uint8Array(new ArrayBuffer(32));
+  private visualizerBuffer: Uint8Array<ArrayBuffer> = new Uint8Array(new ArrayBuffer(64));
 
   private onStateChange: EngineStateCallback | null = null;
   private onTrackEnded: (() => void) | null = null;
@@ -196,7 +196,8 @@ export class AudioElementEngine implements PlaybackEngine {
       if (!this.audioCtx) {
         this.audioCtx = new AudioCtx();
         this.analyser = this.audioCtx.createAnalyser();
-        this.analyser.fftSize = 64;
+        this.analyser.fftSize = 512;
+        this.analyser.smoothingTimeConstant = 0.8;
 
         this.eqFilters = EQ_FREQUENCIES.map((freq, idx) => {
           const filter = this.audioCtx!.createBiquadFilter();

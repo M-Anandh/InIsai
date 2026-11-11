@@ -379,7 +379,7 @@ function SearchContent() {
                   </h3>
                   <div
                     onClick={handlePlayTopResult}
-                    className="group relative p-6 rounded-3xl bg-white dark:bg-gradient-to-b dark:from-white/[0.09] dark:to-white/[0.02] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer"
+                    className="group relative p-6 rounded-3xl bg-[#FBFAF8] dark:bg-[#1C1928] border border-slate-200/80 dark:border-white/10 hover:border-inisai-accent/40 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shadow-xl flex-shrink-0">
@@ -413,19 +413,19 @@ function SearchContent() {
                         <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent transition-colors">
                           {topResult.title}
                         </h4>
-                        <p className="text-xs sm:text-sm text-slate-600 dark:text-white/70 font-medium truncate mt-1">
+                        <p className="text-xs sm:text-sm text-slate-700 dark:text-white/85 font-medium truncate mt-1">
                           {topResult.artist}
                         </p>
                         {topResult.album && topResult.album !== "YouTube Music" && (
-                          <p className="text-[11px] text-slate-400 dark:text-inisai-muted truncate mt-0.5">
+                          <p className="text-[11px] text-slate-500 dark:text-inisai-muted truncate mt-0.5">
                             {topResult.album}
                           </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-100 dark:border-white/5">
-                      <span className="text-xs font-mono text-slate-500 dark:text-inisai-muted">
+                    <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-200/60 dark:border-white/10">
+                      <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 tabular-nums">
                         {topResult.duration ? `${Math.floor(topResult.duration / 60)}:${String(topResult.duration % 60).padStart(2, "0")}` : "Direct Stream"}
                       </span>
                       <button
@@ -457,7 +457,7 @@ function SearchContent() {
                   <h3 className="font-bold uppercase tracking-wider">
                     Songs ({songs.length})
                   </h3>
-                  <span>Tap to play</span>
+                  <span className="md:hidden">Tap to play</span>
                 </div>
 
                 {songs.map((track, idx) => (

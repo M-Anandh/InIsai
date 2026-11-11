@@ -544,6 +544,9 @@ export default function SettingsPage() {
         <p>
           Offline caching applies strictly to your own device files. Streaming music plays cleanly through compliant provider players.
         </p>
+        <p className="text-[11px] text-slate-400 dark:text-inisai-muted/80 pt-1">
+          Movie metadata and poster artwork sourced from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </p>
         <div className="flex flex-wrap items-center space-x-3 pt-2 text-inisai-accent font-medium">
           <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
           <span>•</span>

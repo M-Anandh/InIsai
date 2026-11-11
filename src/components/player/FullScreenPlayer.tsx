@@ -326,7 +326,9 @@ export const FullScreenPlayer: React.FC = () => {
           </p>
           {playbackContext?.title && (
             <p className="text-xs font-medium text-white/90 truncate max-w-[180px] sm:max-w-xs">
-              {playbackContext.title}
+              {playbackContext.title && !playbackContext.title.startsWith("Featured:")
+                ? playbackContext.title
+                : "Featured New Releases"}
             </p>
           )}
         </div>
@@ -471,13 +473,13 @@ export const FullScreenPlayer: React.FC = () => {
       </div>
 
       {/* Main Content Stage */}
-      <div className="flex-1 overflow-y-auto flex flex-col items-center justify-between px-5 sm:px-8 pb-4 pt-2 scrollbar-none">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-between px-5 sm:px-8 pb-3 pt-1 scrollbar-none">
         {activeDrawerTab === "lyrics" && <LyricsView />}
         {activeDrawerTab === "queue" && <QueueView />}
         {activeDrawerTab === "equalizer" && <EqualizerDrawer />}
 
         {activeDrawerTab === "nowPlaying" && (
-          <div className="flex flex-col items-center justify-between w-full max-w-md mx-auto flex-1 py-1 space-y-4">
+          <div className="flex flex-col items-center justify-between w-full max-w-md mx-auto flex-1 min-h-0 py-1 space-y-2 sm:space-y-3">
             {/* Optional Song / Video Switcher when YT engine active */}
             {currentTrack.youtubeVideoId && engineId === "youtube" && (
               <div className="flex items-center space-x-1 p-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md">
@@ -525,14 +527,15 @@ export const FullScreenPlayer: React.FC = () => {
               {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
                 <div
                   ref={videoSlotRef}
-                  className="w-full aspect-video rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center relative z-10"
+                  onClick={togglePlay}
+                  className="w-full aspect-video max-h-[28vh] sm:max-h-[34vh] rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center relative z-10 cursor-pointer"
                 >
                   <span className="text-xs text-white/40 font-mono">Syncing YouTube Video...</span>
                 </div>
               ) : (
                 <div
                   onClick={handleArtworkClick}
-                  className={`relative z-10 w-64 h-64 sm:w-80 sm:h-80 max-w-[78vw] max-h-[36vh] sm:max-h-[42vh] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
+                  className={`relative z-10 w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 max-w-[76vw] max-h-[26vh] sm:max-h-[32vh] md:max-h-[38vh] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
                     isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
                   }`}
                   style={{

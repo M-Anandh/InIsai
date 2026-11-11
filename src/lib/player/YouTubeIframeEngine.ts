@@ -86,7 +86,7 @@ export class YouTubeIframeEngine implements PlaybackEngine {
       host.style.width = `${Math.round(rect.width)}px`;
       host.style.height = `${Math.round(rect.height)}px`;
       host.style.opacity = "1";
-      host.style.pointerEvents = "auto";
+      host.style.pointerEvents = "none";
       host.style.zIndex = "60";
     } else {
       host.style.top = "auto";
@@ -139,11 +139,15 @@ export class YouTubeIframeEngine implements PlaybackEngine {
         host: "https://www.youtube.com",
         playerVars: {
           autoplay: 1,
-          controls: 1,
-          enablejsapi: 1,
-          playsinline: 1,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
           rel: 0,
-          modestbranding: 1,
+          iv_load_policy: 3,
+          playsinline: 1,
+          cc_load_policy: 0,
+          enablejsapi: 1,
+          origin: typeof window !== "undefined" ? window.location.origin : "",
         },
         events: {
           onReady: () => {

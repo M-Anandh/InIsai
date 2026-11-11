@@ -103,9 +103,12 @@ export default function HomePage() {
     fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data?.featured && data.featured.length > 0) {
-          setFeaturedSongs(data.featured);
+        const items = data?.hero || data?.featured;
+        if (Array.isArray(items) && items.length > 0) {
+          setFeaturedSongs(items);
           setHeroIndex(0);
+        } else {
+          setFeaturedSongs([]);
         }
       })
       .catch(() => {});
@@ -179,10 +182,10 @@ export default function HomePage() {
     }));
   }, [featuredSongs]);
 
-  // Combine online and curated pool
+  // Combine online discovery pool
   const allCandidates = useMemo(() => {
     const shelfTracks = ytShelves.flatMap((s) => s.items || []);
-    const pool = [...featuredTracks, ...seedRelated, ...shelfTracks, ...saavnTrending, ...CURATED_TRACKS];
+    const pool = [...featuredTracks, ...seedRelated, ...shelfTracks, ...saavnTrending];
     const seen = new Set<string>();
     return pool.filter((t) => {
       if (seen.has(t.id)) return false;
@@ -211,10 +214,10 @@ export default function HomePage() {
 
   // Dynamically select featured track based on user affinity
   const dynamicFeaturedTrack = useMemo(() => {
-    return selectDynamicFeaturedTrack(allCandidates, userAffinity, history) || CURATED_TRACKS[0];
+    return selectDynamicFeaturedTrack(allCandidates, userAffinity, history) || null;
   }, [allCandidates, userAffinity, history]);
 
-  const activeFeaturedTrack: Track = useMemo(() => {
+  const activeFeaturedTrack: Track | null = useMemo(() => {
     if (featuredTracks.length > 0) {
       return featuredTracks[heroIndex % featuredTracks.length];
     }
@@ -233,12 +236,12 @@ export default function HomePage() {
     return rankPersonalizedRecommendations(allCandidates, userAffinity, history, 12);
   }, [allCandidates, userAffinity, history]);
 
-  const isHeroPlaying = currentTrack?.id === activeFeaturedTrack?.id && isPlaying;
+  const isHeroPlaying = Boolean(currentTrack?.id && activeFeaturedTrack?.id && currentTrack.id === activeFeaturedTrack.id && isPlaying);
 
   const heroContext: PlaybackContext = {
-    id: `home-hero-${activeFeaturedTrack?.id}`,
+    id: "featured-new-releases",
     type: "home_recommendations",
-    title: `Featured: ${activeFeaturedTrack?.title}`,
+    title: "Featured New Releases",
   };
 
   const personalizedContext: PlaybackContext = {
