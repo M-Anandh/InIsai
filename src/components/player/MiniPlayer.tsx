@@ -2,7 +2,7 @@
 
 import React, { useRef } from "react";
 import { usePlayerStore } from "@/stores/player-store";
-import { useAuthStore } from "@/stores/auth-store";
+import { useLikesStore } from "@/stores/likes-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
@@ -38,14 +38,14 @@ export const MiniPlayer: React.FC = () => {
     setActiveDrawerTab,
   } = usePlayerStore();
 
-  const { isLiked, toggleLikeTrack } = useAuthStore();
+  const { isLiked, toggleLike } = useLikesStore();
   const mounted = useMounted();
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   if (!mounted || !currentTrack || isFullScreenOpen) return null;
 
   const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
-  const liked = isLiked(currentTrack.id);
+  const liked = isLiked(currentTrack);
 
   const haptic = () => {
     try {
@@ -203,7 +203,7 @@ export const MiniPlayer: React.FC = () => {
           <button
             onClick={() => {
               haptic();
-              toggleLikeTrack(currentTrack);
+              toggleLike(currentTrack);
             }}
             aria-label={liked ? "Unlike" : "Like"}
             className="p-2 rounded-xl text-slate-500 dark:text-white/60 hover:text-rose-500 transition-colors cursor-pointer"

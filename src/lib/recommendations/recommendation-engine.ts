@@ -1,5 +1,7 @@
 import { Track } from "@/types";
 import { UserMusicAffinity } from "./user-music-profile";
+import { normalizeArtistName } from "@/lib/music-matching";
+import { CURATED_TRACKS } from "@/music/curated-data";
 
 export function scoreTrack(
   track: Track,
@@ -96,6 +98,8 @@ export interface GeneratedDailyMix {
   title: string;
   subtitle: string;
   gradient: string;
+  artworkUrl?: string;
+  collageArtworks?: string[];
   tracks: Track[];
 }
 
@@ -104,13 +108,23 @@ export function buildDailyMixes(
   affinity: UserMusicAffinity,
   history: Track[]
 ): GeneratedDailyMix[] {
-  const ranked = rankPersonalizedRecommendations(candidates, affinity, history, 60);
-  if (ranked.length < 6) return [];
+  // Use candidate pool + curated fallback so mixes can always reach 25+ tracks deterministically
+  const fullPool = [...candidates];
+  const seenIds = new Set(fullPool.map((t) => t.id));
+  for (const t of CURATED_TRACKS) {
+    if (!seenIds.has(t.id)) {
+      seenIds.add(t.id);
+      fullPool.push(t);
+    }
+  }
+
+  const ranked = rankPersonalizedRecommendations(fullPool, affinity, history, 100);
+  if (ranked.length < 5) return [];
 
   const topArtists = Object.entries(affinity.preferredArtists)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
-    .map(([name]) => name);
+    .map(([name]) => normalizeArtistName(name));
 
   const timeTitle =
     affinity.timeBucket === "late_night"
@@ -123,33 +137,80 @@ export function buildDailyMixes(
     {
       id: "daily-mix-1",
       title: "Daily Mix 1",
-      subtitle: topArtists[0] ? `Inspired by ${topArtists[0]} & Tamil favorites` : "Your core melodies & chart toppers",
+      subtitle: topArtists[0]
+        ? `Inspired by ${topArtists[0]} & Tamil favorites`
+        : "Your core melodies & chart toppers",
       gradient: "from-[#FF8A3D]/80 via-[#FF3D77]/70 to-[#7A5CFF]/80",
       sliceStart: 0,
     },
     {
       id: "daily-mix-2",
       title: "Daily Mix 2",
-      subtitle: topArtists[1] ? `More around ${topArtists[1]} & modern hits` : "Cross-genre discovery blend",
+      subtitle: topArtists[1]
+        ? `More around ${topArtists[1]} & modern hits`
+        : "Cross-genre discovery blend",
       gradient: "from-[#7A5CFF]/80 via-indigo-600/75 to-cyan-600/80",
-      sliceStart: 8,
+      sliceStart: 5,
     },
     {
       id: "daily-mix-3",
       title: timeTitle,
       subtitle: "Tuned for this time of day",
       gradient: "from-emerald-600/80 via-teal-600/75 to-indigo-800/85",
-      sliceStart: 16,
+      sliceStart: 10,
     },
   ];
 
-  return mixDefs
-    .map((m) => ({
+  return mixDefs.map((m) => {
+    // Deterministic selection of 25 tracks
+    const selected: Track[] = [];
+    const usedIds = new Set<string>();
+
+    // 1. Take starting from offset
+    for (let i = m.sliceStart; i < ranked.length; i++) {
+      const t = ranked[i];
+      if (!usedIds.has(t.id)) {
+        usedIds.add(t.id);
+        selected.push(t);
+        if (selected.length >= 25) break;
+      }
+    }
+
+    // 2. If under 25, wrap around from beginning of ranked pool
+    if (selected.length < 25) {
+      for (const t of ranked) {
+        if (!usedIds.has(t.id)) {
+          usedIds.add(t.id);
+          selected.push(t);
+          if (selected.length >= 25) break;
+        }
+      }
+    }
+
+    // 3. Fallback to curated tracks if still under 25
+    if (selected.length < 25) {
+      for (const t of CURATED_TRACKS) {
+        if (!usedIds.has(t.id)) {
+          usedIds.add(t.id);
+          selected.push(t);
+          if (selected.length >= 25) break;
+        }
+      }
+    }
+
+    const collageArtworks = selected
+      .slice(0, 4)
+      .map((t) => t.artworkUrl)
+      .filter(Boolean);
+
+    return {
       id: m.id,
       title: m.title,
       subtitle: m.subtitle,
       gradient: m.gradient,
-      tracks: ranked.slice(m.sliceStart, m.sliceStart + 12),
-    }))
-    .filter((m) => m.tracks.length >= 3);
+      artworkUrl: collageArtworks[0] || "",
+      collageArtworks,
+      tracks: selected,
+    };
+  });
 }

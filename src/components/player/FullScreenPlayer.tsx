@@ -3,7 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
-import { useAuthStore } from "@/stores/auth-store";
+import { useLikesStore } from "@/stores/likes-store";
+import { AddToPlaylistModal } from "@/components/music/AddToPlaylistModal";
 import { useMounted } from "@/hooks/use-mounted";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
@@ -33,6 +34,10 @@ import {
   Video,
   Radio,
   Activity,
+  FolderPlus,
+  Share2,
+  Disc,
+  User,
   X,
 } from "lucide-react";
 
@@ -67,9 +72,10 @@ export const FullScreenPlayer: React.FC = () => {
     setFullScreenOpen,
     activeDrawerTab,
     setActiveDrawerTab,
+    setToastMessage,
   } = usePlayerStore();
 
-  const { isLiked, toggleLikeTrack } = useAuthStore();
+  const { isLiked, toggleLike } = useLikesStore();
   const mounted = useMounted();
 
   const [palette, setPalette] = useState<DynamicPalette>({
@@ -80,6 +86,7 @@ export const FullScreenPlayer: React.FC = () => {
   const [mediaMode, setMediaMode] = useState<"audio" | "video">("audio");
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sleepSheetOpen, setSleepSheetOpen] = useState(false);
+  const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverXPercent, setHoverXPercent] = useState<number>(0);
 
@@ -199,7 +206,7 @@ export const FullScreenPlayer: React.FC = () => {
   if (!mounted || !isFullScreenOpen || !currentTrack) return null;
 
   const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
-  const liked = isLiked(currentTrack.id);
+  const liked = isLiked(currentTrack);
 
   const cycleRepeat = () => {
     if (repeatMode === "off") setRepeatMode("all");
@@ -288,6 +295,84 @@ export const FullScreenPlayer: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
               className="absolute right-0 top-12 z-50 w-56 rounded-2xl bg-[#1C1928]/95 backdrop-blur-2xl border border-white/15 shadow-2xl p-1.5 text-xs font-medium space-y-0.5"
             >
+              <button
+                onClick={() => {
+                  setAddToPlaylistOpen(true);
+                  setOverflowOpen(false);
+                }}
+                className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
+              >
+                <FolderPlus className="w-4 h-4 text-inisai-accent" />
+                <span>Add to Playlist</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  setOverflowOpen(false);
+                  const shareData = {
+                    title: currentTrack.title,
+                    text: `Listen to "${currentTrack.title}" by ${currentTrack.artist} on InIsai`,
+                    url: window.location.href,
+                  };
+                  if (typeof navigator !== "undefined" && navigator.share) {
+                    try {
+                      await navigator.share(shareData);
+                    } catch {}
+                  } else {
+                    navigator.clipboard.writeText(`${currentTrack.title} - ${currentTrack.artist}`);
+                    setToastMessage("Copied song info to clipboard");
+                  }
+                }}
+                className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
+              >
+                <Share2 className="w-4 h-4 text-inisai-teal" />
+                <span>Share Song</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSleepSheetOpen(true);
+                  setOverflowOpen(false);
+                }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
+              >
+                <span className="flex items-center space-x-2">
+                  <Moon className="w-4 h-4 text-indigo-400" />
+                  <span>Sleep Timer</span>
+                </span>
+                {(settings.sleepTimerMinutes ?? 0) > 0 && (
+                  <span className="text-[10px] text-white/50">{settings.sleepTimerMinutes}m</span>
+                )}
+              </button>
+
+              {currentTrack.artistId && (
+                <button
+                  onClick={() => {
+                    setOverflowOpen(false);
+                    setFullScreenOpen(false);
+                    router.push(`/artist/${encodeURIComponent(currentTrack.artistId!)}`);
+                  }}
+                  className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
+                >
+                  <User className="w-4 h-4 text-amber-400" />
+                  <span>Go to Artist</span>
+                </button>
+              )}
+
+              {currentTrack.albumId && (
+                <button
+                  onClick={() => {
+                    setOverflowOpen(false);
+                    setFullScreenOpen(false);
+                    router.push(`/album/${encodeURIComponent(currentTrack.albumId!)}`);
+                  }}
+                  className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
+                >
+                  <Disc className="w-4 h-4 text-pink-400" />
+                  <span>Go to Album</span>
+                </button>
+              )}
+
               {currentTrack.youtubeVideoId && engineId === "youtube" && (
                 <button
                   onClick={() => {
@@ -431,7 +516,7 @@ export const FullScreenPlayer: React.FC = () => {
               <button
                 onClick={() => {
                   triggerHaptic();
-                  toggleLikeTrack(currentTrack);
+                  toggleLike(currentTrack, setToastMessage);
                 }}
                 aria-label={liked ? "Unlike" : "Like"}
                 className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform cursor-pointer"
@@ -690,6 +775,13 @@ export const FullScreenPlayer: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Add To Playlist Modal */}
+      <AddToPlaylistModal
+        track={currentTrack}
+        isOpen={addToPlaylistOpen}
+        onClose={() => setAddToPlaylistOpen(false)}
+      />
     </div>
   );
 };

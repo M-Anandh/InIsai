@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
-import { useAuthStore } from "@/stores/auth-store";
+import { useLikesStore } from "@/stores/likes-store";
+import { AddToPlaylistModal } from "@/components/music/AddToPlaylistModal";
 import { useMounted } from "@/hooks/use-mounted";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
@@ -17,6 +18,7 @@ import {
   MoreHorizontal,
   ChevronDown,
   ChevronUp,
+  FolderPlus,
 } from "lucide-react";
 
 interface TrackRowProps {
@@ -36,13 +38,14 @@ export const TrackRow: React.FC<TrackRowProps> = ({
 }) => {
   const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue, playNext, setToastMessage } =
     usePlayerStore();
-  const { isLiked, toggleLikeTrack } = useAuthStore();
+  const { isLiked, toggleLike } = useLikesStore();
   const mounted = useMounted();
   const [menuOpen, setMenuOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
+  const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
 
   const isCurrent = mounted && currentTrack?.id === track.id;
-  const liked = mounted && isLiked(track.id);
+  const liked = mounted && isLiked(track);
 
   const triggerHaptic = () => {
     try {
@@ -153,7 +156,7 @@ export const TrackRow: React.FC<TrackRowProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               triggerHaptic();
-              toggleLikeTrack(track);
+              toggleLike(track, setToastMessage);
             }}
             aria-label={liked ? "Unlike song" : "Like song"}
             className={`p-2 rounded-xl transition-colors cursor-pointer ${
@@ -190,13 +193,23 @@ export const TrackRow: React.FC<TrackRowProps> = ({
                 <button
                   onClick={() => {
                     triggerHaptic();
-                    toggleLikeTrack(track);
+                    toggleLike(track, setToastMessage);
                     setMenuOpen(false);
                   }}
                   className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <Heart className={`w-3.5 h-3.5 ${liked ? "fill-rose-500 text-rose-500" : ""}`} />
                   <span>{liked ? "Remove from Liked" : "Like Song"}</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setAddToPlaylistOpen(true);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <FolderPlus className="w-3.5 h-3.5 text-inisai-accent" />
+                  <span>Add to Playlist</span>
                 </button>
                 <button
                   onClick={() => {
@@ -263,6 +276,13 @@ export const TrackRow: React.FC<TrackRowProps> = ({
           ))}
         </div>
       )}
+
+      {/* Add To Playlist Bottom Sheet / Modal */}
+      <AddToPlaylistModal
+        track={track}
+        isOpen={addToPlaylistOpen}
+        onClose={() => setAddToPlaylistOpen(false)}
+      />
     </div>
   );
 };

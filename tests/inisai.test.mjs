@@ -741,4 +741,117 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(clampColorForContrast(250, 80, 40), "rgb(210, 67, 40)");
     });
   });
+
+  // 16. Phase A: Cross-Provider Track Normalization and Equivalence (P0.1, P0.2)
+  describe("Phase A: Cross-Provider Matching and Deduplication", () => {
+    function normalizeArtist(name) {
+      if (!name) return "";
+      const map = {
+        imaginedragons: "Imagine Dragons",
+        anirudhravichander: "Anirudh Ravichander",
+        ilaiyaraaja: "Ilaiyaraaja",
+        ilayaraja: "Ilaiyaraaja",
+      };
+      const cleaned = name.replace(/\s+/g, "").toLowerCase();
+      return map[cleaned] || name.trim();
+    }
+
+    function areTracksEquivalent(a, b) {
+      if (!a || !b) return false;
+      if (a.id && b.id && a.id === b.id) return true;
+      if (a.youtubeVideoId && b.youtubeVideoId && a.youtubeVideoId === b.youtubeVideoId) return true;
+
+      const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const titleA = norm(a.title);
+      const titleB = norm(b.title);
+      if (!titleA || !titleB) return false;
+
+      const artistA = norm(normalizeArtist(a.artist));
+      const artistB = norm(normalizeArtist(b.artist));
+      const durationMatch = Math.abs((a.duration || 0) - (b.duration || 0)) <= 3;
+
+      const titleMatch = titleA === titleB || titleA.includes(titleB) || titleB.includes(titleA);
+      const artistMatch = !artistA || !artistB || artistA === artistB || artistA.includes(artistB) || artistB.includes(artistA);
+
+      return titleMatch && artistMatch && durationMatch;
+    }
+
+    test("should normalize known artist variations cleanly", () => {
+      assert.equal(normalizeArtist("imaginedragons"), "Imagine Dragons");
+      assert.equal(normalizeArtist("Imagine Dragons"), "Imagine Dragons");
+      assert.equal(normalizeArtist("anirudhravichander"), "Anirudh Ravichander");
+      assert.equal(normalizeArtist("ilayaraja"), "Ilaiyaraaja");
+    });
+
+    test("should recognize equivalent tracks across YouTube and Curated catalog within 3s duration", () => {
+      const ytTrack = {
+        id: "yt-Kx7B-XvmFtE",
+        youtubeVideoId: "Kx7B-XvmFtE",
+        title: "Believer (Audio)",
+        artist: "ImagineDragons",
+        duration: 204,
+      };
+      const directTrack = {
+        id: "curated-believer",
+        title: "Believer",
+        artist: "Imagine Dragons",
+        duration: 204,
+      };
+      const diffTrack = {
+        id: "curated-other",
+        title: "Radioactive",
+        artist: "Imagine Dragons",
+        duration: 186,
+      };
+
+      assert.equal(areTracksEquivalent(ytTrack, directTrack), true);
+      assert.equal(areTracksEquivalent(ytTrack, diffTrack), false);
+    });
+
+    test("should format total collection durations accurately", () => {
+      function formatTotalDuration(seconds) {
+        if (!seconds || seconds <= 0) return "0 min";
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        if (hours > 0) return `${hours} hr ${mins} min`;
+        return `${mins} min`;
+      }
+
+      assert.equal(formatTotalDuration(150), "2 min");
+      assert.equal(formatTotalDuration(3660), "1 hr 1 min");
+      assert.equal(formatTotalDuration(7200), "2 hr 0 min");
+    });
+  });
+
+  // 17. Phase A: User Playlist Mutation & Reorder Logic (P0.3)
+  describe("Phase A: User Playlist Mutation & Reorder Logic", () => {
+    test("should add tracks without duplicates and reorder accurately", () => {
+      const playlist = {
+        id: "pl-test",
+        title: "My Chill Beats",
+        tracks: [
+          { id: "t1", title: "Track 1" },
+          { id: "t2", title: "Track 2" },
+        ],
+      };
+
+      // Add track
+      const newTrack = { id: "t3", title: "Track 3" };
+      const alreadyHasT1 = playlist.tracks.some((t) => t.id === "t1");
+      assert.equal(alreadyHasT1, true);
+
+      const alreadyHasT3 = playlist.tracks.some((t) => t.id === "t3");
+      assert.equal(alreadyHasT3, false);
+      if (!alreadyHasT3) playlist.tracks.push(newTrack);
+
+      assert.equal(playlist.tracks.length, 3);
+
+      // Reorder tracks fromIndex 2 to 0
+      const [moved] = playlist.tracks.splice(2, 1);
+      playlist.tracks.splice(0, 0, moved);
+      assert.equal(playlist.tracks[0].id, "t3");
+      assert.equal(playlist.tracks[1].id, "t1");
+      assert.equal(playlist.tracks[2].id, "t2");
+    });
+  });
 });

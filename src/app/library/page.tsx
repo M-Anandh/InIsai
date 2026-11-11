@@ -2,11 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useAuthStore } from "@/stores/auth-store";
+import { useLikesStore } from "@/stores/likes-store";
+import { usePlaylistStore } from "@/stores/playlist-store";
 import { usePlayerStore } from "@/stores/player-store";
 import { useMounted } from "@/hooks/use-mounted";
-import { CURATED_TRACKS } from "@/music/curated-data";
-import { TrackRow } from "@/components/music/TrackRow";
 import { PlaylistCard } from "@/components/music/PlaylistCard";
 import {
   Library,
@@ -19,18 +18,16 @@ import {
 } from "lucide-react";
 
 export default function LibraryPage() {
-  const { likedTrackIds, userPlaylists, createPlaylist } = useAuthStore();
-  const { history, playTrack } = usePlayerStore();
+  const { getLikedCount } = useLikesStore();
+  const { playlists, createPlaylist } = usePlaylistStore();
+  const { history } = usePlayerStore();
   const mounted = useMounted();
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Match liked tracks guarded by mounted state
-  const likedTracks = mounted
-    ? CURATED_TRACKS.filter((t) => likedTrackIds.includes(t.id))
-    : [];
+  const likedCount = mounted ? getLikedCount() : 0;
   const displayHistory = mounted ? history : [];
-  const displayPlaylists = mounted ? userPlaylists : [];
+  const displayPlaylists = mounted ? playlists : [];
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +72,7 @@ export default function LibraryPage() {
               <Heart className="w-5 h-5 fill-white" />
             </div>
             <span className="text-xs font-mono text-inisai-accent font-semibold">
-              {likedTracks.length} tracks
+              {likedCount} {likedCount === 1 ? "track" : "tracks"}
             </span>
           </div>
           <div>

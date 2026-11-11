@@ -352,22 +352,42 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {dailyMixes.map((mix) => (
-              <div
+              <Link
                 key={mix.id}
-                onClick={() =>
-                  playTrack(mix.tracks[0], mix.tracks, {
-                    id: mix.id,
-                    type: "home_recommendations",
-                    title: mix.title,
-                  })
-                }
-                className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 p-4 flex items-center space-x-4 cursor-pointer shadow-sm hover:shadow-xl transition-all"
+                href={`/mix/${encodeURIComponent(mix.id)}`}
+                className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 p-3.5 flex items-center space-x-4 cursor-pointer shadow-sm hover:shadow-xl transition-all"
               >
-                <div
-                  className={`w-16 h-16 rounded-xl bg-gradient-to-br ${mix.gradient} flex items-center justify-center text-white font-extrabold text-sm shadow-inner flex-shrink-0`}
-                >
-                  <Play className="w-6 h-6 fill-white translate-x-0.5 group-hover:scale-110 transition-transform" />
+                <div className="relative w-16 h-16 rounded-xl overflow-hidden shadow-inner flex-shrink-0 bg-slate-200 dark:bg-black/40">
+                  <CoverImage
+                    src={mix.artworkUrl}
+                    alt={mix.title}
+                    fallbackTracks={mix.tracks}
+                    type="playlist"
+                    aspect="square"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (mix.tracks.length > 0) {
+                          playTrack(mix.tracks[0], mix.tracks, {
+                            id: mix.id,
+                            type: "home_recommendations",
+                            title: mix.title,
+                            trackIds: mix.tracks.map((t) => t.id),
+                          });
+                        }
+                      }}
+                      className="w-8 h-8 rounded-full bg-inisai-accent text-white flex items-center justify-center shadow-lg shadow-inisai-accent/40 hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+                      title={`Play ${mix.title}`}
+                      aria-label={`Play ${mix.title}`}
+                    >
+                      <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                    </button>
+                  </div>
                 </div>
+
                 <div className="min-w-0 flex-1">
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent">
                     {mix.title}
@@ -375,8 +395,11 @@ export default function HomePage() {
                   <p className="text-xs text-slate-500 dark:text-inisai-muted line-clamp-2 mt-0.5">
                     {mix.subtitle}
                   </p>
+                  <p className="text-[10px] text-inisai-teal font-semibold mt-1">
+                    {mix.tracks.length} songs
+                  </p>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -406,13 +429,39 @@ export default function HomePage() {
           {INISAI_OFFICIAL_COLLECTIONS.map((col) => (
             <Link
               key={col.id}
-              href={`/playlist/${encodeURIComponent(col.id)}`}
+              href={`/collection/${encodeURIComponent(col.id)}`}
               className="group relative rounded-2xl overflow-hidden bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 p-3 flex flex-col space-y-3 shadow-sm hover:shadow-xl transition-all"
             >
               <div
                 className={`relative aspect-square w-full rounded-xl overflow-hidden bg-gradient-to-br ${col.gradient} p-4 flex flex-col justify-between text-white shadow-inner`}
               >
-                <ListMusic className="w-6 h-6 opacity-80" />
+                <div className="flex items-center justify-between">
+                  <ListMusic className="w-6 h-6 opacity-80" />
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      fetch(`/api/yt/collections?id=${encodeURIComponent(col.id)}`)
+                        .then((r) => r.json())
+                        .then((data) => {
+                          if (data.tracks && data.tracks.length > 0) {
+                            playTrack(data.tracks[0], data.tracks, {
+                              id: `col-${col.id}`,
+                              type: "playlist",
+                              title: col.title,
+                              trackIds: data.tracks.map((t: any) => t.id),
+                            });
+                          }
+                        })
+                        .catch(() => {});
+                    }}
+                    className="w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 shadow-md cursor-pointer"
+                    title={`Play ${col.title}`}
+                    aria-label={`Play ${col.title}`}
+                  >
+                    <Play className="w-4 h-4 fill-white translate-x-0.5" />
+                  </button>
+                </div>
                 <div className="space-y-0.5">
                   <span className="text-[10px] font-bold uppercase tracking-widest opacity-75">
                     InIsai Official

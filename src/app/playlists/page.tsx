@@ -1,21 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAuthStore } from "@/stores/auth-store";
+import { usePlaylistStore } from "@/stores/playlist-store";
 import { useMounted } from "@/hooks/use-mounted";
-import { FEATURED_PLAYLISTS, CURATED_TRACKS } from "@/music/curated-data";
+import { INISAI_OFFICIAL_COLLECTIONS } from "@/music/collections";
+import { CURATED_TRACKS, FEATURED_PLAYLISTS } from "@/music/curated-data";
 import { PlaylistCard } from "@/components/music/PlaylistCard";
 import { BackNavigation } from "@/components/layout/BackNavigation";
 import { ListMusic, Plus, Trash2 } from "lucide-react";
 
 export default function PlaylistsPage() {
-  const { userPlaylists, createPlaylist, deletePlaylist } = useAuthStore();
+  const { playlists, createPlaylist, deletePlaylist } = usePlaylistStore();
   const mounted = useMounted();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
 
-  const displayUserPlaylists = mounted ? userPlaylists : [];
+  const displayUserPlaylists = mounted ? playlists : [];
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +57,20 @@ export default function PlaylistsPage() {
 
       {/* Featured Playlists */}
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-white">InIsai Official Collections</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {featured.map((pl) => (
-            <PlaylistCard key={pl.id} playlist={pl} />
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">InIsai Official Collections</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {INISAI_OFFICIAL_COLLECTIONS.map((col) => (
+            <PlaylistCard
+              key={col.id}
+              playlist={{
+                id: col.id,
+                name: col.title,
+                description: col.subtitle,
+                artworkUrl: "",
+                tracks: [],
+              }}
+              href={`/collection/${encodeURIComponent(col.id)}`}
+            />
           ))}
         </div>
       </section>

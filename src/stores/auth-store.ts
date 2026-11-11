@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { UserProfile, Track, Playlist } from "@/types";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useLikesStore } from "@/stores/likes-store";
+import { usePlaylistStore } from "@/stores/playlist-store";
 
 interface AuthState {
   user: UserProfile | null;
@@ -87,6 +89,8 @@ export const useAuthStore = create<AuthState>()(
               },
             });
           }
+          useLikesStore.getState().initialize("guest-user");
+          usePlaylistStore.getState().initialize("guest-user");
           return;
         }
 
@@ -103,17 +107,21 @@ export const useAuthStore = create<AuthState>()(
                 avatarUrl: authUser.user_metadata?.avatar_url,
               },
             });
-            // Fetch remote liked tracks & playlists
-            const { data: likedData } = await supabase
-              .from("liked_tracks")
-              .select("track_id")
-              .eq("user_id", authUser.id);
-            if (likedData) {
-              set({ likedTrackIds: likedData.map((d: any) => d.track_id) });
-            }
+
+            await useLikesStore.getState().initialize(authUser.id);
+            await usePlaylistStore.getState().initialize(authUser.id);
+            set({
+              likedTrackIds: useLikesStore.getState().likedSongs.map((s) => s.track.id),
+              userPlaylists: usePlaylistStore.getState().playlists,
+            });
+          } else {
+            useLikesStore.getState().initialize("guest-user");
+            usePlaylistStore.getState().initialize("guest-user");
           }
         } catch (err) {
           console.warn("Supabase auth check error:", err);
+          useLikesStore.getState().initialize("guest-user");
+          usePlaylistStore.getState().initialize("guest-user");
         }
       },
 
@@ -149,6 +157,14 @@ export const useAuthStore = create<AuthState>()(
                 displayName: name,
               },
               isAuthenticated: true,
+            });
+
+            // Merge guest likes and playlists into the new registered account
+            await useLikesStore.getState().mergeGuestLikesOnAuth(data.user.id);
+            await usePlaylistStore.getState().mergeGuestPlaylistsOnAuth(data.user.id);
+            set({
+              likedTrackIds: useLikesStore.getState().likedSongs.map((s) => s.track.id),
+              userPlaylists: usePlaylistStore.getState().playlists,
             });
           }
           return {};
@@ -190,6 +206,14 @@ export const useAuthStore = create<AuthState>()(
               },
               isAuthenticated: true,
             });
+
+            // Merge guest data on sign-in
+            await useLikesStore.getState().mergeGuestLikesOnAuth(data.user.id);
+            await usePlaylistStore.getState().mergeGuestPlaylistsOnAuth(data.user.id);
+            set({
+              likedTrackIds: useLikesStore.getState().likedSongs.map((s) => s.track.id),
+              userPlaylists: usePlaylistStore.getState().playlists,
+            });
           }
           return {};
         } catch (err: any) {
@@ -211,6 +235,12 @@ export const useAuthStore = create<AuthState>()(
             theme: "dark",
           },
           isAuthenticated: false,
+        });
+        await useLikesStore.getState().initialize("guest-user");
+        await usePlaylistStore.getState().initialize("guest-user");
+        set({
+          likedTrackIds: useLikesStore.getState().likedSongs.map((s) => s.track.id),
+          userPlaylists: usePlaylistStore.getState().playlists,
         });
       },
 

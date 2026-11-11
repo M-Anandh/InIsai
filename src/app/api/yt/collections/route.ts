@@ -104,13 +104,13 @@ export async function GET(req: NextRequest) {
   if (tracks.length >= 10) {
     collectionCache.set(col.id, {
       payload,
-      expiresAt: Date.now() + 3600 * 1000,
+      expiresAt: Date.now() + 86400 * 1000,
     });
   }
 
   return NextResponse.json(payload, {
     headers: {
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=172800",
     },
   });
 }

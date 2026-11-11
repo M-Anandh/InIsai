@@ -3,10 +3,11 @@
 import React, { useState } from "react";
 import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
-import { useAuthStore } from "@/stores/auth-store";
+import { useLikesStore } from "@/stores/likes-store";
+import { AddToPlaylistModal } from "@/components/music/AddToPlaylistModal";
 import { useMounted } from "@/hooks/use-mounted";
 import { ArtworkImage } from "@/components/ui/ArtworkImage";
-import { Play, Pause, Heart, Plus, ListPlus, Music } from "lucide-react";
+import { Play, Pause, Heart, Plus, ListPlus, FolderPlus } from "lucide-react";
 
 interface TrackCardProps {
   track: Track;
@@ -21,14 +22,15 @@ export const TrackCard: React.FC<TrackCardProps> = ({
   context,
   carouselItem = false,
 }) => {
-  const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue, playNext } =
+  const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue, playNext, setToastMessage } =
     usePlayerStore();
-  const { isLiked, toggleLikeTrack } = useAuthStore();
+  const { isLiked, toggleLike } = useLikesStore();
   const [imgError, setImgError] = useState(false);
+  const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
   const mounted = useMounted();
 
   const isCurrent = mounted && currentTrack?.id === track.id;
-  const liked = mounted && isLiked(track.id);
+  const liked = mounted && isLiked(track);
 
   const handlePlayClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -93,7 +95,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            toggleLikeTrack(track);
+            toggleLike(track, setToastMessage);
           }}
           className={`absolute top-2 right-2 p-1.5 rounded-full bg-black/60 backdrop-blur-md transition-all cursor-pointer ${
             liked
@@ -122,12 +124,23 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         </p>
       </div>
 
-      {/* Quick Add To Queue & Play Next */}
+      {/* Quick Add To Queue & Play Next & Add to Playlist */}
       <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[11px] text-inisai-muted">
         <span className="truncate max-w-[80px]">
           {track.genre || track.language || "Music"}
         </span>
         <div className="flex items-center space-x-1 flex-shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setAddToPlaylistOpen(true);
+            }}
+            className="text-white/40 hover:text-inisai-accent p-1 cursor-pointer transition-colors"
+            title="Add to playlist"
+            aria-label="Add to playlist"
+          >
+            <FolderPlus className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -152,6 +165,13 @@ export const TrackCard: React.FC<TrackCardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Add to Playlist Modal */}
+      <AddToPlaylistModal
+        track={track}
+        isOpen={addToPlaylistOpen}
+        onClose={() => setAddToPlaylistOpen(false)}
+      />
     </div>
   );
 };
