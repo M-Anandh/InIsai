@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLikesStore } from "@/stores/likes-store";
-import { AddToPlaylistModal } from "@/components/music/AddToPlaylistModal";
+import { useAddToPlaylistStore } from "@/stores/add-to-playlist-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
@@ -42,7 +42,6 @@ export const TrackRow: React.FC<TrackRowProps> = ({
   const mounted = useMounted();
   const [menuOpen, setMenuOpen] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
-  const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
 
   const isCurrent = mounted && currentTrack?.id === track.id;
   const liked = mounted && isLiked(track);
@@ -203,7 +202,7 @@ export const TrackRow: React.FC<TrackRowProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    setAddToPlaylistOpen(true);
+                    useAddToPlaylistStore.getState().open(track);
                     setMenuOpen(false);
                   }}
                   className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
@@ -276,13 +275,6 @@ export const TrackRow: React.FC<TrackRowProps> = ({
           ))}
         </div>
       )}
-
-      {/* Add To Playlist Bottom Sheet / Modal */}
-      <AddToPlaylistModal
-        track={track}
-        isOpen={addToPlaylistOpen}
-        onClose={() => setAddToPlaylistOpen(false)}
-      />
     </div>
   );
 };

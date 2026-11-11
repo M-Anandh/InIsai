@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Track, PlaybackContext } from "@/types";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLikesStore } from "@/stores/likes-store";
-import { AddToPlaylistModal } from "@/components/music/AddToPlaylistModal";
+import { useAddToPlaylistStore } from "@/stores/add-to-playlist-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { ArtworkImage } from "@/components/ui/ArtworkImage";
 import { Play, Pause, Heart, Plus, ListPlus, FolderPlus } from "lucide-react";
@@ -31,7 +31,6 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     usePlayerStore();
   const { isLiked, toggleLike } = useLikesStore();
   const [imgError, setImgError] = useState(false);
-  const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
   const mounted = useMounted();
 
   const isCurrent = mounted && currentTrack?.id === track.id;
@@ -139,7 +138,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setAddToPlaylistOpen(true);
+              useAddToPlaylistStore.getState().open(track);
             }}
             className="text-white/40 hover:text-inisai-accent p-1 cursor-pointer transition-colors"
             title="Add to playlist"
@@ -171,13 +170,6 @@ export const TrackCard: React.FC<TrackCardProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Add to Playlist Modal */}
-      <AddToPlaylistModal
-        track={track}
-        isOpen={addToPlaylistOpen}
-        onClose={() => setAddToPlaylistOpen(false)}
-      />
     </div>
   );
 };

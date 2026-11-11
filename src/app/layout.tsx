@@ -10,6 +10,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 import { FontLoader } from "@/components/ui/FontLoader";
 import { SWUpdateNotifier } from "@/components/pwa/SWUpdateNotifier";
+import { GlobalAddToPlaylistModal } from "@/components/music/GlobalAddToPlaylistModal";
 
 export const metadata: Metadata = {
   title: "InIsai — Every Beat, Your World",
@@ -105,9 +106,10 @@ export default function RootLayout({
             </div>
           </div>
 
-          {/* Global Persistent Players */}
+          {/* Global Persistent Players & Modals */}
           <MiniPlayer />
           <FullScreenPlayer />
+          <GlobalAddToPlaylistModal />
 
           {/* Mobile Bottom Navigation */}
           <MobileNav />

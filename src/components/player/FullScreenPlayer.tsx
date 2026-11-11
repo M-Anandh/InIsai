@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLikesStore } from "@/stores/likes-store";
-import { AddToPlaylistModal } from "@/components/music/AddToPlaylistModal";
+import { useAddToPlaylistStore } from "@/stores/add-to-playlist-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
@@ -88,7 +88,6 @@ export const FullScreenPlayer: React.FC = () => {
   const [mediaMode, setMediaMode] = useState<"audio" | "video">("audio");
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sleepSheetOpen, setSleepSheetOpen] = useState(false);
-  const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverXPercent, setHoverXPercent] = useState<number>(0);
   const [seekFeedback, setSeekFeedback] = useState<{ text: string; side: "left" | "right" } | null>(null);
@@ -348,7 +347,7 @@ export const FullScreenPlayer: React.FC = () => {
             >
               <button
                 onClick={() => {
-                  setAddToPlaylistOpen(true);
+                  if (currentTrack) useAddToPlaylistStore.getState().open(currentTrack);
                   setOverflowOpen(false);
                 }}
                 className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
@@ -857,13 +856,6 @@ export const FullScreenPlayer: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Add To Playlist Modal */}
-      <AddToPlaylistModal
-        track={currentTrack}
-        isOpen={addToPlaylistOpen}
-        onClose={() => setAddToPlaylistOpen(false)}
-      />
     </div>
   );
 };
