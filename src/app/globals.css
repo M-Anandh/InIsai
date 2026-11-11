@@ -34,30 +34,44 @@
 }
 
 /* =========================================================================
-   CREAM STUDIO (DESIGNED LIGHT THEME — HIGH CONTRAST)
+   CREAM STUDIO (DESIGNED LIGHT THEME — HIGH CONTRAST WCAG AAA)
    ========================================================================= */
 html.light {
-  --background: #EFEAE2;
-  --surface: #FAF7F2;
+  --bg-page: #F2EFEA;
+  --bg-surface: #FBFAF8;
+  --bg-raised: #FFFFFF;
+  --bg-sunken: #E8E3DB;
+  --border: rgba(28, 24, 38, 0.12);
+  --border-strong: rgba(28, 24, 38, 0.22);
+  --text-1: #16131F;
+  --text-2: #3F3A4D;
+  --text-3: #5E586D;
+  --text-disabled: #8B8599;
+  --accent: #6D4AFF;
+  --accent-hot: #E0285F;
+  --accent-warm: #D96A12;
+
+  --background: #F2EFEA;
+  --surface: #FBFAF8;
   --surface-elevated: #FFFFFF;
-  --surface-muted: #E5DFD5;
-  --card: #FAF7F2;
+  --surface-muted: #E8E3DB;
+  --card: #FBFAF8;
   --card-hover: #FFFFFF;
-  --border: rgba(27, 24, 36, 0.09);
-  --border-strong: rgba(27, 24, 36, 0.18);
-  --glass: rgba(250, 247, 242, 0.88);
-  --glass-solid: #FAF7F2;
-  --glass-border: rgba(27, 24, 36, 0.10);
+  --border: rgba(28, 24, 38, 0.12);
+  --border-strong: rgba(28, 24, 38, 0.22);
+  --glass: rgba(251, 250, 248, 0.94);
+  --glass-solid: #FBFAF8;
+  --glass-border: rgba(28, 24, 38, 0.12);
 
   --accent-turmeric: #D95F12;
   --accent-rose: #D91B57;
-  --accent-indigo: #5D3DF2;
-  --accent-primary: #5D3DF2;
+  --accent-indigo: #6D4AFF;
+  --accent-primary: #6D4AFF;
 
-  --foreground: #1B1824;
-  --text-secondary: #4A4558;
-  --text-muted: #6B6578;
-  --shadow-card: 0 4px 20px -2px rgba(27, 24, 36, 0.06), 0 2px 8px -1px rgba(27, 24, 36, 0.04);
+  --foreground: #16131F;
+  --text-secondary: #3F3A4D;
+  --text-muted: #5E586D;
+  --shadow-card: 0 4px 20px -2px rgba(28, 24, 38, 0.08), 0 2px 6px -1px rgba(28, 24, 38, 0.04);
 }
 
 html {
@@ -155,61 +169,110 @@ h1, h2, h3, .font-display {
   }
 }
 
-/* Light Mode Contrast Overrides for Residual Utility Classes */
+/* High-Contrast Light Theme Overrides (WCAG AAA >= 7:1 for text-1, >= 4.5:1 for text-2) */
 html.light body {
-  background-color: #FBF7F1 !important;
-  color: #1B1824 !important;
+  background-color: var(--bg-page) !important;
+  color: var(--text-1) !important;
 }
 
-html.light .bg-inisai-dark {
-  background-color: #FBF7F1 !important;
+html.light .glass-panel {
+  background: var(--glass) !important;
+  border-color: var(--border) !important;
 }
 
-html.light .bg-inisai-surface,
-html.light .bg-inisai-card {
-  background-color: #FFFFFF !important;
-  border-color: rgba(27, 24, 36, 0.09) !important;
-  box-shadow: var(--shadow-card);
+html.light aside {
+  background-color: #FBFAF8 !important;
+  border-color: rgba(28, 24, 38, 0.12) !important;
 }
 
-html.light .text-inisai-muted {
-  color: #524B63 !important;
+html.light header {
+  background-color: rgba(251, 250, 248, 0.95) !important;
+  border-color: rgba(28, 24, 38, 0.12) !important;
 }
 
-html.light main h1,
-html.light main h2,
-html.light main h3,
-html.light main h4 {
-  color: #1B1824;
+html.light input[type="text"],
+html.light input[type="search"] {
+  color: #16131F !important;
 }
 
-html.light main .text-white {
-  color: #1B1824;
+html.light input::placeholder {
+  color: #5E586D !important;
+  opacity: 0.9 !important;
 }
 
-html.light main .bg-inisai-accent,
-html.light main .bg-inisai-accent .text-white,
-html.light main [class*="bg-gradient-to"] .text-white,
-html.light main [class*="bg-gradient-to"].text-white,
-html.light main button.bg-inisai-accent {
+/* Ensure text on light surfaces is crisp & high contrast */
+html.light h1,
+html.light h2,
+html.light h3,
+html.light h4,
+html.light .text-slate-900,
+html.light .dark\:text-white {
+  color: #16131F !important;
+}
+
+html.light p.text-slate-600,
+html.light p.text-slate-500,
+html.light span.text-slate-500,
+html.light .text-slate-600,
+html.light .text-slate-500,
+html.light .dark\:text-inisai-muted {
+  color: #3F3A4D !important;
+}
+
+html.light .text-slate-400 {
+  color: #5E586D !important;
+}
+
+/* Preserve bright crisp white text strictly inside colored brand buttons and dark artwork scrims */
+html.light button.bg-inisai-accent,
+html.light a.bg-inisai-accent,
+html.light .bg-inisai-accent,
+html.light .bg-black,
+html.light .bg-black\/40,
+html.light .bg-black\/45,
+html.light .bg-black\/60,
+html.light .bg-black\/70,
+html.light .bg-black\/75,
+html.light .bg-black\/80,
+html.light .bg-black\/90,
+html.light [class*="bg-gradient-to-t from-black"],
+html.light [class*="bg-gradient-to-b from-black"],
+html.light [class*="bg-gradient-to-tr from-"],
+html.light [class*="bg-gradient-to-r from-"] {
   color: #FFFFFF !important;
 }
 
-html.light main .bg-white\/5,
-html.light main .bg-white\/\[0\.02\],
-html.light main .bg-white\/\[0\.03\],
-html.light main .bg-white\/\[0\.04\] {
-  background-color: rgba(27, 24, 36, 0.04) !important;
+html.light button.bg-inisai-accent *,
+html.light a.bg-inisai-accent *,
+html.light .bg-black *,
+html.light [class*="bg-gradient-to-t from-black"] * {
+  color: #FFFFFF !important;
 }
 
-html.light main .bg-white\/10 {
-  background-color: rgba(27, 24, 36, 0.07) !important;
+/* Neutral card and surface backgrounds in light theme */
+html.light .bg-white\/80,
+html.light .bg-white\/90,
+html.light .bg-white\/95 {
+  background-color: #FFFFFF !important;
 }
 
-html.light main .border-white\/5,
-html.light main .border-white\/10,
-html.light main .border-white\/15 {
-  border-color: rgba(27, 24, 36, 0.1) !important;
+html.light .bg-white\/5,
+html.light .bg-white\/\[0\.02\],
+html.light .bg-white\/\[0\.03\],
+html.light .bg-white\/\[0\.04\] {
+  background-color: #FBFAF8 !important;
+  border-color: rgba(28, 24, 38, 0.12) !important;
+}
+
+html.light .bg-slate-100 {
+  background-color: #E8E3DB !important;
+}
+
+html.light .border-slate-200,
+html.light .border-white\/5,
+html.light .border-white\/10,
+html.light .border-white\/15 {
+  border-color: rgba(28, 24, 38, 0.12) !important;
 }
 
 /* Horizontal Carousel Edge Mask */

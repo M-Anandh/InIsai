@@ -328,7 +328,7 @@ function SearchContent() {
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 isSelected
                   ? "bg-inisai-accent text-white shadow-md shadow-inisai-accent/30"
-                  : "bg-white/80 dark:bg-white/5 text-slate-600 dark:text-white/75 hover:bg-slate-200 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10"
+                  : "bg-white dark:bg-white/5 text-slate-800 dark:text-white/80 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-300 dark:border-white/10 font-semibold"
               }`}
             >
               {chip}

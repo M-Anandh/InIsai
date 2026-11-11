@@ -372,10 +372,15 @@ export const useAuthStore = create<AuthState>()(
 
       toggleTheme: (mode) => {
         const currentTheme = get().theme || get().user?.theme || "dark";
+        let effectiveCurrent = currentTheme;
+        if (currentTheme === "system" && typeof window !== "undefined") {
+          effectiveCurrent = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+
         const isValidMode = mode === "dark" || mode === "light" || mode === "system";
         const nextTheme: "dark" | "light" | "system" = isValidMode
           ? (mode as "dark" | "light" | "system")
-          : currentTheme === "dark"
+          : effectiveCurrent === "dark"
           ? "light"
           : "dark";
 
@@ -385,7 +390,11 @@ export const useAuthStore = create<AuthState>()(
           user: currentUser ? { ...currentUser, theme: nextTheme } : null,
         });
 
-        if (typeof document !== "undefined") {
+        if (typeof window !== "undefined") {
+          try {
+            localStorage.setItem("inisai_theme", nextTheme);
+          } catch {}
+
           const root = document.documentElement;
           let effectiveTheme = nextTheme;
           if (nextTheme === "system") {
@@ -400,6 +409,10 @@ export const useAuthStore = create<AuthState>()(
             root.classList.add("dark");
             root.classList.remove("light");
           }
+
+          const themeColor = effectiveTheme === "light" ? "#F2EFEA" : "#0B0A10";
+          const meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", themeColor);
         }
       },
 
