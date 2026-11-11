@@ -36,6 +36,8 @@ interface FeaturedMovieSong {
   isPlayable: boolean;
 }
 
+const FEATURE_NEW_RELEASES = false;
+
 export default function NewAndUpcomingPage() {
   const { playTrack, currentTrack, isPlaying, togglePlay, addToQueue } = usePlayerStore();
   const { selectedLanguages, toggleLanguage } = useLanguageStore();
@@ -49,6 +51,23 @@ export default function NewAndUpcomingPage() {
   const [songs, setSongs] = useState<FeaturedMovieSong[]>([]);
   const [filter, setFilter] = useState<"all" | "released" | "upcoming">("all");
   const [isLoading, setIsLoading] = useState(true);
+
+  if (!FEATURE_NEW_RELEASES) {
+    return (
+      <div className="py-20 text-center space-y-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New Releases</h1>
+        <p className="text-slate-500 dark:text-inisai-muted text-sm">
+          This feature is temporarily in preview mode while we upgrade our theatrical feeds.
+        </p>
+        <Link
+          href="/explore"
+          className="inline-block px-5 py-2.5 rounded-full bg-inisai-accent text-white text-xs font-bold"
+        >
+          Explore Music
+        </Link>
+      </div>
+    );
+  }
 
   useEffect(() => {
     let isCancelled = false;

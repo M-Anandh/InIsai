@@ -114,11 +114,6 @@ export const Header: React.FC = () => {
 
             <ThemeToggle showLabelOnMobile={false} />
 
-            {/* Desktop only Install button in header; Mobile Install lives in Home Banner & Settings */}
-            <div className="hidden md:block">
-              <PWAInstaller />
-            </div>
-
             {mounted && isAuthenticated && user ? (
               <div className="flex items-center space-x-2">
                 <Link

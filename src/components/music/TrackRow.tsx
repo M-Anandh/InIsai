@@ -95,10 +95,11 @@ export const TrackRow: React.FC<TrackRowProps> = ({
           {/* 48x48 Thumbnail */}
           <div className="relative w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 border border-slate-200 dark:border-white/10">
             <CoverImage
+              id={track.id}
               src={track.artworkUrl}
               alt={track.title}
               youtubeVideoId={track.youtubeVideoId}
-              type="track"
+              kind="song"
               aspect="square"
             />
             <div

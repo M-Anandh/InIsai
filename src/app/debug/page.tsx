@@ -16,6 +16,24 @@ interface CollectionDebugStatus {
   error?: string;
 }
 
+interface CoverAuditData {
+  timestamp: string;
+  summaries: Array<{ surface: string; total: number; realArt: number; fallback: number; percentage: number }>;
+  topRejectionReasons: Array<{ reason: string; count: number }>;
+  items: Array<{
+    surface: string;
+    id: string;
+    title: string;
+    originalUrl: string;
+    httpStatus: number | string;
+    contentType: string;
+    naturalWidth: number;
+    naturalHeight: number;
+    realArt: boolean;
+    rejectedReason?: string;
+  }>;
+}
+
 export default function DebugPage() {
   const { user } = useAuthStore();
   const [collections, setCollections] = useState<CollectionDebugStatus[]>([]);
@@ -28,6 +46,8 @@ export default function DebugPage() {
     "TMDB Movie Discovery": "unconfigured",
   });
   const [clientErrors, setClientErrors] = useState<string[]>([]);
+  const [coverAudit, setCoverAudit] = useState<CoverAuditData | null>(null);
+  const [loadingCoverAudit, setLoadingCoverAudit] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const buildSha = process.env.NEXT_PUBLIC_BUILD_SHA || "1329352";
@@ -102,17 +122,15 @@ export default function DebugPage() {
     }
     setCollections(results);
 
-    // 4. Test TMDB / Featured Endpoint
-    try {
-      const featRes = await fetch("/api/featured?lang=ta,te");
-      if (featRes.ok) {
-        const featData = await featRes.json();
-        setProviderHealth((prev) => ({
-          ...prev,
-          "TMDB Movie Discovery": featData.tmdbConfigured ? "ok" : "unconfigured",
-        }));
-      }
-    } catch {}
+    // 4. Cover Images Audit if debug=1
+    if (typeof window !== "undefined" && window.location.search.includes("debug=1")) {
+      setLoadingCoverAudit(true);
+      fetch("/api/debug/covers")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => setCoverAudit(data))
+        .catch(() => {})
+        .finally(() => setLoadingCoverAudit(false));
+    }
 
     setIsRefreshing(false);
   };
@@ -239,6 +257,85 @@ export default function DebugPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Cover Images Quality & Rejection Audit (/debug?debug=1) */}
+      <section className="bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-3xl p-6 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <Activity className="w-5 h-5 text-rose-400" />
+            <span>Cover Images Audit & Rejection Telemetry</span>
+          </h2>
+          <button
+            onClick={() => {
+              setLoadingCoverAudit(true);
+              fetch("/api/debug/covers")
+                .then((r) => (r.ok ? r.json() : null))
+                .then((data) => setCoverAudit(data))
+                .finally(() => setLoadingCoverAudit(false));
+            }}
+            className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-semibold hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
+          >
+            {loadingCoverAudit ? "Auditing..." : "Run Covers Audit"}
+          </button>
+        </div>
+
+        {coverAudit ? (
+          <div className="space-y-6 text-xs">
+            {/* Surface Summaries Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-white/10 text-slate-400 font-mono uppercase text-[10px]">
+                    <th className="py-2 px-3">Surface</th>
+                    <th className="py-2 px-3">Total Items</th>
+                    <th className="py-2 px-3">Real Art</th>
+                    <th className="py-2 px-3">Fallback</th>
+                    <th className="py-2 px-3">% Real Art</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5 font-mono">
+                  {coverAudit.summaries.map((s) => (
+                    <tr key={s.surface}>
+                      <td className="py-2 px-3 font-semibold text-slate-800 dark:text-white/90">{s.surface}</td>
+                      <td className="py-2 px-3">{s.total}</td>
+                      <td className="py-2 px-3 text-emerald-500 font-bold">{s.realArt}</td>
+                      <td className="py-2 px-3 text-rose-400">{s.fallback}</td>
+                      <td className="py-2 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          s.percentage >= 95 ? "bg-emerald-500/15 text-emerald-500" : "bg-rose-500/15 text-rose-400"
+                        }`}>
+                          {s.percentage}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Top Rejection Reasons */}
+            {coverAudit.topRejectionReasons.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-bold uppercase tracking-wider text-slate-500 dark:text-inisai-muted text-[11px]">
+                  Top Rejection Reasons
+                </h3>
+                <div className="space-y-1">
+                  {coverAudit.topRejectionReasons.map((r) => (
+                    <div key={r.reason} className="flex justify-between p-2 rounded-xl bg-rose-500/10 text-rose-400 font-mono text-[11px]">
+                      <span>{r.reason}</span>
+                      <span className="font-bold">{r.count} occurrence(s)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500 dark:text-inisai-muted">
+            {loadingCoverAudit ? "Auditing cover images across home, search, collections and mixes..." : "Pass ?debug=1 or click Run Covers Audit to generate cover analysis."}
+          </p>
+        )}
       </section>
     </div>
   );

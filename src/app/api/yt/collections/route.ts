@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { INISAI_OFFICIAL_COLLECTIONS } from "@/music/collections";
 import { ytSearch } from "@/music/providers/ytmusic-server";
+import { getTmdbPersonPhoto } from "@/lib/tmdb";
 import { Track } from "@/types";
 
 const collectionCache = new Map<string, { payload: any; expiresAt: number }>();
+const BUILD_ID = process.env.NEXT_PUBLIC_BUILD_SHA || "v2";
+
+const ARTIST_COLLECTIONS_MAP: Record<string, string> = {
+  "ilaiyaraaja-maestro-hits": "Ilaiyaraaja",
+  "ilaiyaraaja-melody-gold": "Ilaiyaraaja",
+  "anirudh-mass-melody": "Anirudh Ravichander",
+  "ar-rahman-essentials": "A. R. Rahman",
+  "yuvan-feel": "Yuvan Shankar Raja",
+};
 
 function selectPriorityQueries(queries: string[], limit: number): string[] {
   if (queries.length <= limit) return queries;
-  // Include lead iconic tracks plus the broad playlist query (last item) first
   const picks: string[] = [];
   const candidates = [queries[0], queries[queries.length - 1], queries[1], queries[2], ...queries.slice(3)];
   for (const q of candidates) {
@@ -52,6 +61,7 @@ export async function GET(req: NextRequest) {
         subtitle: c.subtitle,
         gradient: c.gradient,
         artworkUrl: c.artworkUrl,
+        coverUrl: c.artworkUrl,
       })),
     });
   }
@@ -61,11 +71,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Collection not found" }, { status: 404 });
   }
 
-  const cached = collectionCache.get(col.id);
+  const cacheKey = `${col.id}:${BUILD_ID}`;
+  const cached = collectionCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return NextResponse.json(cached.payload, {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=7200",
+        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=172800",
       },
     });
   }
@@ -92,6 +103,33 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // 1. Mosaic: first 4 distinct validated track covers
+  const mosaic: string[] = [];
+  const seenMosaicUrls = new Set<string>();
+  for (const t of tracks) {
+    if (t.artworkUrl && !seenMosaicUrls.has(t.artworkUrl)) {
+      seenMosaicUrls.add(t.artworkUrl);
+      mosaic.push(t.artworkUrl);
+      if (mosaic.length >= 4) break;
+    }
+  }
+
+  // 2. Cover resolution order:
+  // Mosaic of 4 -> Artist Photo (for artist collections) -> Fallback Track Cover -> Default
+  let resolvedCover = col.artworkUrl || "";
+  const artistName = ARTIST_COLLECTIONS_MAP[col.id];
+
+  if (mosaic.length >= 4) {
+    resolvedCover = mosaic[0];
+  } else if (artistName) {
+    const artistPic = await getTmdbPersonPhoto(artistName);
+    if (artistPic) resolvedCover = artistPic;
+  }
+
+  if (!resolvedCover) {
+    resolvedCover = tracks[0]?.artworkUrl || "/covers/default-collection.svg";
+  }
+
   const payload = {
     id: col.id,
     title: col.title,
@@ -99,11 +137,15 @@ export async function GET(req: NextRequest) {
     gradient: col.gradient,
     trackCount: tracks.length,
     tracks,
-    collageArtworks: tracks.slice(0, 4).map((t) => t.artworkUrl).filter(Boolean),
+    cover: resolvedCover,
+    coverUrl: resolvedCover,
+    artworkUrl: resolvedCover,
+    mosaic,
+    collageArtworks: mosaic,
   };
 
-  if (tracks.length >= 10) {
-    collectionCache.set(col.id, {
+  if (tracks.length >= 5) {
+    collectionCache.set(cacheKey, {
       payload,
       expiresAt: Date.now() + 86400 * 1000,
     });

@@ -286,10 +286,11 @@ export const PlaylistDetailView: React.FC<PlaylistDetailViewProps> = ({ id, type
         {/* Cover with 2x2 mosaic support */}
         <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden shadow-2xl flex-shrink-0 bg-slate-200 dark:bg-black/50 border border-white/20">
           <CoverImage
+            id={`${type}-${data.id}`}
             src={data.artworkUrl}
             alt={data.title}
             fallbackTracks={data.tracks}
-            type="playlist"
+            kind={type === "collection" ? "collection" : "playlist"}
             aspect="square"
           />
         </div>

@@ -2,68 +2,88 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Track } from "@/types";
-import { ListMusic, Disc3, User, Disc } from "lucide-react";
+import { normalizeThumb, ThumbSize } from "@/lib/media/thumb";
+import { get, set } from "idb-keyval";
 
 export interface CoverImageProps {
   src?: string;
+  candidates?: string[];
   alt: string;
+  id?: string; // provider:trackId for IndexedDB caching
   youtubeVideoId?: string;
   fallbackTracks?: Track[];
   className?: string;
-  type?: "track" | "playlist" | "artist" | "album";
+  kind?: "song" | "album" | "playlist" | "artist" | "collection";
+  type?: "track" | "playlist" | "artist" | "album" | "collection"; // alias for backwards-compat
   aspect?: "square" | "video" | "none";
+  size?: ThumbSize;
   eager?: boolean;
 }
 
-function getDeterministicGradient(seed: string): string {
-  const palettes = [
-    "from-[#FF8A3D]/80 via-[#FF3D77]/70 to-[#7A5CFF]/85",
-    "from-[#7A5CFF]/80 via-[#4F46E5]/75 to-[#0EA5E9]/85",
-    "from-[#FF3D77]/75 via-[#C026D3]/70 to-[#7A5CFF]/85",
-    "from-[#10B981]/75 via-[#06B6D4]/75 to-[#3B82F6]/85",
-    "from-[#F59E0B]/80 via-[#EF4444]/75 to-[#9333EA]/85",
-  ];
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) {
-    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return palettes[Math.abs(hash) % palettes.length];
-}
+const CACHE_PREFIX = "inisai_cover_v2:";
 
 export const CoverImage: React.FC<CoverImageProps> = ({
   src,
+  candidates: explicitCandidates,
   alt,
+  id,
   youtubeVideoId,
   fallbackTracks = [],
   className = "",
+  kind,
   type = "track",
   aspect = "none",
+  size = "card",
   eager = false,
 }) => {
+  // Normalize kind
+  const effectiveKind =
+    kind ||
+    (type === "track" ? "song" : (type as "song" | "album" | "playlist" | "artist" | "collection"));
+
   const [attemptIndex, setAttemptIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [cachedUrl, setCachedUrl] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
-  // Build ordered resilient fallback candidate chain
+  // Look up cached verified working URL in IndexedDB on mount
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    get(`${CACHE_PREFIX}${id}`)
+      .then((val) => {
+        if (!cancelled && typeof val === "string" && val.length > 5) {
+          setCachedUrl(val);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Build resilient, normalized candidate list
   const candidateUrls = useMemo(() => {
-    const urls: string[] = [];
-    if (src && src.trim()) {
-      urls.push(src);
-      // Alternative sizing for Google / YouTube CDN
-      if (src.includes("lh3.googleusercontent.com")) {
-        urls.push(src.replace(/=w\d+-h\d+[^&]*/i, "=w300-h300-l90-rj"));
-      }
-      if (src.includes("c.saavncdn.com")) {
-        urls.push(src.replace("500x500", "150x150"));
-      }
+    if (explicitCandidates && explicitCandidates.length > 0) {
+      return explicitCandidates;
     }
-    return Array.from(new Set(urls));
-  }, [src]);
+
+    const list: string[] = [];
+    if (cachedUrl) {
+      list.push(cachedUrl);
+    }
+
+    if (src && src.trim()) {
+      list.push(...normalizeThumb(src, size));
+    }
+
+    return Array.from(new Set(list));
+  }, [src, explicitCandidates, cachedUrl, size]);
 
   useEffect(() => {
     setAttemptIndex(0);
     setLoaded(false);
-  }, [src]);
+  }, [src, cachedUrl]);
 
   const activeUrl = candidateUrls[attemptIndex];
   const validTrackArts = fallbackTracks.filter((t) => Boolean(t.artworkUrl));
@@ -80,47 +100,70 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     setAttemptIndex((prev) => prev + 1);
   }, []);
 
-  // 1. Immediately detect if the image was already cached/completed by browser
-  // Rejects YouTube's ~120x90 grey placeholder TV icon (requires >= 200x200)
+  // Validation function: checks image dimensions
+  // Rejects YouTube's ~120x90 grey placeholder TV icon (<300px for ytimg)
+  // Rejects broken images under 100px
+  const validateAndMarkLoaded = useCallback(
+    (img: HTMLImageElement | null, currentUrl?: string) => {
+      if (!img) return;
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+
+      if (w === 0 || h === 0) return;
+
+      const isYtPlaceholder =
+        currentUrl?.includes("i.ytimg.com") && (w < 300 || h < 200);
+
+      if (isYtPlaceholder || w < 100 || h < 100) {
+        handleImgError();
+        return;
+      }
+
+      setLoaded(true);
+
+      // Cache verified working URL in IndexedDB for instant subsequent renders
+      if (id && currentUrl && !currentUrl.startsWith("data:")) {
+        set(`${CACHE_PREFIX}${id}`, currentUrl).catch(() => {});
+      }
+    },
+    [handleImgError, id]
+  );
+
   const imageRefCallback = useCallback(
     (img: HTMLImageElement | null) => {
       imgRef.current = img;
       if (!img) return;
       if (img.complete) {
-        if (img.naturalWidth >= 200 && img.naturalHeight >= 200) {
-          setLoaded(true);
-        } else {
-          handleImgError();
-        }
+        validateAndMarkLoaded(img, activeUrl);
       }
     },
-    [handleImgError]
+    [validateAndMarkLoaded, activeUrl]
   );
 
-  // 2. 4-second timeout fallback: if network stalls on a CDN URL, switch to next candidate
+  // 4-second timeout fallback: if a CDN stalls, advance to next candidate
   useEffect(() => {
     if (!activeUrl || loaded) return;
     const timer = setTimeout(() => {
       if (!loaded) {
-        if (
-          imgRef.current?.complete &&
-          imgRef.current.naturalWidth >= 200 &&
-          imgRef.current.naturalHeight >= 200
-        ) {
-          setLoaded(true);
+        if (imgRef.current?.complete && imgRef.current.naturalWidth >= 100) {
+          validateAndMarkLoaded(imgRef.current, activeUrl);
         } else {
           handleImgError();
         }
       }
     }, 4000);
     return () => clearTimeout(timer);
-  }, [activeUrl, loaded, handleImgError]);
+  }, [activeUrl, loaded, handleImgError, validateAndMarkLoaded]);
 
-  // Stage 1 & 2: Primary or Alt Size URL
+  // Stage 1: Active normalized URL candidate
   if (activeUrl) {
     return (
-      <div className={`relative w-full h-full overflow-hidden ${aspectClass} ${className}`}>
-        {/* Skeleton always sits behind image and fades when loaded */}
+      <div
+        className={`relative w-full h-full overflow-hidden ${aspectClass} ${className} ${
+          effectiveKind === "artist" ? "rounded-full" : ""
+        }`}
+      >
+        {/* Responsive skeleton behind the image */}
         <div
           className={`absolute inset-0 bg-slate-200 dark:bg-white/10 transition-opacity duration-300 ${
             loaded ? "opacity-0 pointer-events-none" : "animate-pulse opacity-100"
@@ -130,14 +173,7 @@ export const CoverImage: React.FC<CoverImageProps> = ({
           ref={imageRefCallback}
           src={activeUrl}
           alt={alt || "Artwork"}
-          onLoad={(e) => {
-            const img = e.currentTarget;
-            if (img.naturalWidth >= 200 && img.naturalHeight >= 200) {
-              setLoaded(true);
-            } else {
-              handleImgError();
-            }
-          }}
+          onLoad={(e) => validateAndMarkLoaded(e.currentTarget, activeUrl)}
           onError={handleImgError}
           loading={eager ? "eager" : "lazy"}
           decoding={eager ? "sync" : "async"}
@@ -145,66 +181,48 @@ export const CoverImage: React.FC<CoverImageProps> = ({
           referrerPolicy="no-referrer"
           className={`w-full h-full object-cover transition-opacity duration-200 ${
             loaded ? "opacity-100" : "opacity-0"
-          }`}
+          } ${effectiveKind === "artist" ? "rounded-full" : ""}`}
         />
       </div>
     );
   }
 
-  // Stage 3: 2x2 Mosaic Collage for Playlists when 4+ track covers exist
-  if (type === "playlist" && validTrackArts.length >= 4) {
+  // Stage 2: 2x2 Mosaic Collage for Playlists when 4+ track covers exist
+  if (effectiveKind === "playlist" && validTrackArts.length >= 4) {
     return (
-      <div className={`w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden ${aspectClass} ${className}`}>
+      <div
+        className={`w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5 overflow-hidden ${aspectClass} ${className}`}
+      >
         {validTrackArts.slice(0, 4).map((t, idx) => (
           <CoverImage
             key={`${t.id}-${idx}`}
             src={t.artworkUrl}
             alt={t.title}
             youtubeVideoId={t.youtubeVideoId}
+            kind="song"
           />
         ))}
       </div>
     );
   }
 
-  // Stage 4: Single track cover if playlist has at least one valid cover
-  if (validTrackArts.length > 0 && validTrackArts[0].artworkUrl !== src) {
-    return (
-      <CoverImage
-        src={validTrackArts[0].artworkUrl}
-        alt={alt}
-        youtubeVideoId={validTrackArts[0].youtubeVideoId}
-        className={className}
-        aspect={aspect}
-      />
-    );
-  }
-
-  // Stage 5: Guaranteed Generated Gradient Initial Emblem (NEVER blank grey box or broken alt text)
-  const cleanTitle = (alt || "InIsai").trim();
-  const initial = cleanTitle.charAt(0).toUpperCase() || "♪";
-  const gradientClass = getDeterministicGradient(cleanTitle);
+  // Stage 3: Designed Default Cover (no letters, no icon-on-gradient overlay)
+  const defaultAsset = `/covers/default-${effectiveKind}.svg`;
 
   return (
     <div
-      aria-label={cleanTitle}
-      className={`w-full h-full flex flex-col items-center justify-center p-3 text-center bg-gradient-to-br ${gradientClass} text-white select-none relative overflow-hidden ${aspectClass} ${className}`}
+      aria-label={alt || "InIsai Music"}
+      className={`relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-900 ${aspectClass} ${className} ${
+        effectiveKind === "artist" ? "rounded-full" : ""
+      }`}
     >
-      <div className="absolute inset-0 bg-black/15" />
-      <div className="relative z-10 flex flex-col items-center justify-center">
-        {type === "playlist" ? (
-          <ListMusic className="w-7 h-7 mb-1 opacity-90 drop-shadow" />
-        ) : type === "artist" ? (
-          <User className="w-7 h-7 mb-1 opacity-90 drop-shadow" />
-        ) : type === "album" ? (
-          <Disc className="w-7 h-7 mb-1 opacity-90 drop-shadow" />
-        ) : (
-          <Disc3 className="w-7 h-7 mb-1 opacity-90 drop-shadow" />
-        )}
-        <span className="text-lg font-extrabold tracking-tight drop-shadow-sm">
-          {initial}
-        </span>
-      </div>
+      <img
+        src={defaultAsset}
+        alt={alt || "Cover"}
+        className="w-full h-full object-cover select-none pointer-events-none"
+        loading="lazy"
+        decoding="async"
+      />
     </div>
   );
 };

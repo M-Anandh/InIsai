@@ -59,6 +59,8 @@ interface FeaturedMovieSong {
   isPlayable: boolean;
 }
 
+const FEATURE_NEW_RELEASES = false;
+
 export default function HomePage() {
   const { playTrack, currentTrack, isPlaying, togglePlay, history, addToQueue } =
     usePlayerStore();
@@ -68,9 +70,6 @@ export default function HomePage() {
   const [ytShelves, setYtShelves] = useState<Shelf[]>([]);
   const [saavnTrending, setSaavnTrending] = useState<Track[]>([]);
   const [seedRelated, setSeedRelated] = useState<Track[]>([]);
-  const [featuredSongs, setFeaturedSongs] = useState<FeaturedMovieSong[]>([]);
-  const [heroIndex, setHeroIndex] = useState(0);
-  const [isHeroHovered, setIsHeroHovered] = useState(false);
   const [tasteSummary, setTasteSummary] = useState<ComputedTasteSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [langModalOpen, setLangModalOpen] = useState(false);
@@ -85,35 +84,6 @@ export default function HomePage() {
     return Array.isArray(likedTrackIds) ? likedTrackIds : [];
   }, [likedTrackIds]);
 
-  // Auto-rotate featured hero every 7.5 seconds when not hovered
-  useEffect(() => {
-    if (featuredSongs.length <= 1 || isHeroHovered) return;
-    const interval = setInterval(() => {
-      setHeroIndex((prev) => (prev + 1) % Math.min(featuredSongs.length, 6));
-    }, 7500);
-    return () => clearInterval(interval);
-  }, [featuredSongs.length, isHeroHovered]);
-
-  // Refetch featured songs when selectedLanguages change
-  useEffect(() => {
-    const langQuery = safeLanguages
-      .map((l) => (typeof l === "string" ? l.toLowerCase() : ""))
-      .filter(Boolean)
-      .join(",");
-    fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        const items = data?.hero || data?.featured;
-        if (Array.isArray(items) && items.length > 0) {
-          setFeaturedSongs(items);
-          setHeroIndex(0);
-        } else {
-          setFeaturedSongs([]);
-        }
-      })
-      .catch(() => {});
-  }, [safeLanguages]);
-
   useEffect(() => {
     initialize();
 
@@ -125,9 +95,8 @@ export default function HomePage() {
         setTasteSummary(summary);
 
         const seedVid = summary.seedVideoIds[0] || history[0]?.youtubeVideoId;
-        const langQuery = selectedLanguages.map((l) => l.toLowerCase()).join(",");
 
-        const [ytHomeRes, saavnRes, relatedRes, featRes] = await Promise.allSettled([
+        const [ytHomeRes, saavnRes, relatedRes] = await Promise.allSettled([
           fetch("/api/yt/home").then((r) => (r.ok ? r.json() : null)),
           fetch("/api/music/trending?category=tamil").then((r) => (r.ok ? r.json() : null)),
           seedVid
@@ -135,9 +104,6 @@ export default function HomePage() {
                 r.ok ? r.json() : null
               )
             : Promise.resolve(null),
-          fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`).then((r) =>
-            r.ok ? r.json() : null
-          ),
         ]);
 
         if (ytHomeRes.status === "fulfilled" && ytHomeRes.value?.shelves?.length > 0) {
@@ -148,9 +114,6 @@ export default function HomePage() {
         }
         if (relatedRes.status === "fulfilled" && relatedRes.value?.results?.length > 0) {
           setSeedRelated(relatedRes.value.results);
-        }
-        if (featRes.status === "fulfilled" && featRes.value?.featured?.length > 0) {
-          setFeaturedSongs(featRes.value.featured);
         }
       } catch (err) {
         console.warn("Home discovery fetch note:", err);
@@ -163,29 +126,10 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialize]);
 
-  // Convert featured movie songs to playable Track objects
-  const featuredTracks: Track[] = useMemo(() => {
-    return featuredSongs.map((f) => ({
-      id: f.id,
-      title: f.title,
-      artist: f.artist,
-      album: f.filmTitle,
-      artworkUrl: f.artworkUrl || "",
-      youtubeVideoId: f.youtubeVideoId,
-      streamUrl: f.streamUrl || "",
-      language: f.language,
-      duration: 210,
-      sourceId: f.youtubeVideoId || f.id,
-      isPlayable: true,
-      sourceType: f.youtubeVideoId ? "youtube" : "curated",
-      sourceAttribution: f.releaseLabel,
-    }));
-  }, [featuredSongs]);
-
   // Combine online discovery pool
   const allCandidates = useMemo(() => {
     const shelfTracks = ytShelves.flatMap((s) => s.items || []);
-    const pool = [...featuredTracks, ...seedRelated, ...shelfTracks, ...saavnTrending];
+    const pool = [...seedRelated, ...shelfTracks, ...saavnTrending];
     const seen = new Set<string>();
     return pool.filter((t) => {
       if (seen.has(t.id)) return false;
@@ -193,7 +137,7 @@ export default function HomePage() {
       seen.add(t.id);
       return true;
     });
-  }, [featuredTracks, ytShelves, saavnTrending, seedRelated]);
+  }, [ytShelves, saavnTrending, seedRelated]);
 
   // Build dynamic user profile
   const userAffinity = useMemo(() => {
@@ -212,37 +156,84 @@ export default function HomePage() {
     return buildDailyMixes(allCandidates, userAffinity, history);
   }, [allCandidates, userAffinity, history]);
 
-  // Dynamically select featured track based on user affinity
-  const dynamicFeaturedTrack = useMemo(() => {
-    return selectDynamicFeaturedTrack(allCandidates, userAffinity, history) || null;
-  }, [allCandidates, userAffinity, history]);
+  // User Greeting
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
-  const activeFeaturedTrack: Track | null = useMemo(() => {
-    if (featuredTracks.length > 0) {
-      return featuredTracks[heroIndex % featuredTracks.length];
+  // Quick picks: 2x3 grid (up to 6 items)
+  // If user has history: pick from history & daily mixes
+  // If guest / no history: 3 Daily Mixes + 3 top collections
+  const quickPicks = useMemo(() => {
+    interface QuickPickItem {
+      id: string;
+      title: string;
+      subtitle: string;
+      artworkUrl?: string;
+      track?: Track;
+      mixId?: string;
+      collectionId?: string;
+      type: "track" | "mix" | "collection";
     }
-    return dynamicFeaturedTrack;
-  }, [featuredTracks, heroIndex, dynamicFeaturedTrack]);
 
-  const activeFeaturedMeta: FeaturedMovieSong | null = useMemo(() => {
-    if (featuredSongs.length > 0) {
-      return featuredSongs[heroIndex % featuredSongs.length];
+    const items: QuickPickItem[] = [];
+
+    if (history && history.length > 0) {
+      for (const t of history.slice(0, 3)) {
+        items.push({
+          id: `hist-${t.id}`,
+          title: t.title,
+          subtitle: t.artist,
+          artworkUrl: t.artworkUrl,
+          track: t,
+          type: "track",
+        });
+      }
+      for (const m of dailyMixes.slice(0, 3)) {
+        if (items.length >= 6) break;
+        items.push({
+          id: `mix-${m.id}`,
+          title: m.title,
+          subtitle: "Daily Mix",
+          artworkUrl: m.tracks[0]?.artworkUrl,
+          mixId: m.id,
+          type: "mix",
+        });
+      }
+    } else {
+      for (const m of dailyMixes.slice(0, 3)) {
+        items.push({
+          id: `mix-${m.id}`,
+          title: m.title,
+          subtitle: "Daily Mix",
+          artworkUrl: m.tracks[0]?.artworkUrl,
+          mixId: m.id,
+          type: "mix",
+        });
+      }
+      for (const col of INISAI_OFFICIAL_COLLECTIONS.slice(0, 3)) {
+        if (items.length >= 6) break;
+        items.push({
+          id: `col-${col.id}`,
+          title: col.title,
+          subtitle: "Official Collection",
+          artworkUrl: col.artworkUrl,
+          collectionId: col.id,
+          type: "collection",
+        });
+      }
     }
-    return null;
-  }, [featuredSongs, heroIndex]);
+
+    return items.slice(0, 6);
+  }, [history, dailyMixes]);
 
   // Dynamically rank "Made for you"
   const personalizedTracks = useMemo(() => {
     return rankPersonalizedRecommendations(allCandidates, userAffinity, history, 12);
   }, [allCandidates, userAffinity, history]);
-
-  const isHeroPlaying = Boolean(currentTrack?.id && activeFeaturedTrack?.id && currentTrack.id === activeFeaturedTrack.id && isPlaying);
-
-  const heroContext: PlaybackContext = {
-    id: "featured-new-releases",
-    type: "home_recommendations",
-    title: "Featured New Releases",
-  };
 
   const personalizedContext: PlaybackContext = {
     id: "home-personalized",
@@ -251,150 +242,95 @@ export default function HomePage() {
     trackIds: personalizedTracks.map((t) => t.id),
   };
 
-  const handleHeroPlay = () => {
-    if (!activeFeaturedTrack) return;
-    if (currentTrack?.id === activeFeaturedTrack.id) {
-      togglePlay();
-    } else {
-      const playQueue = featuredTracks.length > 0 ? featuredTracks : allCandidates.slice(0, 20);
-      playTrack(activeFeaturedTrack, playQueue, heroContext);
-    }
-  };
-
-  const handleNextHero = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const count = Math.min(featuredSongs.length || 1, 6);
-    setHeroIndex((prev) => (prev + 1) % count);
-  };
-
-  const handlePrevHero = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const count = Math.min(featuredSongs.length || 1, 6);
-    setHeroIndex((prev) => (prev - 1 + count) % count);
-  };
-
   return (
     <div className="space-y-8 sm:space-y-10 pb-16">
       {/* Dismissible Mobile / Desktop PWA Install Banner */}
       <PWAInstaller variant="banner" />
 
-      {/* 1. Dynamic Featured Songs Hero Banner (Featured New Releases) */}
-      {activeFeaturedTrack && (
-        <div
-          data-release-date={activeFeaturedMeta?.releaseDate}
-          onMouseEnter={() => setIsHeroHovered(true)}
-          onMouseLeave={() => setIsHeroHovered(false)}
-          className="relative rounded-3xl overflow-hidden glass-panel border border-slate-200/80 dark:border-white/10 p-6 sm:p-10 shadow-xl dark:shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 group transition-all"
-        >
-          <div className="absolute -top-24 -left-24 w-96 h-96 bg-inisai-accent/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-inisai-teal/15 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="space-y-3 max-w-xl z-10 text-center md:text-left">
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-              <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent/15 border border-inisai-accent/30 text-inisai-accent text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Featured New Releases</span>
-              </div>
-              {activeFeaturedMeta?.releaseLabel && (
-                <span className="text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full bg-inisai-teal/15 text-inisai-teal border border-inisai-teal/30">
-                  {activeFeaturedMeta.releaseLabel}
-                </span>
-              )}
-              {activeFeaturedMeta?.language && (
-                <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-white/80">
-                  {activeFeaturedMeta.language}
-                </span>
-              )}
-            </div>
-
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              {activeFeaturedTrack.title}
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 dark:text-inisai-muted font-medium">
-              {activeFeaturedTrack.artist}
-              {(activeFeaturedMeta?.filmTitle || activeFeaturedTrack.album) &&
-                ` • ${activeFeaturedMeta?.filmTitle || activeFeaturedTrack.album}`}
-            </p>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-white/70 max-w-md">
-              Every Beat, Your World — fresh releases, official high-fidelity audio, and synchronized lyrics.
-            </p>
-
-            <div className="pt-2 flex flex-wrap items-center justify-center md:justify-start gap-3">
-              <button
-                onClick={handleHeroPlay}
-                className="flex items-center space-x-2 px-6 py-3 rounded-full bg-inisai-accent dark:bg-white text-white dark:text-black font-bold text-sm shadow-lg hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-              >
-                {isHeroPlaying ? (
-                  <Pause className="w-4 h-4 fill-current" />
-                ) : (
-                  <Play className="w-4 h-4 fill-current translate-x-0.5" />
-                )}
-                <span>{isHeroPlaying ? "Pause" : "Listen Now"}</span>
-              </button>
-
-              <button
-                onClick={() => addToQueue(activeFeaturedTrack)}
-                className="flex items-center space-x-2 px-5 py-3 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/15 text-slate-900 dark:text-white font-semibold text-sm transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add to Queue</span>
-              </button>
-
-              <Link
-                href="/new"
-                className="hidden sm:flex items-center space-x-1.5 px-4 py-3 rounded-full bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white/80 font-semibold text-sm transition-colors cursor-pointer"
-              >
-                <Flame className="w-4 h-4 text-inisai-turmeric" />
-                <span>New & Upcoming</span>
-              </Link>
-            </div>
-
-            {/* Hero Carousel Navigation Dots */}
-            {featuredSongs.length > 1 && (
-              <div className="flex items-center justify-center md:justify-start space-x-2 pt-3">
-                <button
-                  onClick={handlePrevHero}
-                  className="p-1 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-colors"
-                  aria-label="Previous featured song"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <div className="flex space-x-1.5">
-                  {featuredSongs.slice(0, 6).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setHeroIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                        idx === heroIndex % Math.min(featuredSongs.length, 6)
-                          ? "w-6 bg-inisai-accent"
-                          : "w-2 bg-slate-300 dark:bg-white/20 hover:bg-slate-400 dark:hover:bg-white/40"
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={handleNextHero}
-                  className="p-1 rounded-full bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 text-slate-700 dark:text-white transition-colors"
-                  aria-label="Next featured song"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="relative w-44 h-44 sm:w-56 sm:h-56 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-white/15 flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500">
-            <CoverImage
-              src={activeFeaturedTrack.artworkUrl}
-              alt={activeFeaturedTrack.title}
-              youtubeVideoId={activeFeaturedTrack.youtubeVideoId}
-              type="track"
-              aspect="square"
-            />
-          </div>
+      {/* 1. Header Greeting & Quick Picks (2x3 Grid) */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            {greeting}
+            {user?.displayName ? `, ${user.displayName}` : ""}
+          </h1>
+          <span className="text-xs font-semibold text-inisai-accent flex items-center space-x-1">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Quick picks</span>
+          </span>
         </div>
-      )}
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {quickPicks.map((item) => {
+            const isItemPlaying =
+              item.track && currentTrack?.id === item.track.id && isPlaying;
+
+            const handleClick = () => {
+              if (item.type === "track" && item.track) {
+                if (currentTrack?.id === item.track.id) {
+                  togglePlay();
+                } else {
+                  playTrack(item.track, [item.track, ...allCandidates.slice(0, 20)], {
+                    id: "quick-picks",
+                    type: "home_recommendations",
+                    title: "Quick picks",
+                  });
+                }
+              }
+            };
+
+            const CardContent = (
+              <div
+                onClick={item.type === "track" ? handleClick : undefined}
+                className="group relative flex items-center gap-3 p-2 sm:p-2.5 rounded-2xl bg-white/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/10 hover:border-inisai-accent/40 shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden select-none"
+              >
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden flex-shrink-0 relative shadow-sm">
+                  <CoverImage
+                    src={item.artworkUrl}
+                    alt={item.title}
+                    kind={item.type === "track" ? "song" : item.type === "mix" ? "playlist" : "collection"}
+                    aspect="square"
+                  />
+                  {isItemPlaying && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <Pause className="w-4 h-4 text-white fill-white" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent transition-colors">
+                    {item.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-inisai-muted truncate mt-0.5">
+                    {item.subtitle}
+                  </p>
+                </div>
+                <div className="pr-1 sm:pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="w-8 h-8 rounded-full bg-inisai-accent text-white flex items-center justify-center shadow-md">
+                    <Play className="w-3.5 h-3.5 fill-white translate-x-0.5" />
+                  </div>
+                </div>
+              </div>
+            );
+
+            if (item.type === "mix" && item.mixId) {
+              return (
+                <Link key={item.id} href={`/mix/${encodeURIComponent(item.mixId)}`}>
+                  {CardContent}
+                </Link>
+              );
+            }
+            if (item.type === "collection" && item.collectionId) {
+              return (
+                <Link key={item.id} href={`/collection/${encodeURIComponent(item.collectionId)}`}>
+                  {CardContent}
+                </Link>
+              );
+            }
+            return <div key={item.id}>{CardContent}</div>;
+          })}
+        </div>
+      </div>
 
       {/* 2. Quick Spotify-Style Jump Back In Grid (Top 6 recents) */}
       {history && history.length > 0 && (
@@ -484,29 +420,15 @@ export default function HomePage() {
         </Link>
       </div>
 
-      {/* 3b. New & Upcoming Movie Songs Shelf (Driven by User's Language Preference) */}
-      {featuredTracks.length > 0 && (
+      {/* 3b. New & Upcoming Movie Songs Shelf (Behind FEATURE_NEW_RELEASES flag) */}
+      {FEATURE_NEW_RELEASES && (
         <MusicCarousel
           title="New & Upcoming Movie Songs"
           subtitle="Fresh theatrical drops & anticipated soundtracks in your languages"
           icon={<Flame className="w-5 h-5 text-inisai-turmeric" />}
           seeAllHref="/new"
         >
-          {featuredTracks.map((track, idx) => (
-            <TrackCard
-              key={`feat-shelf-${track.id}`}
-              track={track}
-              index={idx}
-              playlistContext={featuredTracks}
-              context={{
-                id: "new-and-upcoming-shelf",
-                type: "home_recommendations",
-                title: "New & Upcoming Movie Songs",
-                trackIds: featuredTracks.map((t) => t.id),
-              }}
-              carouselItem
-            />
-          ))}
+          {[]}
         </MusicCarousel>
       )}
 
@@ -650,9 +572,10 @@ export default function HomePage() {
             >
               <div className="relative aspect-square w-full rounded-xl overflow-hidden shadow-inner group/cover">
                 <CoverImage
+                  id={`col-${col.id}`}
                   src={col.artworkUrl}
                   alt={col.title}
-                  type="playlist"
+                  kind="collection"
                   aspect="square"
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/cover:scale-105"
                 />

@@ -112,10 +112,6 @@ export const Sidebar: React.FC = () => {
 
       {/* Sidebar Footer Controls */}
       <div className="border-t border-slate-200/80 dark:border-white/[0.06] pt-3 mt-2 space-y-1">
-        <div className="px-1 py-1">
-          <PWAInstaller />
-        </div>
-
         {bottomNav.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;

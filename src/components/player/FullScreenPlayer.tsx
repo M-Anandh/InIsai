@@ -326,9 +326,7 @@ export const FullScreenPlayer: React.FC = () => {
           </p>
           {playbackContext?.title && (
             <p className="text-xs font-medium text-white/90 truncate max-w-[180px] sm:max-w-xs">
-              {playbackContext.title && !playbackContext.title.startsWith("Featured:")
-                ? playbackContext.title
-                : "Featured New Releases"}
+              {playbackContext.title.replace(/^Featured:\s*/i, "").trim() || "Now Playing"}
             </p>
           )}
         </div>
@@ -473,301 +471,311 @@ export const FullScreenPlayer: React.FC = () => {
       </div>
 
       {/* Main Content Stage */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-between px-5 sm:px-8 pb-3 pt-1 scrollbar-none">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-between px-5 sm:px-8 pb-1 pt-1 scrollbar-none">
         {activeDrawerTab === "lyrics" && <LyricsView />}
         {activeDrawerTab === "queue" && <QueueView />}
         {activeDrawerTab === "equalizer" && <EqualizerDrawer />}
 
         {activeDrawerTab === "nowPlaying" && (
-          <div className="flex flex-col items-center justify-between w-full max-w-md mx-auto flex-1 min-h-0 py-1 space-y-2 sm:space-y-3">
-            {/* Optional Song / Video Switcher when YT engine active */}
-            {currentTrack.youtubeVideoId && engineId === "youtube" && (
-              <div className="flex items-center space-x-1 p-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md">
-                <button
-                  onClick={() => setMediaMode("audio")}
-                  className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    mediaMode === "audio" ? "bg-white text-black shadow" : "text-white/70 hover:text-white"
-                  }`}
-                >
-                  <Music className="w-3.5 h-3.5" />
-                  <span>Song</span>
-                </button>
-                <button
-                  onClick={() => setMediaMode("video")}
-                  className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                    mediaMode === "video" ? "bg-rose-600 text-white shadow" : "text-white/70 hover:text-white"
-                  }`}
-                >
-                  <Video className="w-3.5 h-3.5" />
-                  <span>Video</span>
-                </button>
-              </div>
-            )}
-
-            {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork with Ambient Glow & Double-Tap Seek */}
-            <div className="relative w-full flex items-center justify-center my-auto py-1">
-              {/* Ambient Light Aurora Glow (Behind Artwork) */}
-              <div
-                className={`absolute w-72 h-72 sm:w-96 sm:h-96 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${
-                  isPlaying ? "opacity-65 scale-110" : "opacity-30 scale-95"
-                }`}
-                style={{
-                  background: `radial-gradient(circle, ${palette.primary || "#7A5CFF"} 0%, ${palette.secondary || "#FF3D77"} 55%, transparent 75%)`,
-                }}
-              />
-              <div
-                className={`absolute -top-8 -right-8 w-60 h-60 rounded-full blur-3xl pointer-events-none transition-all duration-1000 delay-150 ${
-                  isPlaying ? "opacity-45 scale-105" : "opacity-20 scale-90"
-                }`}
-                style={{
-                  background: `radial-gradient(circle, ${palette.secondary || "#FF8A3D"} 0%, transparent 70%)`,
-                }}
-              />
-
-              {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
-                <div
-                  ref={videoSlotRef}
-                  onClick={togglePlay}
-                  className="w-full aspect-video max-h-[28vh] sm:max-h-[34vh] rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center relative z-10 cursor-pointer"
-                >
-                  <span className="text-xs text-white/40 font-mono">Syncing YouTube Video...</span>
+          <div className="flex flex-col items-center justify-between w-full max-w-md mx-auto flex-1 min-h-0 py-1">
+            {/* Middle Visual Area: Song/Video Switcher + Artwork/Video (flexes and shrinks to fit remaining space) */}
+            <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center my-auto py-1 space-y-2">
+              {/* Optional Song / Video Switcher when YT engine active */}
+              {currentTrack.youtubeVideoId && engineId === "youtube" && (
+                <div className="flex items-center space-x-1 p-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex-shrink-0">
+                  <button
+                    onClick={() => setMediaMode("audio")}
+                    className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      mediaMode === "audio" ? "bg-white text-black shadow" : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    <Music className="w-3.5 h-3.5" />
+                    <span>Song</span>
+                  </button>
+                  <button
+                    onClick={() => setMediaMode("video")}
+                    className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                      mediaMode === "video" ? "bg-rose-600 text-white shadow" : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>Video</span>
+                  </button>
                 </div>
-              ) : (
+              )}
+
+              {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork with Ambient Glow & Double-Tap Seek */}
+              <div className="relative w-full flex items-center justify-center my-auto py-1">
+                {/* Ambient Light Aurora Glow (Behind Artwork) */}
                 <div
-                  onClick={handleArtworkClick}
-                  className={`relative z-10 w-52 h-52 sm:w-64 sm:h-64 md:w-80 md:h-80 max-w-[76vw] max-h-[26vh] sm:max-h-[32vh] md:max-h-[38vh] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
-                    isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
+                  className={`absolute w-64 h-64 sm:w-80 sm:h-80 rounded-full blur-3xl pointer-events-none transition-all duration-1000 ${
+                    isPlaying ? "opacity-65 scale-110" : "opacity-30 scale-95"
                   }`}
                   style={{
-                    boxShadow: isPlaying
-                      ? `0 24px 60px -10px ${palette.glow}`
-                      : "0 16px 40px -12px rgba(0,0,0,0.65)",
+                    background: `radial-gradient(circle, ${palette.primary || "#7A5CFF"} 0%, ${palette.secondary || "#FF3D77"} 55%, transparent 75%)`,
                   }}
-                  title="Double tap left/right to seek ±10s"
-                >
-                  <CoverImage
-                    src={currentTrack.artworkUrl}
-                    alt={currentTrack.title}
-                    youtubeVideoId={currentTrack.youtubeVideoId}
-                    type="track"
-                    aspect="square"
-                  />
+                />
+                <div
+                  className={`absolute -top-6 -right-6 w-52 h-52 rounded-full blur-3xl pointer-events-none transition-all duration-1000 delay-150 ${
+                    isPlaying ? "opacity-45 scale-105" : "opacity-20 scale-90"
+                  }`}
+                  style={{
+                    background: `radial-gradient(circle, ${palette.secondary || "#FF8A3D"} 0%, transparent 70%)`,
+                  }}
+                />
 
-                  {/* Double-Tap Gesture Feedback Ripple */}
-                  {seekFeedback && (
-                    <div
-                      className={`absolute inset-y-0 ${
-                        seekFeedback.side === "left"
-                          ? "left-0 w-1/2 rounded-l-3xl bg-black/50"
-                          : "right-0 w-1/2 rounded-r-3xl bg-black/50"
-                      } flex items-center justify-center pointer-events-none transition-opacity animate-in fade-in duration-200`}
-                    >
-                      <div className="flex items-center space-x-1.5 text-white font-bold text-xs bg-black/70 px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
-                        <span>{seekFeedback.side === "left" ? "<<" : ""}</span>
-                        <span>{seekFeedback.text}</span>
-                        <span>{seekFeedback.side === "right" ? ">>" : ""}</span>
+                {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
+                  <div
+                    ref={videoSlotRef}
+                    onClick={togglePlay}
+                    className="w-full aspect-video max-h-[min(26vh,220px)] rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center relative z-10 cursor-pointer"
+                  >
+                    <span className="text-xs text-white/40 font-mono">Syncing YouTube Video...</span>
+                  </div>
+                ) : (
+                  <div
+                    onClick={handleArtworkClick}
+                    className={`relative z-10 w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 max-w-[72vw] max-h-[min(30vh,260px)] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
+                      isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
+                    }`}
+                    style={{
+                      boxShadow: isPlaying
+                        ? `0 24px 60px -10px ${palette.glow}`
+                        : "0 16px 40px -12px rgba(0,0,0,0.65)",
+                    }}
+                    title="Double tap left/right to seek ±10s"
+                  >
+                    <CoverImage
+                      src={currentTrack.artworkUrl}
+                      alt={currentTrack.title}
+                      youtubeVideoId={currentTrack.youtubeVideoId}
+                      type="track"
+                      aspect="square"
+                    />
+
+                    {/* Double-Tap Gesture Feedback Ripple */}
+                    {seekFeedback && (
+                      <div
+                        className={`absolute inset-y-0 ${
+                          seekFeedback.side === "left"
+                            ? "left-0 w-1/2 rounded-l-3xl bg-black/50"
+                            : "right-0 w-1/2 rounded-r-3xl bg-black/50"
+                        } flex items-center justify-center pointer-events-none transition-opacity animate-in fade-in duration-200`}
+                      >
+                        <div className="flex items-center space-x-1.5 text-white font-bold text-xs bg-black/70 px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
+                          <span>{seekFeedback.side === "left" ? "<<" : ""}</span>
+                          <span>{seekFeedback.text}</span>
+                          <span>{seekFeedback.side === "right" ? ">>" : ""}</span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Stats for Nerds Telemetry Card */}
+              {settings.statsForNerd && (
+                <div className="w-full p-2.5 rounded-2xl bg-black/50 border border-white/15 text-[10px] font-mono text-white/80 grid grid-cols-2 gap-x-3 gap-y-0.5 flex-shrink-0">
+                  <span>Engine: {engineId === "youtube" ? "YT.Player IFrame" : "WebAudio <audio>"}</span>
+                  <span>Source: {currentTrack.providerId || currentTrack.sourceType}</span>
+                  <span className="truncate">ID: {currentTrack.youtubeVideoId || currentTrack.sourceId}</span>
+                  <span>Rate: {settings.playbackRate}x {videoQuality ? `(${videoQuality})` : ""}</span>
+                  <span>Buffered: {Math.round(buffered || 0)}%</span>
+                  <span>Latency: {latencyMs !== undefined ? `${latencyMs}ms` : "Live"}</span>
                 </div>
               )}
             </div>
 
-            {/* Stats for Nerds Telemetry Card */}
-            {settings.statsForNerd && (
-              <div className="w-full p-3 rounded-2xl bg-black/50 border border-white/15 text-[11px] font-mono text-white/80 grid grid-cols-2 gap-x-4 gap-y-1">
-                <span>Engine: {engineId === "youtube" ? "YT.Player IFrame" : "WebAudio <audio>"}</span>
-                <span>Source: {currentTrack.providerId || currentTrack.sourceType}</span>
-                <span className="truncate">ID: {currentTrack.youtubeVideoId || currentTrack.sourceId}</span>
-                <span>Rate: {settings.playbackRate}x {videoQuality ? `(${videoQuality})` : ""}</span>
-                <span>Buffered: {Math.round(buffered || 0)}%</span>
-                <span>Latency: {latencyMs !== undefined ? `${latencyMs}ms` : "Live"}</span>
-              </div>
-            )}
-
-            {/* Track Info & Like on One Row */}
-            <div className="w-full flex items-center justify-between gap-3 pt-1">
-              <div className="min-w-0 flex-1">
-                <h2 className="text-xl sm:text-2xl font-extrabold truncate tracking-tight">
-                  {currentTrack.title}
-                </h2>
-                <p className="text-sm text-white/65 truncate mt-0.5">
-                  {currentTrack.artist}
-                  {currentTrack.album && currentTrack.album !== "YouTube Music" && ` • ${currentTrack.album}`}
-                </p>
-                <div className="flex items-center space-x-2 mt-1">
-                  <span className="inline-block px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-medium text-white/70">
-                    {currentTrack.sourceAttribution ||
-                      (engineId === "youtube" ? "YouTube Music" : "InIsai Audio")}
-                  </span>
+            {/* Bottom Controls Area: NEVER SHRINKS, ALWAYS PINNED ABOVE THE BOTTOM TABS */}
+            <div className="w-full flex-shrink-0 space-y-1.5 sm:space-y-2 pt-1 pb-1">
+              {/* Track Info & Like on One Row */}
+              <div className="w-full flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-extrabold truncate tracking-tight text-white">
+                    {currentTrack.title}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-white/65 truncate mt-0.5">
+                    {currentTrack.artist}
+                    {currentTrack.album && currentTrack.album !== "YouTube Music" && ` • ${currentTrack.album}`}
+                  </p>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <span className="inline-block px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-medium text-white/70">
+                      {currentTrack.sourceAttribution ||
+                        (engineId === "youtube" ? "YouTube Music" : "InIsai Audio")}
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <button
-                onClick={() => {
-                  triggerHaptic();
-                  toggleLike(currentTrack, setToastMessage);
-                }}
-                aria-label={liked ? "Unlike" : "Like"}
-                className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform cursor-pointer"
-              >
-                <Heart
-                  className={`w-6 h-6 transition-transform ${
-                    liked ? "fill-[#FF3D77] text-[#FF3D77] scale-110" : "text-white/80"
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Center-Mirrored Multi-Layer Wave Visualizer with Harmonic Glow */}
-            <div className="w-full max-w-sm my-0.5">
-              <WaveVisualizer className="w-full h-11" barCount={52} />
-            </div>
-
-            {/* Scrubber with Hover/Drag Preview Tooltip & Buffered Bar */}
-            <div className="w-full space-y-1.5 relative">
-              {hoverTime !== null && (
-                <div
-                  className="absolute -top-8 -translate-x-1/2 px-2 py-0.5 rounded-md bg-white text-black text-[11px] font-mono font-bold shadow-lg pointer-events-none"
-                  style={{ left: `${hoverXPercent}%` }}
-                >
-                  {formatDuration(hoverTime)}
-                </div>
-              )}
-
-              <div
-                className="w-full h-2.5 bg-white/15 rounded-full cursor-pointer relative overflow-hidden"
-                onMouseMove={(e) => updateHoverScrub(e.clientX, e.currentTarget.getBoundingClientRect())}
-                onMouseLeave={() => setHoverTime(null)}
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                  seek(ratio * (duration || 0));
-                }}
-              >
-                {/* Buffered Range */}
-                <div
-                  className="absolute inset-y-0 left-0 bg-white/20 transition-all"
-                  style={{ width: `${Math.min(100, buffered || 0)}%` }}
-                />
-                {/* Active Progress */}
-                <div
-                  className="relative h-full rounded-full transition-all duration-100"
-                  style={{
-                    width: `${progressPercent}%`,
-                    background: "linear-gradient(90deg, #FF8A3D 0%, #FF3D77 50%, #7A5CFF 100%)",
+                <button
+                  onClick={() => {
+                    triggerHaptic();
+                    toggleLike(currentTrack, setToastMessage);
                   }}
+                  aria-label={liked ? "Unlike" : "Like"}
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform cursor-pointer"
+                >
+                  <Heart
+                    className={`w-5 h-5 sm:w-6 sm:h-6 transition-transform ${
+                      liked ? "fill-[#FF3D77] text-[#FF3D77] scale-110" : "text-white/80"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Center-Mirrored Multi-Layer Wave Visualizer with Harmonic Glow */}
+              <div className="w-full max-w-sm mx-auto my-0.5">
+                <WaveVisualizer className="w-full h-8 sm:h-10" barCount={48} />
+              </div>
+
+              {/* Scrubber with Hover/Drag Preview Tooltip & Buffered Bar */}
+              <div className="w-full space-y-1 relative">
+                {hoverTime !== null && (
+                  <div
+                    className="absolute -top-7 -translate-x-1/2 px-2 py-0.5 rounded-md bg-white text-black text-[10px] font-mono font-bold shadow-lg pointer-events-none"
+                    style={{ left: `${hoverXPercent}%` }}
+                  >
+                    {formatDuration(hoverTime)}
+                  </div>
+                )}
+
+                <div
+                  className="w-full h-2 bg-white/15 rounded-full cursor-pointer relative overflow-hidden"
+                  onMouseMove={(e) => updateHoverScrub(e.clientX, e.currentTarget.getBoundingClientRect())}
+                  onMouseLeave={() => setHoverTime(null)}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    seek(ratio * (duration || 0));
+                  }}
+                >
+                  {/* Buffered Range */}
+                  <div
+                    className="absolute inset-y-0 left-0 bg-white/20 transition-all"
+                    style={{ width: `${Math.min(100, buffered || 0)}%` }}
+                  />
+                  {/* Active Progress */}
+                  <div
+                    className="relative h-full rounded-full transition-all duration-100"
+                    style={{
+                      width: `${progressPercent}%`,
+                      background: "linear-gradient(90deg, #FF8A3D 0%, #FF3D77 50%, #7A5CFF 100%)",
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-between text-[11px] font-mono text-white/55">
+                  <span>{formatDuration(currentTime)}</span>
+                  <span>{formatDuration(duration)}</span>
+                </div>
+              </div>
+
+              {/* Transport Row */}
+              <div className="flex items-center justify-between w-full pt-0.5">
+                <button
+                  onClick={toggleShuffle}
+                  aria-label="Toggle Shuffle"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                    isShuffle ? "text-[#FF8A3D]" : "text-white/45 hover:text-white"
+                  }`}
+                >
+                  <Shuffle className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+
+                <button
+                  onMouseDown={() => prevHold.start(-1)}
+                  onMouseUp={prevHold.stop}
+                  onMouseLeave={prevHold.stop}
+                  onTouchStart={() => prevHold.start(-1)}
+                  onTouchEnd={prevHold.stop}
+                  aria-label="Previous Track (Hold to rewind)"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer relative"
+                >
+                  <SkipBack className="w-6 h-6 sm:w-7 sm:h-7 fill-current" />
+                  {prevHold.isHolding && (
+                    <span className="absolute -top-7 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[10px] font-mono text-white whitespace-nowrap animate-pulse">
+                      {prevHold.accumulatedSeconds}s &lt;&lt;
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    triggerHaptic();
+                    togglePlay();
+                  }}
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                  className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-transform cursor-pointer flex-shrink-0"
+                >
+                  {isPlaying ? (
+                    <Pause className="w-7 h-7 sm:w-8 sm:h-8 fill-black" />
+                  ) : (
+                    <Play className="w-7 h-7 sm:w-8 sm:h-8 fill-black translate-x-0.5" />
+                  )}
+                </button>
+
+                <button
+                  onMouseDown={() => nextHold.start(1)}
+                  onMouseUp={nextHold.stop}
+                  onMouseLeave={nextHold.stop}
+                  onTouchStart={() => nextHold.start(1)}
+                  onTouchEnd={nextHold.stop}
+                  aria-label="Next Track (Hold to fast forward)"
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer relative"
+                >
+                  <SkipForward className="w-6 h-6 sm:w-7 sm:h-7 fill-current" />
+                  {nextHold.isHolding && (
+                    <span className="absolute -top-7 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[10px] font-mono text-white whitespace-nowrap animate-pulse">
+                      &gt;&gt; +{nextHold.accumulatedSeconds}s
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={cycleRepeat}
+                  aria-label={`Repeat Mode: ${repeatMode}`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
+                    repeatMode !== "off" ? "text-[#7A5CFF]" : "text-white/45 hover:text-white"
+                  }`}
+                >
+                  {repeatMode === "one" ? (
+                    <Repeat1 className="w-4 h-4 sm:w-5 sm:h-5" />
+                  ) : (
+                    <Repeat className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
+              </div>
+
+              {/* Volume Slider (Fine-Pointer Desktop Only) */}
+              <div className="hidden [@media(pointer:fine)]:flex items-center space-x-3 w-full max-w-xs mx-auto pt-0.5">
+                <button
+                  onClick={toggleMute}
+                  aria-label={settings.isMuted ? "Unmute" : "Mute"}
+                  className="text-white/60 hover:text-white cursor-pointer"
+                >
+                  {settings.isMuted || settings.volume === 0 ? (
+                    <VolumeX className="w-4 h-4 text-rose-400" />
+                  ) : (
+                    <Volume2 className="w-4 h-4" />
+                  )}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  aria-label="Volume"
+                  value={settings.isMuted ? 0 : settings.volume}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                  className="flex-1 accent-white h-1.5 bg-white/20 rounded-lg cursor-pointer"
                 />
               </div>
-
-              <div className="flex justify-between text-xs font-mono text-white/55">
-                <span>{formatDuration(currentTime)}</span>
-                <span>{formatDuration(duration)}</span>
-              </div>
-            </div>
-
-            {/* Transport Row */}
-            <div className="flex items-center justify-between w-full pt-1">
-              <button
-                onClick={toggleShuffle}
-                aria-label="Toggle Shuffle"
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                  isShuffle ? "text-[#FF8A3D]" : "text-white/45 hover:text-white"
-                }`}
-              >
-                <Shuffle className="w-5 h-5" />
-              </button>
-
-              <button
-                onMouseDown={() => prevHold.start(-1)}
-                onMouseUp={prevHold.stop}
-                onMouseLeave={prevHold.stop}
-                onTouchStart={() => prevHold.start(-1)}
-                onTouchEnd={prevHold.stop}
-                aria-label="Previous Track (Hold to rewind)"
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer relative"
-              >
-                <SkipBack className="w-7 h-7 fill-current" />
-                {prevHold.isHolding && (
-                  <span className="absolute -top-7 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[10px] font-mono text-white whitespace-nowrap animate-pulse">
-                    {prevHold.accumulatedSeconds}s &lt;&lt;
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  triggerHaptic();
-                  togglePlay();
-                }}
-                aria-label={isPlaying ? "Pause" : "Play"}
-                className="w-16 h-16 rounded-full bg-white text-black flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-transform cursor-pointer"
-              >
-                {isPlaying ? (
-                  <Pause className="w-8 h-8 fill-black" />
-                ) : (
-                  <Play className="w-8 h-8 fill-black translate-x-0.5" />
-                )}
-              </button>
-
-              <button
-                onMouseDown={() => nextHold.start(1)}
-                onMouseUp={nextHold.stop}
-                onMouseLeave={nextHold.stop}
-                onTouchStart={() => nextHold.start(1)}
-                onTouchEnd={nextHold.stop}
-                aria-label="Next Track (Hold to fast forward)"
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer relative"
-              >
-                <SkipForward className="w-7 h-7 fill-current" />
-                {nextHold.isHolding && (
-                  <span className="absolute -top-7 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[10px] font-mono text-white whitespace-nowrap animate-pulse">
-                    &gt;&gt; +{nextHold.accumulatedSeconds}s
-                  </span>
-                )}
-              </button>
-
-              <button
-                onClick={cycleRepeat}
-                aria-label={`Repeat Mode: ${repeatMode}`}
-                className={`w-11 h-11 rounded-full flex items-center justify-center transition-colors cursor-pointer ${
-                  repeatMode !== "off" ? "text-[#7A5CFF]" : "text-white/45 hover:text-white"
-                }`}
-              >
-                {repeatMode === "one" ? <Repeat1 className="w-5 h-5" /> : <Repeat className="w-5 h-5" />}
-              </button>
-            </div>
-
-            {/* Volume Slider (Fine-Pointer Desktop Only) */}
-            <div className="hidden [@media(pointer:fine)]:flex items-center space-x-3 w-full max-w-xs pt-1">
-              <button
-                onClick={toggleMute}
-                aria-label={settings.isMuted ? "Unmute" : "Mute"}
-                className="text-white/60 hover:text-white cursor-pointer"
-              >
-                {settings.isMuted || settings.volume === 0 ? (
-                  <VolumeX className="w-4 h-4 text-rose-400" />
-                ) : (
-                  <Volume2 className="w-4 h-4" />
-                )}
-              </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                aria-label="Volume"
-                value={settings.isMuted ? 0 : settings.volume}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                className="flex-1 accent-white h-1.5 bg-white/20 rounded-lg cursor-pointer"
-              />
             </div>
           </div>
         )}
       </div>
 
       {/* Bottom Sheet Triggers Row (Lyrics · Queue · FX · Sleep) */}
-      <div className="px-4 sm:px-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 border-t border-white/10 bg-black/40 backdrop-blur-2xl flex items-center justify-around max-w-md w-full mx-auto">
+      <div className="px-4 sm:px-8 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 border-t border-white/10 bg-black/40 backdrop-blur-2xl flex items-center justify-around max-w-md w-full mx-auto flex-shrink-0 relative z-20">
         <button
           onClick={() => setActiveDrawerTab(activeDrawerTab === "lyrics" ? "nowPlaying" : "lyrics")}
           className={`flex flex-col items-center justify-center min-w-[56px] min-h-[44px] rounded-xl text-[11px] font-semibold transition-colors cursor-pointer ${

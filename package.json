@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "node --test tests/**/*.test.mjs",
-    "verify:releases": "node scripts/verify-releases.mjs",
+    "verify:images": "node scripts/verify-images.mjs",
     "e2e:prod": "playwright test --config=playwright.config.ts"
   },
   "dependencies": {

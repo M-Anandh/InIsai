@@ -104,3 +104,32 @@ export async function discoverTmdbMovies(
 
   return movies.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 }
+
+/**
+ * Search TMDB for a person (composer/singer/actor) to fetch official high-res profile photo.
+ */
+export async function getTmdbPersonPhoto(name: string, apiKey?: string): Promise<string | null> {
+  const key = apiKey || process.env.TMDB_API_KEY;
+  if (!key || key.length < 10 || !name?.trim()) return null;
+
+  try {
+    const url = `${TMDB_BASE_URL}/search/person?api_key=${encodeURIComponent(
+      key
+    )}&query=${encodeURIComponent(name.trim())}&page=1`;
+
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      next: { revalidate: 86400 * 7 }, // cache 7 days
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    const match = data.results?.[0];
+    if (match?.profile_path) {
+      return `https://image.tmdb.org/t/p/w500${match.profile_path}`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

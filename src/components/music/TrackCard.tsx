@@ -62,10 +62,11 @@ export const TrackCard: React.FC<TrackCardProps> = ({
       {/* Artwork Container */}
       <div className="relative aspect-square w-full rounded-xl overflow-hidden bg-slate-200 dark:bg-black/40 border border-slate-200/60 dark:border-white/5 shadow-inner">
         <ArtworkImage
+          id={track.id}
           src={track.artworkUrl}
           alt={track.title}
           youtubeVideoId={track.youtubeVideoId}
-          type="track"
+          kind="song"
           aspect="square"
           eager={isEager}
           className={`group-hover:scale-105 transition-transform duration-500 ${

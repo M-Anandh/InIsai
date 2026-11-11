@@ -239,6 +239,17 @@ function SearchContent() {
 
   const isTopPlaying = topResult && currentTrack?.id === topResult.id && isPlaying;
 
+  // Check if top match is an artist
+  const matchingArtist = useMemo(() => {
+    if (!query || artists.length === 0) return null;
+    const cleanQ = query.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const firstNorm = (artists[0].name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (firstNorm === cleanQ || cleanQ.startsWith(firstNorm) || firstNorm.startsWith(cleanQ)) {
+      return artists[0];
+    }
+    return null;
+  }, [query, artists]);
+
   const handlePlayTopResult = () => {
     if (!topResult) return;
     if (currentTrack?.id === topResult.id) {
@@ -370,85 +381,135 @@ function SearchContent() {
       ) : query ? (
         <div className="space-y-10">
           {/* Top Result + Songs */}
-          {showSongs && (songs.length > 0 || topResult) && (
+          {showSongs && (songs.length > 0 || topResult || matchingArtist) && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              {topResult && (
+              {(matchingArtist || topResult) && (
                 <div className="lg:col-span-1 space-y-4">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-inisai-muted">
                     Best match
                   </h3>
-                  <div
-                    onClick={handlePlayTopResult}
-                    className="group relative p-6 rounded-3xl bg-[#FBFAF8] dark:bg-[#1C1928] border border-slate-200/80 dark:border-white/10 hover:border-inisai-accent/40 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shadow-xl flex-shrink-0">
-                        <CoverImage
-                          src={topResult.artworkUrl}
-                          alt={topResult.title}
-                          youtubeVideoId={topResult.youtubeVideoId}
-                          type="track"
-                          aspect="square"
-                          eager
-                        />
-                        <div
-                          className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
-                            isTopPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                          }`}
-                        >
-                          <div className="w-12 h-12 rounded-full bg-inisai-accent text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                            {isTopPlaying ? (
-                              <Pause className="w-5 h-5 fill-current" />
-                            ) : (
-                              <Play className="w-5 h-5 fill-current translate-x-0.5" />
-                            )}
-                          </div>
+                  {matchingArtist ? (
+                    <Link
+                      href={`/artist/${encodeURIComponent(matchingArtist.id)}?name=${encodeURIComponent(matchingArtist.name)}&photo=${encodeURIComponent(matchingArtist.artworkUrl || "")}`}
+                      className="group relative p-6 rounded-3xl bg-[#FBFAF8] dark:bg-[#1C1928] border border-slate-200/80 dark:border-white/10 hover:border-inisai-accent/40 shadow-md hover:shadow-2xl transition-all duration-300 block cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-xl flex-shrink-0 bg-slate-800">
+                          <CoverImage
+                            src={matchingArtist.artworkUrl}
+                            alt={matchingArtist.name}
+                            kind="artist"
+                            aspect="square"
+                            eager
+                          />
+                        </div>
+
+                        <div className="min-w-0 flex-1 pt-2">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full bg-inisai-accent/15 text-inisai-accent text-[10px] font-extrabold uppercase tracking-wider mb-2">
+                            Artist
+                          </span>
+                          <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent transition-colors">
+                            {matchingArtist.name}
+                          </h4>
+                          <p className="text-xs text-slate-500 dark:text-inisai-muted font-medium truncate mt-1">
+                            {matchingArtist.subscribers || "Official Artist"}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="min-w-0 flex-1 pt-1">
-                        <span className="inline-block px-2.5 py-0.5 rounded-full bg-inisai-accent/15 text-inisai-accent text-[10px] font-extrabold uppercase tracking-wider mb-2">
-                          Song
+                      <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-200/60 dark:border-white/10">
+                        <span className="text-xs font-semibold text-inisai-accent">
+                          View Artist Profile →
                         </span>
-                        <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent transition-colors">
-                          {topResult.title}
-                        </h4>
-                        <p className="text-xs sm:text-sm text-slate-700 dark:text-white/85 font-medium truncate mt-1">
-                          {topResult.artist}
-                        </p>
-                        {topResult.album && topResult.album !== "YouTube Music" && (
-                          <p className="text-[11px] text-slate-500 dark:text-inisai-muted truncate mt-0.5">
-                            {topResult.album}
-                          </p>
+                        {songs.length > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              playTrack(songs[0], songs, searchContext);
+                            }}
+                            className="px-4 py-2 rounded-full bg-inisai-accent text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-inisai-accent/25 hover:opacity-95 active:scale-95 transition-all"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
+                            <span>Play All</span>
+                          </button>
                         )}
                       </div>
-                    </div>
+                    </Link>
+                  ) : topResult ? (
+                    <div
+                      onClick={handlePlayTopResult}
+                      className="group relative p-6 rounded-3xl bg-[#FBFAF8] dark:bg-[#1C1928] border border-slate-200/80 dark:border-white/10 hover:border-inisai-accent/40 shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden shadow-xl flex-shrink-0">
+                          <CoverImage
+                            src={topResult.artworkUrl}
+                            alt={topResult.title}
+                            youtubeVideoId={topResult.youtubeVideoId}
+                            type="track"
+                            aspect="square"
+                            eager
+                          />
+                          <div
+                            className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
+                              isTopPlaying ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                            }`}
+                          >
+                            <div className="w-12 h-12 rounded-full bg-inisai-accent text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                              {isTopPlaying ? (
+                                <Pause className="w-5 h-5 fill-current" />
+                              ) : (
+                                <Play className="w-5 h-5 fill-current translate-x-0.5" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-200/60 dark:border-white/10">
-                      <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 tabular-nums">
-                        {topResult.duration ? `${Math.floor(topResult.duration / 60)}:${String(topResult.duration % 60).padStart(2, "0")}` : "Direct Stream"}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlayTopResult();
-                        }}
-                        className="px-4 py-2 rounded-full bg-inisai-accent text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-inisai-accent/25 hover:opacity-95 active:scale-95 transition-all"
-                      >
-                        {isTopPlaying ? (
-                          <>
-                            <Pause className="w-3.5 h-3.5 fill-current" />
-                            <span>Pause</span>
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
-                            <span>Play Now</span>
-                          </>
-                        )}
-                      </button>
+                        <div className="min-w-0 flex-1 pt-1">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full bg-inisai-accent/15 text-inisai-accent text-[10px] font-extrabold uppercase tracking-wider mb-2">
+                            Song
+                          </span>
+                          <h4 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white truncate group-hover:text-inisai-accent transition-colors">
+                            {topResult.title}
+                          </h4>
+                          <p className="text-xs sm:text-sm text-slate-700 dark:text-white/85 font-medium truncate mt-1">
+                            {topResult.artist}
+                          </p>
+                          {topResult.album && topResult.album !== "YouTube Music" && (
+                            <p className="text-[11px] text-slate-500 dark:text-inisai-muted truncate mt-0.5">
+                              {topResult.album}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 mt-2 border-t border-slate-200/60 dark:border-white/10">
+                        <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-slate-200/80 dark:bg-white/10 text-slate-700 dark:text-slate-200 tabular-nums">
+                          {topResult.duration ? `${Math.floor(topResult.duration / 60)}:${String(topResult.duration % 60).padStart(2, "0")}` : "Direct Stream"}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePlayTopResult();
+                          }}
+                          className="px-4 py-2 rounded-full bg-inisai-accent text-white font-bold text-xs flex items-center space-x-1.5 shadow-lg shadow-inisai-accent/25 hover:opacity-95 active:scale-95 transition-all"
+                        >
+                          {isTopPlaying ? (
+                            <>
+                              <Pause className="w-3.5 h-3.5 fill-current" />
+                              <span>Pause</span>
+                            </>
+                          ) : (
+                            <>
+                              <Play className="w-3.5 h-3.5 fill-current translate-x-0.5" />
+                              <span>Play Now</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
               )}
 
@@ -488,11 +549,11 @@ function SearchContent() {
                 {artists.map((artist) => (
                   <Link
                     key={artist.id}
-                    href={`/artist/${encodeURIComponent(artist.id)}`}
+                    href={`/artist/${encodeURIComponent(artist.id)}?name=${encodeURIComponent(artist.name)}&photo=${encodeURIComponent(artist.artworkUrl || "")}`}
                     className="group flex flex-col items-center text-center p-3 rounded-2xl bg-white/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 hover:border-inisai-accent/40 transition-all shadow-sm"
                   >
-                    <div className="w-24 h-24 rounded-full overflow-hidden mb-2.5">
-                      <CoverImage src={artist.artworkUrl} alt={artist.name} type="artist" aspect="square" />
+                    <div className="w-24 h-24 rounded-full overflow-hidden mb-2.5 bg-slate-800">
+                      <CoverImage src={artist.artworkUrl} alt={artist.name} kind="artist" aspect="square" />
                     </div>
                     <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate w-full group-hover:text-inisai-accent">
                       {artist.name}

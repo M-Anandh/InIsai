@@ -125,10 +125,11 @@ export const MiniPlayer: React.FC = () => {
         >
           <div className="relative w-11 h-11 rounded-xl overflow-hidden shadow-md flex-shrink-0 border border-slate-200/60 dark:border-white/10">
             <CoverImage
+              id={currentTrack.id}
               src={currentTrack.artworkUrl}
               alt={currentTrack.title}
               youtubeVideoId={currentTrack.youtubeVideoId}
-              type="track"
+              kind="song"
               aspect="square"
             />
             <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 items-center justify-center transition-opacity">

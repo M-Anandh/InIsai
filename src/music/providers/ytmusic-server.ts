@@ -3,6 +3,21 @@ import { Innertube } from "youtubei.js";
 import { Track, AlbumSummary, ArtistSummary, PlaylistSummary, Shelf } from "@/types";
 import { normalizeTrackSignature } from "./ProviderRegistry";
 import { isTrackBlocked } from "@/config/blocklist";
+import { normalizeThumb } from "@/lib/media/thumb";
+import { getTmdbPersonPhoto } from "@/lib/tmdb";
+
+export function normalizeArtistName(name: string): string {
+  return (name || "")
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\bravichandar\b/g, "ravichander")
+    .replace(/\bilayaraja\b/g, "ilaiyaraaja")
+    .replace(/\bilaiyaraja\b/g, "ilaiyaraaja")
+    .replace(/\bar rahman\b/g, "a r rahman")
+    .replace(/\barrahman\b/g, "a r rahman")
+    .trim();
+}
 
 try {
   dns.setDefaultResultOrder("ipv4first");
@@ -89,11 +104,8 @@ export function extractHighResArtwork(item: any, videoId?: string): string {
   const raw = arr[arr.length - 1]?.url || arr[0]?.url || "";
 
   if (raw) {
-    if (raw.includes("lh3.googleusercontent.com")) {
-      return raw.replace(/=w\d+-h\d+[^&]*/i, "=w544-h544-l90-rj");
-    }
-    if (raw.startsWith("//")) return `https:${raw}`;
-    return raw;
+    const candidates = normalizeThumb(raw, "card");
+    return candidates[0] || (raw.startsWith("//") ? `https:${raw}` : raw);
   }
 
   if (videoId) {
@@ -328,9 +340,10 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
 
     // For song-only batch lookups (collections, quick-picks), skip redundant general search
     const songOnly = typeFilter === "song";
-    const [generalRes, songsRes] = await Promise.allSettled([
+    const [generalRes, songsRes, artistsRes] = await Promise.allSettled([
       songOnly ? Promise.resolve(null) : withTimeout(yt.music.search(clean), 5500, null),
       withTimeout(yt.music.search(clean, { type: "song" }), 5500, null),
+      songOnly ? Promise.resolve(null) : withTimeout(yt.music.search(clean, { type: "artist" }), 5500, null),
     ]);
 
     const songCandidates: Array<{ track: Track; type: string }> = [];
@@ -339,6 +352,26 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
     const artists: ArtistSummary[] = [];
     const playlists: PlaylistSummary[] = [];
     let topResultCandidate: Track | null = null;
+
+    if (artistsRes.status === "fulfilled" && artistsRes.value) {
+      const artContents =
+        (artistsRes.value as any)?.artists?.contents ||
+        (artistsRes.value as any)?.contents ||
+        [];
+      for (const item of artContents) {
+        const id = item.id || item.endpoint?.payload?.browseId;
+        const name = item.name || item.title || "";
+        if (id && name) {
+          artists.push({
+            id,
+            name,
+            artworkUrl: extractHighResArtwork(item),
+            subscribers: item.subscribers || "",
+            providerId: "ytmusic",
+          });
+        }
+      }
+    }
 
     if (songsRes.status === "fulfilled" && songsRes.value?.songs?.contents) {
       for (const item of songsRes.value.songs.contents) {
@@ -376,9 +409,9 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
               year: item.year,
               providerId: "ytmusic",
             });
-          } else if (itemType === "artist" && item.id) {
+          } else if (itemType === "artist" && (item.id || item.endpoint?.payload?.browseId)) {
             artists.push({
-              id: item.id,
+              id: item.id || item.endpoint?.payload?.browseId,
               name: item.name || item.title || "Artist",
               artworkUrl: extractHighResArtwork(item),
               subscribers: item.subscribers,
@@ -396,6 +429,41 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
         }
       }
     }
+
+    // Rank & deduplicate artists: exact match first, then startsWith, then popularity
+    const cleanNorm = normalizeArtistName(clean);
+    const seenArtistIds = new Set<string>();
+    const seenArtistNames = new Set<string>();
+    const rankedArtists: ArtistSummary[] = [];
+
+    for (const a of artists) {
+      const normName = normalizeArtistName(a.name);
+      if (seenArtistIds.has(a.id) || seenArtistNames.has(normName)) continue;
+      seenArtistIds.add(a.id);
+      seenArtistNames.add(normName);
+      rankedArtists.push(a);
+    }
+
+    rankedArtists.sort((a, b) => {
+      const aNorm = normalizeArtistName(a.name);
+      const bNorm = normalizeArtistName(b.name);
+      const aExact = aNorm === cleanNorm;
+      const bExact = bNorm === cleanNorm;
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+
+      const aStarts = aNorm.startsWith(cleanNorm);
+      const bStarts = bNorm.startsWith(cleanNorm);
+      if (aStarts && !bStarts) return -1;
+      if (!aStarts && bStarts) return 1;
+
+      const aContains = aNorm.includes(cleanNorm);
+      const bContains = bNorm.includes(cleanNorm);
+      if (aContains && !bContains) return -1;
+      if (!aContains && bContains) return 1;
+
+      return 0;
+    });
 
     // Retry with shorter token subset if results are very weak
     if (songCandidates.length === 0 && clean.split(" ").length > 2) {
@@ -451,7 +519,7 @@ export async function ytSearch(query: string, typeFilter: string = "all"): Promi
       songs: songs.slice(0, 25),
       videos: videoCandidates.slice(0, 12),
       albums: albums.slice(0, 10),
-      artists: artists.slice(0, 8),
+      artists: rankedArtists.slice(0, 12),
       playlists: playlists.slice(0, 10),
     };
 
@@ -611,58 +679,145 @@ export async function ytArtistDetails(channelId: string) {
   if (cached) return cached;
 
   try {
-    const yt = await withTimeout(getClient(), 4500, null as unknown as Innertube);
+    const yt = await withTimeout(getClient(), 5000, null as unknown as Innertube);
     if (!yt) return null;
-    const artist: any = await withTimeout(yt.music.getArtist(channelId), 6000, null);
-    if (!artist) return null;
-    const name = artist?.header?.title?.text || "Artist";
+
+    let realBrowseId = channelId;
+    if (!realBrowseId.startsWith("UC")) {
+      try {
+        const searchRes: any = await withTimeout(
+          yt.music.search(realBrowseId, { type: "artist" }),
+          4500,
+          null
+        );
+        const artList = searchRes?.artists?.contents || searchRes?.contents || [];
+        if (artList[0]?.id || artList[0]?.endpoint?.payload?.browseId) {
+          realBrowseId = artList[0].id || artList[0].endpoint?.payload?.browseId;
+        }
+      } catch {}
+    }
+
+    let artist: any = null;
+    if (realBrowseId.startsWith("UC")) {
+      artist = await withTimeout(yt.music.getArtist(realBrowseId), 6000, null);
+    }
+
+    const name = artist?.header?.title?.text || channelId;
     const description = artist?.header?.description?.text || "";
-    const artworkUrl = extractHighResArtwork(artist?.header);
+    let artworkUrl = extractHighResArtwork(artist?.header);
+    const banner = extractHighResArtwork(artist?.header?.banner);
+    const subscribers = artist?.header?.subscribers?.text || artist?.header?.subtitle?.text || "";
+
+    if (!artworkUrl) {
+      const tmdbPic = await getTmdbPersonPhoto(name);
+      if (tmdbPic) artworkUrl = tmdbPic;
+    }
 
     const songs: Track[] = [];
     const albums: AlbumSummary[] = [];
+    const singles: AlbumSummary[] = [];
+    const videos: Track[] = [];
     const relatedArtists: ArtistSummary[] = [];
 
     for (const sec of artist?.sections || []) {
       const secTitle = (sec?.header?.title?.text || "").toLowerCase();
       for (const item of sec?.contents || []) {
-        if (item.item_type === "song" || item.item_type === "video") {
+        if (item.item_type === "song") {
           const t = normalizeTrackItem(item, name);
-          if (t) songs.push(t);
-        } else if ((item.item_type === "album" || secTitle.includes("album") || secTitle.includes("single")) && item.id) {
-          albums.push({
-            id: item.id,
-            title: item.title || "Album",
-            artist: name,
-            artistId: channelId,
-            artworkUrl: extractHighResArtwork(item),
-            year: item.year,
-            providerId: "ytmusic",
-          });
-        } else if ((item.item_type === "artist" || secTitle.includes("fans")) && item.id) {
-          relatedArtists.push({
-            id: item.id,
-            name: item.name || item.title || "Artist",
-            artworkUrl: extractHighResArtwork(item),
-            subscribers: item.subscribers,
-            providerId: "ytmusic",
-          });
+          if (t && songs.length < 20) songs.push(t);
+        } else if (item.item_type === "video") {
+          const t = normalizeTrackItem(item, name);
+          if (t) videos.push(t);
+        } else if (item.item_type === "album" || secTitle.includes("album")) {
+          if (item.id) {
+            albums.push({
+              id: item.id,
+              title: item.title || "Album",
+              artist: name,
+              artistId: realBrowseId,
+              artworkUrl: extractHighResArtwork(item),
+              year: item.year,
+              providerId: "ytmusic",
+            });
+          }
+        } else if (secTitle.includes("single") || secTitle.includes("ep")) {
+          if (item.id) {
+            singles.push({
+              id: item.id,
+              title: item.title || "Single",
+              artist: name,
+              artistId: realBrowseId,
+              artworkUrl: extractHighResArtwork(item),
+              year: item.year,
+              providerId: "ytmusic",
+            });
+          }
+        } else if (item.item_type === "artist" || secTitle.includes("fans") || secTitle.includes("like")) {
+          if (item.id) {
+            relatedArtists.push({
+              id: item.id,
+              name: item.name || item.title || "Artist",
+              artworkUrl: extractHighResArtwork(item),
+              subscribers: item.subscribers || "",
+              providerId: "ytmusic",
+            });
+          }
         }
       }
     }
 
-    // Ensure Top Songs loaded cleanly even if artist landing collapsed them
+    // Fallback: If songs are empty, search by artist name
     if (songs.length === 0) {
       const searchFallback = await ytSearch(name, "song");
-      songs.push(...searchFallback.songs.slice(0, 15));
+      songs.push(...searchFallback.songs.slice(0, 20));
+      if (albums.length === 0 && searchFallback.albums.length > 0) {
+        albums.push(...searchFallback.albums);
+      }
+      if (videos.length === 0 && searchFallback.videos.length > 0) {
+        videos.push(...searchFallback.videos);
+      }
     }
 
-    const result = { id: channelId, name, description, artworkUrl, songs, albums, relatedArtists };
+    const result = {
+      id: realBrowseId,
+      name,
+      description,
+      artworkUrl,
+      photo: artworkUrl,
+      banner,
+      subscribers,
+      topSongs: songs,
+      songs,
+      albums,
+      singles,
+      videos,
+      related: relatedArtists,
+      relatedArtists,
+    };
+
     cache.set(cacheKey, result, 1800);
     return result;
   } catch (err) {
     console.warn("ytArtistDetails error:", err);
-    return null;
+    // Graceful fallback: return search songs so the page never fails or hangs!
+    const searchFallback = await ytSearch(channelId, "song");
+    const tmdbPic = await getTmdbPersonPhoto(channelId);
+    return {
+      id: channelId,
+      name: channelId,
+      description: "",
+      artworkUrl: tmdbPic || "",
+      photo: tmdbPic || "",
+      banner: "",
+      subscribers: "",
+      topSongs: searchFallback.songs.slice(0, 20),
+      songs: searchFallback.songs.slice(0, 20),
+      albums: searchFallback.albums,
+      singles: [],
+      videos: searchFallback.videos,
+      related: [],
+      relatedArtists: [],
+    };
   }
 }
 
