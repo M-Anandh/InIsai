@@ -275,9 +275,10 @@ export default function HomePage() {
       {/* Dismissible Mobile / Desktop PWA Install Banner */}
       <PWAInstaller variant="banner" />
 
-      {/* 1. Dynamic Featured Songs Hero Banner (Latest & Upcoming Movie Songs) */}
+      {/* 1. Dynamic Featured Songs Hero Banner (Featured New Releases) */}
       {activeFeaturedTrack && (
         <div
+          data-release-date={activeFeaturedMeta?.releaseDate}
           onMouseEnter={() => setIsHeroHovered(true)}
           onMouseLeave={() => setIsHeroHovered(false)}
           className="relative rounded-3xl overflow-hidden glass-panel border border-slate-200/80 dark:border-white/10 p-6 sm:p-10 shadow-xl dark:shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 group transition-all"
@@ -289,8 +290,13 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
               <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent/15 border border-inisai-accent/30 text-inisai-accent text-xs font-bold uppercase tracking-wider backdrop-blur-md">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>{activeFeaturedMeta?.releaseLabel || "Recommended For You"}</span>
+                <span>Featured New Releases</span>
               </div>
+              {activeFeaturedMeta?.releaseLabel && (
+                <span className="text-[11px] font-semibold tracking-wide px-2.5 py-0.5 rounded-full bg-inisai-teal/15 text-inisai-teal border border-inisai-teal/30">
+                  {activeFeaturedMeta.releaseLabel}
+                </span>
+              )}
               {activeFeaturedMeta?.language && (
                 <span className="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-white/80">
                   {activeFeaturedMeta.language}

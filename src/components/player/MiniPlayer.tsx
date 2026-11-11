@@ -43,11 +43,6 @@ export const MiniPlayer: React.FC = () => {
   const mounted = useMounted();
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  if (!mounted || !currentTrack || isFullScreenOpen) return null;
-
-  const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
-  const liked = isLiked(currentTrack);
-
   const haptic = () => {
     try {
       if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -81,6 +76,11 @@ export const MiniPlayer: React.FC = () => {
       seek(Math.max(0, Math.min(duration || 0, currentTime + delta)));
     },
   });
+
+  if (!mounted || !currentTrack || isFullScreenOpen) return null;
+
+  const progressPercent = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const liked = isLiked(currentTrack);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];

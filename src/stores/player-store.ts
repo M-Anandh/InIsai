@@ -153,7 +153,7 @@ const defaultSettings: PlayerSettings = {
   equalizerEnabled: false,
   selectedEqPreset: "flat",
   sleepTimerMinutes: null,
-  preferAudioFallback: false,
+  preferAudioFallback: true,
   autoplayRelated: true,
   statsForNerd: false,
   videoMode: false,

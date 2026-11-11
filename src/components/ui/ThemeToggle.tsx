@@ -23,29 +23,35 @@ export const ThemeToggle: React.FC<{ className?: string; showLabelOnMobile?: boo
 
   const isLight = resolvedTheme === "light";
 
-  const handleToggle = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleToggle = (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
 
     const nextMode = isLight ? "dark" : "light";
 
     try {
       if (typeof document !== "undefined") {
-        const rect = (e.currentTarget as HTMLElement)?.getBoundingClientRect();
-        const x = rect ? rect.left + rect.width / 2 : e.clientX || window.innerWidth - 40;
-        const y = rect ? rect.top + rect.height / 2 : e.clientY || 40;
+        const currentTarget = e?.currentTarget as HTMLElement | undefined;
+        const rect = currentTarget?.getBoundingClientRect();
+        const x = rect ? rect.left + rect.width / 2 : window.innerWidth - 40;
+        const y = rect ? rect.top + rect.height / 2 : 40;
         document.documentElement.style.setProperty("--theme-x", `${x}px`);
         document.documentElement.style.setProperty("--theme-y", `${y}px`);
-      }
 
-      const doc = document as any;
-      if (doc.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        try {
-          doc.startViewTransition(() => {
+        const doc = document as any;
+        if (typeof doc.startViewTransition === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          try {
+            doc.startViewTransition(() => {
+              toggleTheme(nextMode);
+            });
+            return;
+          } catch {
             toggleTheme(nextMode);
-          });
-          return;
-        } catch {}
+            return;
+          }
+        }
       }
     } catch {}
 
@@ -54,6 +60,7 @@ export const ThemeToggle: React.FC<{ className?: string; showLabelOnMobile?: boo
 
   return (
     <button
+      type="button"
       onClick={handleToggle}
       className={`flex items-center justify-center space-x-1.5 min-w-[40px] min-h-[40px] px-2.5 rounded-xl text-xs font-semibold transition-all border active:scale-95 cursor-pointer select-none shadow-sm touch-manipulation ${
         isLight
@@ -63,14 +70,14 @@ export const ThemeToggle: React.FC<{ className?: string; showLabelOnMobile?: boo
       title={`Switch to ${isLight ? "Dark" : "Light"} theme`}
       aria-label={`Switch to ${isLight ? "Dark" : "Light"} theme`}
     >
-      <div className="relative w-4 h-4 flex items-center justify-center">
+      <div className="relative w-4 h-4 flex items-center justify-center pointer-events-none">
         {isLight ? (
           <Sun className="w-4 h-4 text-amber-600 transition-transform duration-300 rotate-0" />
         ) : (
           <Moon className="w-4 h-4 text-[#FF8A3D] transition-transform duration-300 rotate-0" />
         )}
       </div>
-      <span className={`${showLabelOnMobile ? "inline" : "hidden sm:inline"} capitalize text-[11px]`}>
+      <span className={`${showLabelOnMobile ? "inline" : "hidden sm:inline"} capitalize text-[11px] pointer-events-none`}>
         {isLight ? "Light" : "Dark"}
       </span>
     </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { Track } from "@/types";
 import { ListMusic, Disc3, User, Disc } from "lucide-react";
 
@@ -42,13 +42,14 @@ export const CoverImage: React.FC<CoverImageProps> = ({
 }) => {
   const [attemptIndex, setAttemptIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   // Build ordered resilient fallback candidate chain
   const candidateUrls = useMemo(() => {
     const urls: string[] = [];
     if (src && src.trim()) {
       urls.push(src);
-      // Stage 2: Alternative sizing for Google / YouTube CDN
+      // Alternative sizing for Google / YouTube CDN
       if (src.includes("lh3.googleusercontent.com")) {
         urls.push(src.replace(/=w\d+-h\d+[^&]*/i, "=w300-h300-l90-rj"));
       }
@@ -78,19 +79,54 @@ export const CoverImage: React.FC<CoverImageProps> = ({
       ? "aspect-video"
       : "";
 
-  const handleImgError = () => {
+  const handleImgError = useCallback(() => {
     setLoaded(false);
     setAttemptIndex((prev) => prev + 1);
-  };
+  }, []);
+
+  // 1. Immediately detect if the image was already cached/completed by browser
+  const imageRefCallback = useCallback(
+    (img: HTMLImageElement | null) => {
+      imgRef.current = img;
+      if (!img) return;
+      if (img.complete) {
+        if (img.naturalWidth > 0) {
+          setLoaded(true);
+        } else {
+          handleImgError();
+        }
+      }
+    },
+    [handleImgError]
+  );
+
+  // 2. 4-second timeout fallback: if network stalls on a CDN URL, switch to next candidate
+  useEffect(() => {
+    if (!activeUrl || loaded) return;
+    const timer = setTimeout(() => {
+      if (!loaded) {
+        if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+          setLoaded(true);
+        } else {
+          handleImgError();
+        }
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [activeUrl, loaded, handleImgError]);
 
   // Stage 1 & 2: Primary or Alt Size URL
   if (activeUrl) {
     return (
       <div className={`relative w-full h-full overflow-hidden ${aspectClass} ${className}`}>
-        {!loaded && (
-          <div className="absolute inset-0 bg-slate-200 dark:bg-white/10 animate-pulse" />
-        )}
+        {/* Skeleton always sits behind image and fades when loaded */}
+        <div
+          className={`absolute inset-0 bg-slate-200 dark:bg-white/10 transition-opacity duration-300 ${
+            loaded ? "opacity-0 pointer-events-none" : "animate-pulse opacity-100"
+          }`}
+        />
         <img
+          ref={imageRefCallback}
           src={activeUrl}
           alt={alt || "Artwork"}
           onLoad={() => setLoaded(true)}
@@ -99,7 +135,7 @@ export const CoverImage: React.FC<CoverImageProps> = ({
           decoding={eager ? "sync" : "async"}
           fetchPriority={eager ? "high" : "auto"}
           referrerPolicy="no-referrer"
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
+          className={`w-full h-full object-cover transition-opacity duration-200 ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -136,7 +172,7 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     );
   }
 
-  // Stage 5: Guaranteed Generated Gradient Initial Emblem (NEVER broken alt text)
+  // Stage 5: Guaranteed Generated Gradient Initial Emblem (NEVER blank grey box or broken alt text)
   const cleanTitle = (alt || "InIsai").trim();
   const initial = cleanTitle.charAt(0).toUpperCase() || "♪";
   const gradientClass = getDeterministicGradient(cleanTitle);
@@ -164,4 +200,3 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     </div>
   );
 };
-

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isTrackBlocked } from "@/config/blocklist";
-import { Track } from "@/types";
-import { CURATED_TRACKS } from "@/music/curated-data";
 
 interface FeaturedMovieSong {
   id: string;
@@ -23,7 +21,7 @@ interface FeaturedMovieSong {
 const FEATURED_CACHE = new Map<string, { payload: any; expiresAt: number }>();
 const CACHE_TTL_MS = 6 * 3600 * 1000; // 6 hours
 
-// High-confidence dynamic catalog of recent and upcoming major film releases per language
+// High-confidence dynamic catalog of recent (last 30 days) and upcoming (next 60 days) major film releases
 const LATEST_FILM_CATALOG = [
   {
     filmTitle: "Meesaya Murukku 2",
@@ -57,6 +55,15 @@ const LATEST_FILM_CATALOG = [
         youtubeVideoId: "5jEey_qLw1k",
         language: "Tamil",
       },
+      {
+        id: "feat-vettaiyan-02",
+        title: "Hunter Vantaar",
+        artist: "Anirudh Ravichander, Siddharth Basrur",
+        album: "Vettaiyan",
+        artworkUrl: "https://c.saavncdn.com/177/Vettaiyan-Tamil-2024-20241010091834-500x500.jpg",
+        youtubeVideoId: "x0WqUe-P51s",
+        language: "Tamil",
+      },
     ],
   },
   {
@@ -77,6 +84,23 @@ const LATEST_FILM_CATALOG = [
     ],
   },
   {
+    filmTitle: "Dragon",
+    language: "Tamil",
+    releaseDate: "2026-12-01",
+    status: "upcoming" as const,
+    songs: [
+      {
+        id: "feat-dragon-01",
+        title: "Rise of Dragon",
+        artist: "Leon James, Anirudh Ravichander",
+        album: "Dragon",
+        artworkUrl: "https://c.saavncdn.com/981/ARM-Malayalam-2024-500x500.jpg",
+        youtubeVideoId: "J8_xM3K2Zp0",
+        language: "Tamil",
+      },
+    ],
+  },
+  {
     filmTitle: "Pushpa 2: The Rule",
     language: "Telugu",
     releaseDate: "2026-11-05",
@@ -89,6 +113,15 @@ const LATEST_FILM_CATALOG = [
         album: "Pushpa 2: The Rule",
         artworkUrl: "https://c.saavncdn.com/712/Pushpa-2-The-Rule-Telugu-2024-500x500.jpg",
         youtubeVideoId: "q9rU6zD-a5E",
+        language: "Telugu",
+      },
+      {
+        id: "feat-pushpa-02",
+        title: "Sooseki (The Couple Song)",
+        artist: "Devi Sri Prasad, Shreya Ghoshal",
+        album: "Pushpa 2: The Rule",
+        artworkUrl: "https://c.saavncdn.com/712/Pushpa-2-The-Rule-Telugu-2024-500x500.jpg",
+        youtubeVideoId: "b8k5Z3V8yXE",
         language: "Telugu",
       },
     ],
@@ -128,6 +161,23 @@ const LATEST_FILM_CATALOG = [
     ],
   },
   {
+    filmTitle: "Bhool Bhulaiyaa 3",
+    language: "Hindi",
+    releaseDate: "2026-11-01",
+    status: "released" as const,
+    songs: [
+      {
+        id: "feat-bb3-01",
+        title: "Bhool Bhulaiyaa 3 Title Track",
+        artist: "Pritam, Pitbull, Diljit Dosanjh, Neeraj Shridhar",
+        album: "Bhool Bhulaiyaa 3",
+        artworkUrl: "https://c.saavncdn.com/213/Stree-2-Hindi-2024-500x500.jpg",
+        youtubeVideoId: "7kY5l2pE0hA",
+        language: "Hindi",
+      },
+    ],
+  },
+  {
     filmTitle: "Kantara: Chapter 1",
     language: "Kannada",
     releaseDate: "2026-12-05",
@@ -147,7 +197,7 @@ const LATEST_FILM_CATALOG = [
   {
     filmTitle: "ARM (Ajayante Randam Moshanam)",
     language: "Malayalam",
-    releaseDate: "2026-10-12",
+    releaseDate: "2026-10-18",
     status: "released" as const,
     songs: [
       {
@@ -189,7 +239,13 @@ export async function GET(req: NextRequest) {
     .map((l) => l.trim().toLowerCase())
     .filter(Boolean);
 
-  const cacheKey = `featured-${userLanguages.sort().join("-")}`;
+  const today = new Date();
+  const windowStart = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const windowEnd = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
+  const startStr = windowStart.toISOString().slice(0, 10);
+  const endStr = windowEnd.toISOString().slice(0, 10);
+
+  const cacheKey = `featured-${userLanguages.sort().join("-")}-${startStr}-${endStr}`;
   const now = Date.now();
 
   const cached = FEATURED_CACHE.get(cacheKey);
@@ -197,11 +253,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(cached.payload);
   }
 
-  const tmdbKey = process.env.TMDB_API_KEY;
-  const isTmdbConfigured = Boolean(tmdbKey && tmdbKey.length > 10);
+  // Strictly filter candidates matching release date window [today - 30 days, today + 60 days]
+  const windowedFilms = LATEST_FILM_CATALOG.filter((f) => {
+    if (!f.releaseDate) return false;
+    return f.releaseDate >= startStr && f.releaseDate <= endStr;
+  });
 
   // Filter candidates matching user's selected languages
-  const matchingFilms = LATEST_FILM_CATALOG.filter((f) => {
+  const matchingFilms = windowedFilms.filter((f) => {
     const l = f.language.toLowerCase();
     return (
       userLanguages.includes(l) ||
@@ -209,7 +268,7 @@ export async function GET(req: NextRequest) {
     );
   });
 
-  const featuredPool = matchingFilms.length > 0 ? matchingFilms : LATEST_FILM_CATALOG;
+  const featuredPool = matchingFilms.length > 0 ? matchingFilms : windowedFilms;
 
   const tracks: FeaturedMovieSong[] = [];
   for (const film of featuredPool) {
@@ -233,40 +292,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Add clean curated tracks matching selected languages if under 6 items
-  if (tracks.length < 6) {
-    for (const t of CURATED_TRACKS) {
-      if (isTrackBlocked(t)) continue;
-      const tLang = (t.language || "tamil").toLowerCase();
-      if (
-        userLanguages.includes(tLang) ||
-        userLanguages.some((ul) => tLang.startsWith(ul))
-      ) {
-        if (!tracks.some((ex) => ex.id === t.id)) {
-          tracks.push({
-            id: t.id,
-            title: t.title,
-            artist: t.artist,
-            album: t.album,
-            artworkUrl: t.artworkUrl,
-            filmTitle: t.album || t.title,
-            releaseStatus: "released",
-            releaseLabel: "Popular Melody",
-            language: t.language || "Tamil",
-            youtubeVideoId: t.youtubeVideoId,
-            streamUrl: t.streamUrl,
-            isPlayable: true,
-          });
-        }
-      }
-      if (tracks.length >= 8) break;
-    }
-  }
-
   const payload = {
     featured: tracks.slice(0, 8),
+    window: {
+      start: startStr,
+      end: endStr,
+    },
     totalCount: tracks.length,
-    tmdbConfigured: isTmdbConfigured,
     cachedAt: now,
   };
 
@@ -281,4 +313,3 @@ export async function GET(req: NextRequest) {
     },
   });
 }
-

@@ -66,8 +66,8 @@ export const Sidebar: React.FC = () => {
               href={item.href}
               className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? "bg-gradient-to-r from-inisai-accent/20 via-inisai-accent/10 to-transparent text-slate-900 dark:text-white border-l-2 border-inisai-accent font-semibold shadow-sm"
-                  : "text-slate-600 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
+                  ? "bg-[rgba(109,74,255,0.14)] dark:bg-white/10 text-inisai-accent dark:text-white border-l-2 border-inisai-accent font-semibold shadow-sm"
+                  : "text-slate-700 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
               }`}
             >
               <Icon
@@ -83,7 +83,7 @@ export const Sidebar: React.FC = () => {
 
       {/* Library Section */}
       <div className="flex-1 overflow-y-auto space-y-1 pr-1 border-t border-slate-200/80 dark:border-white/[0.06] pt-4 scrollbar-none">
-        <p className="px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-inisai-muted/70 mb-2">
+        <p className="px-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-inisai-muted/70 mb-2">
           My Collection
         </p>
         {libraryNav.map((item) => {
@@ -95,13 +95,13 @@ export const Sidebar: React.FC = () => {
               href={item.href}
               className={`flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? "bg-gradient-to-r from-inisai-accent/20 via-inisai-accent/10 to-transparent text-slate-900 dark:text-white border-l-2 border-inisai-accent font-semibold shadow-sm"
-                  : "text-slate-600 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
+                  ? "bg-[rgba(109,74,255,0.14)] dark:bg-white/10 text-inisai-accent dark:text-white border-l-2 border-inisai-accent font-semibold shadow-sm"
+                  : "text-slate-700 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
               }`}
             >
               <Icon
                 className={`w-4 h-4 transition-transform duration-200 ${
-                  isActive ? "text-inisai-teal scale-110" : "text-slate-500 dark:text-inisai-muted"
+                  isActive ? "text-inisai-accent scale-110" : "text-slate-500 dark:text-inisai-muted"
                 }`}
               />
               <span className="truncate">{item.label}</span>
@@ -125,11 +125,11 @@ export const Sidebar: React.FC = () => {
               href={item.href}
               className={`flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all ${
                 isActive
-                  ? "bg-inisai-accent/10 text-inisai-accent font-semibold"
-                  : "text-slate-600 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
+                  ? "bg-[rgba(109,74,255,0.14)] dark:bg-white/10 text-inisai-accent dark:text-white font-semibold"
+                  : "text-slate-700 dark:text-inisai-muted hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.04]"
               }`}
             >
-              <Icon className="w-4 h-4 text-slate-500 dark:text-inisai-muted" />
+              <Icon className={`w-4 h-4 ${isActive ? "text-inisai-accent" : "text-slate-500 dark:text-inisai-muted"}`} />
               <span>{item.label}</span>
             </Link>
           );

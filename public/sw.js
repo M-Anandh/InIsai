@@ -1,5 +1,5 @@
-// InIsai PWA Service Worker v2.1.1
-const SW_VERSION = "inisai-pwa-v2.1.1";
+// InIsai PWA Service Worker v2.1.2
+const SW_VERSION = "inisai-pwa-v2.1.2";
 const CACHE_NAME = SW_VERSION;
 const OFFLINE_URL = "/offline.html";
 
@@ -47,8 +47,9 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
 
-  // 1. Bypass all external media, audio blobs, and YouTube frames
+  // 1. Bypass all external media, audio blobs, version checks, and YouTube frames
   if (
+    url.pathname === "/version.json" ||
     url.pathname.endsWith(".mp3") ||
     url.pathname.endsWith(".mp4") ||
     url.pathname.endsWith(".wav") ||

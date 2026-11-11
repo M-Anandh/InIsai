@@ -12,6 +12,19 @@ export default function ErrorBoundary({
 }) {
   useEffect(() => {
     console.error("[InIsai Root Error Caught]:", error);
+    try {
+      fetch("/api/client-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: error?.message || "Unknown client error",
+          stack: error?.stack,
+          digest: error?.digest,
+          url: typeof window !== "undefined" ? window.location.href : "",
+          buildSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_SHA || "unknown",
+        }),
+      }).catch(() => {});
+    } catch {}
   }, [error]);
 
   const handleHardReset = async () => {
@@ -94,3 +107,4 @@ export default function ErrorBoundary({
     </div>
   );
 }
+

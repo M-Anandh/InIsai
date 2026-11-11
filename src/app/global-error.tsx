@@ -12,6 +12,19 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[InIsai Global Layout Error]:", error);
+    try {
+      fetch("/api/client-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: error?.message || "Unknown global error",
+          stack: error?.stack,
+          digest: error?.digest,
+          url: typeof window !== "undefined" ? window.location.href : "",
+          buildSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_SHA || "unknown",
+        }),
+      }).catch(() => {});
+    } catch {}
   }, [error]);
 
   const handleFullReset = async () => {
@@ -65,3 +78,4 @@ export default function GlobalError({
     </html>
   );
 }
+

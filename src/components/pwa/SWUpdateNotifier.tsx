@@ -8,6 +8,33 @@ export const SWUpdateNotifier: React.FC = () => {
   const [showReload, setShowReload] = useState(false);
 
   useEffect(() => {
+    let initialSha: string | null = null;
+
+    const checkVersion = async () => {
+      try {
+        const res = await fetch("/version.json", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!initialSha) {
+          initialSha = data.sha;
+        } else if (data.sha && data.sha !== initialSha) {
+          setShowReload(true);
+        }
+      } catch {}
+    };
+
+    checkVersion();
+    const interval = setInterval(checkVersion, 5 * 60 * 1000);
+    const onFocus = () => checkVersion();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
 
     navigator.serviceWorker.getRegistration().then((reg) => {

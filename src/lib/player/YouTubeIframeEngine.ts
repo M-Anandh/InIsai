@@ -144,7 +144,6 @@ export class YouTubeIframeEngine implements PlaybackEngine {
           playsinline: 1,
           rel: 0,
           modestbranding: 1,
-          origin: typeof window !== "undefined" ? window.location.origin : "",
         },
         events: {
           onReady: () => {
