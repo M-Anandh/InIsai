@@ -116,10 +116,28 @@ export default function RootLayout({
           <SWUpdateNotifier />
         </PlayerProvider>
 
-        {/* Service Worker Registration */}
+        {/* Service Worker Registration & Stale Chunk Auto-Recovery */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Auto-recover from Next.js deployment chunk mismatches
+              window.addEventListener('error', function(e) {
+                var msg = (e && e.message) ? e.message.toLowerCase() : '';
+                if (msg.indexOf('chunkloaderror') !== -1 || msg.indexOf('loading chunk') !== -1 || msg.indexOf('failed to fetch dynamically imported') !== -1) {
+                  if ('caches' in window) {
+                    caches.keys().then(function(keys) {
+                      keys.forEach(function(k) { caches.delete(k); });
+                    });
+                  }
+                  if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(function(regs) {
+                      regs.forEach(function(r) { r.unregister(); });
+                    });
+                  }
+                  setTimeout(function() { window.location.reload(); }, 100);
+                }
+              });
+
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js').catch(err => {

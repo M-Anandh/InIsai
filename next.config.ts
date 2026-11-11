@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || gitSha,
     NEXT_PUBLIC_BUILD_TIME: new Date().toISOString(),
-    NEXT_PUBLIC_APP_VERSION: "2.1.0",
+    NEXT_PUBLIC_APP_VERSION: "2.1.1",
   },
 };
 

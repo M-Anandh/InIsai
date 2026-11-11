@@ -1,5 +1,5 @@
-// InIsai PWA Service Worker v2.1.0
-const SW_VERSION = "inisai-pwa-v2.1.0";
+// InIsai PWA Service Worker v2.1.1
+const SW_VERSION = "inisai-pwa-v2.1.1";
 const CACHE_NAME = SW_VERSION;
 const OFFLINE_URL = "/offline.html";
 

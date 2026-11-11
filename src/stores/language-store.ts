@@ -73,6 +73,13 @@ export const useLanguageStore = create<LanguageState>()(
     {
       name: "inisai_preferred_languages_v2",
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (!Array.isArray(state.selectedLanguages) || state.selectedLanguages.length === 0) {
+            state.selectedLanguages = ["Tamil", "English"];
+          }
+        }
+      },
     }
   )
 );

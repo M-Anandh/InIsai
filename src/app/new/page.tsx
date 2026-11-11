@@ -40,6 +40,12 @@ export default function NewAndUpcomingPage() {
   const { playTrack, currentTrack, isPlaying, togglePlay, addToQueue } = usePlayerStore();
   const { selectedLanguages, toggleLanguage } = useLanguageStore();
 
+  const safeLanguages = useMemo(() => {
+    return Array.isArray(selectedLanguages) && selectedLanguages.length > 0
+      ? selectedLanguages
+      : ["Tamil", "English"];
+  }, [selectedLanguages]);
+
   const [songs, setSongs] = useState<FeaturedMovieSong[]>([]);
   const [filter, setFilter] = useState<"all" | "released" | "upcoming">("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -48,7 +54,10 @@ export default function NewAndUpcomingPage() {
     let isCancelled = false;
     setIsLoading(true);
 
-    const langQuery = selectedLanguages.map((l) => l.toLowerCase()).join(",");
+    const langQuery = safeLanguages
+      .map((l) => (typeof l === "string" ? l.toLowerCase() : ""))
+      .filter(Boolean)
+      .join(",");
     fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -64,7 +73,7 @@ export default function NewAndUpcomingPage() {
     return () => {
       isCancelled = true;
     };
-  }, [selectedLanguages]);
+  }, [safeLanguages]);
 
   const filteredSongs = useMemo(() => {
     if (filter === "all") return songs;
@@ -175,7 +184,7 @@ export default function NewAndUpcomingPage() {
             <span>Languages:</span>
           </span>
           {AVAILABLE_LANGUAGES.map((lang) => {
-            const isSelected = selectedLanguages.includes(lang.id);
+            const isSelected = safeLanguages.includes(lang.id);
             return (
               <button
                 key={lang.id}

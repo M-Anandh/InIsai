@@ -75,6 +75,16 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [langModalOpen, setLangModalOpen] = useState(false);
 
+  const safeLanguages = useMemo(() => {
+    return Array.isArray(selectedLanguages) && selectedLanguages.length > 0
+      ? selectedLanguages
+      : ["Tamil", "English"];
+  }, [selectedLanguages]);
+
+  const safeLikedTrackIds = useMemo(() => {
+    return Array.isArray(likedTrackIds) ? likedTrackIds : [];
+  }, [likedTrackIds]);
+
   // Auto-rotate featured hero every 7.5 seconds when not hovered
   useEffect(() => {
     if (featuredSongs.length <= 1 || isHeroHovered) return;
@@ -86,7 +96,10 @@ export default function HomePage() {
 
   // Refetch featured songs when selectedLanguages change
   useEffect(() => {
-    const langQuery = selectedLanguages.map((l) => l.toLowerCase()).join(",");
+    const langQuery = safeLanguages
+      .map((l) => (typeof l === "string" ? l.toLowerCase() : ""))
+      .filter(Boolean)
+      .join(",");
     fetch(`/api/featured?lang=${encodeURIComponent(langQuery)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -96,7 +109,7 @@ export default function HomePage() {
         }
       })
       .catch(() => {});
-  }, [selectedLanguages]);
+  }, [safeLanguages]);
 
   useEffect(() => {
     initialize();
@@ -181,13 +194,15 @@ export default function HomePage() {
 
   // Build dynamic user profile
   const userAffinity = useMemo(() => {
-    const likedTracks = allCandidates.filter((t) => likedTrackIds.includes(t.id));
-    const profile = buildUserMusicProfile(user, history, likedTracks, tasteSummary);
-    for (const l of selectedLanguages) {
-      profile.preferredLanguages[l.toLowerCase()] = (profile.preferredLanguages[l.toLowerCase()] || 0) + 20;
+    const likedTracks = allCandidates.filter((t) => safeLikedTrackIds.includes(t.id));
+    const profile = buildUserMusicProfile(user, history || [], likedTracks, tasteSummary);
+    for (const l of safeLanguages) {
+      if (l && typeof l === "string") {
+        profile.preferredLanguages[l.toLowerCase()] = (profile.preferredLanguages[l.toLowerCase()] || 0) + 20;
+      }
     }
     return profile;
-  }, [user, history, likedTrackIds, allCandidates, tasteSummary, selectedLanguages]);
+  }, [user, history, safeLikedTrackIds, allCandidates, tasteSummary, safeLanguages]);
 
   // Daily Mixes & Discover Weekly-style recommendations
   const dailyMixes = useMemo(() => {
@@ -439,7 +454,7 @@ export default function HomePage() {
           className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl bg-inisai-accent/15 border border-inisai-accent/30 text-xs font-semibold whitespace-nowrap text-inisai-accent hover:bg-inisai-accent/25 transition-all cursor-pointer shadow-sm"
         >
           <Globe className="w-3.5 h-3.5" />
-          <span>Languages ({selectedLanguages.length})</span>
+          <span>Languages ({safeLanguages.length})</span>
         </button>
 
         {EXPLORE_CATEGORIES.slice(0, 8).map((cat) => (
@@ -745,7 +760,7 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 gap-2 pt-2">
               {AVAILABLE_LANGUAGES.map((lang) => {
-                const isSelected = selectedLanguages.includes(lang.id);
+                const isSelected = safeLanguages.includes(lang.id);
                 return (
                   <button
                     key={lang.id}

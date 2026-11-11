@@ -462,9 +462,15 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         theme: state.theme,
         isAuthenticated: state.isAuthenticated,
-        likedTrackIds: state.likedTrackIds,
-        userPlaylists: state.userPlaylists,
+        likedTrackIds: Array.isArray(state.likedTrackIds) ? state.likedTrackIds : [],
+        userPlaylists: Array.isArray(state.userPlaylists) ? state.userPlaylists : [],
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          if (!Array.isArray(state.likedTrackIds)) state.likedTrackIds = [];
+          if (!Array.isArray(state.userPlaylists)) state.userPlaylists = [];
+        }
+      },
     }
   )
 );

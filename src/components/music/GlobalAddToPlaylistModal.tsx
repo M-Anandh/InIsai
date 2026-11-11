@@ -55,7 +55,7 @@ export const GlobalAddToPlaylistModal: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, close]);
 
-  if (!mounted || !isOpen || !track) return null;
+  if (!mounted || !isOpen || !track || typeof document === "undefined" || !document.body) return null;
 
   const handleToggle = async (playlistId: string, playlistName: string, alreadyIn: boolean) => {
     if (alreadyIn) {
