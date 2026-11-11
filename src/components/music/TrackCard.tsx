@@ -14,6 +14,8 @@ interface TrackCardProps {
   playlistContext?: Track[];
   context?: PlaybackContext;
   carouselItem?: boolean;
+  index?: number;
+  eager?: boolean;
 }
 
 export const TrackCard: React.FC<TrackCardProps> = ({
@@ -21,7 +23,10 @@ export const TrackCard: React.FC<TrackCardProps> = ({
   playlistContext,
   context,
   carouselItem = false,
+  index,
+  eager,
 }) => {
+  const isEager = eager || (index !== undefined && index < 6);
   const { currentTrack, isPlaying, playTrack, togglePlay, addToQueue, playNext, setToastMessage } =
     usePlayerStore();
   const { isLiked, toggleLike } = useLikesStore();
@@ -63,6 +68,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
           youtubeVideoId={track.youtubeVideoId}
           type="track"
           aspect="square"
+          eager={isEager}
           className={`group-hover:scale-105 transition-transform duration-500 ${
             isCurrent && isPlaying ? "opacity-90" : ""
           }`}

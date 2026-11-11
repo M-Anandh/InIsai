@@ -33,6 +33,9 @@ import {
   Radio,
   Plus,
   ListMusic,
+  Globe,
+  Check,
+  X,
 } from "lucide-react";
 
 export default function HomePage() {
@@ -45,6 +48,34 @@ export default function HomePage() {
   const [seedRelated, setSeedRelated] = useState<Track[]>([]);
   const [tasteSummary, setTasteSummary] = useState<ComputedTasteSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [preferredLanguages, setPreferredLanguages] = useState<string[]>(["Tamil", "Hindi", "English"]);
+  const [langModalOpen, setLangModalOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("inisai_preferred_languages");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setPreferredLanguages(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  const toggleLanguage = (lang: string) => {
+    let updated: string[];
+    if (preferredLanguages.includes(lang)) {
+      if (preferredLanguages.length === 1) return; // Keep at least one
+      updated = preferredLanguages.filter((l) => l !== lang);
+    } else {
+      updated = [...preferredLanguages, lang];
+    }
+    setPreferredLanguages(updated);
+    try {
+      localStorage.setItem("inisai_preferred_languages", JSON.stringify(updated));
+    } catch {}
+  };
 
   useEffect(() => {
     initialize();
@@ -103,8 +134,12 @@ export default function HomePage() {
   // Build dynamic user profile
   const userAffinity = useMemo(() => {
     const likedTracks = allCandidates.filter((t) => likedTrackIds.includes(t.id));
-    return buildUserMusicProfile(user, history, likedTracks, tasteSummary);
-  }, [user, history, likedTrackIds, allCandidates, tasteSummary]);
+    const profile = buildUserMusicProfile(user, history, likedTracks, tasteSummary);
+    for (const l of preferredLanguages) {
+      profile.preferredLanguages[l.toLowerCase()] = (profile.preferredLanguages[l.toLowerCase()] || 0) + 20;
+    }
+    return profile;
+  }, [user, history, likedTrackIds, allCandidates, tasteSummary, preferredLanguages]);
 
   // Daily Mixes & Discover Weekly-style recommendations
   const dailyMixes = useMemo(() => {
@@ -276,8 +311,16 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 3. Category Filter Shortcuts */}
+      {/* 3. Category & Language Filter Shortcuts */}
       <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
+        <button
+          onClick={() => setLangModalOpen(true)}
+          className="flex items-center space-x-1.5 px-3.5 py-2 rounded-2xl bg-inisai-accent/15 border border-inisai-accent/30 text-xs font-semibold whitespace-nowrap text-inisai-accent hover:bg-inisai-accent/25 transition-all cursor-pointer shadow-sm"
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>Languages ({preferredLanguages.length})</span>
+        </button>
+
         {EXPLORE_CATEGORIES.slice(0, 8).map((cat) => (
           <Link
             key={cat.id}
@@ -289,7 +332,7 @@ export default function HomePage() {
         ))}
         <Link
           href="/explore"
-          className="flex items-center space-x-1.5 px-4 py-2 rounded-2xl bg-inisai-accent/15 border border-inisai-accent/30 text-xs font-semibold whitespace-nowrap text-inisai-accent hover:bg-inisai-accent/25 transition-all cursor-pointer"
+          className="flex items-center space-x-1.5 px-4 py-2 rounded-2xl bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-xs font-semibold whitespace-nowrap text-slate-700 dark:text-white/80 transition-all cursor-pointer"
         >
           <Compass className="w-3.5 h-3.5" />
           <span>Explore All</span>
@@ -302,10 +345,11 @@ export default function HomePage() {
         subtitle="Personalized selections tailored to your listening affinity"
         icon={<Sparkles className="w-5 h-5 text-inisai-accent" />}
       >
-        {personalizedTracks.map((track) => (
+        {personalizedTracks.map((track, idx) => (
           <TrackCard
             key={`pf-${track.id}`}
             track={track}
+            index={idx}
             playlistContext={personalizedTracks}
             context={personalizedContext}
             carouselItem
@@ -320,10 +364,11 @@ export default function HomePage() {
           subtitle="Fresh related radio & similar soundscapes discovered for you"
           icon={<Disc3 className="w-5 h-5 text-inisai-teal" />}
         >
-          {seedRelated.slice(0, 12).map((track) => (
+          {seedRelated.slice(0, 12).map((track, idx) => (
             <TrackCard
               key={`rel-${track.id}`}
               track={track}
+              index={idx}
               playlistContext={seedRelated}
               context={{
                 id: "home-related-seed",
@@ -502,10 +547,11 @@ export default function HomePage() {
             subtitle={shelf.subtitle}
             icon={<Flame className="w-5 h-5 text-amber-500" />}
           >
-            {shelf.items.map((track) => (
+            {shelf.items.map((track, idx) => (
               <TrackCard
                 key={`${shelf.id}-${track.id}`}
                 track={track}
+                index={idx}
                 playlistContext={shelf.items}
                 context={{
                   id: `shelf-${shelf.id}`,
@@ -518,6 +564,67 @@ export default function HomePage() {
             ))}
           </MusicCarousel>
         ))
+      )}
+
+      {/* Multi-Select Language Preference Modal */}
+      {langModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/10 rounded-3xl p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/10">
+              <div className="flex items-center space-x-2">
+                <Globe className="w-5 h-5 text-inisai-accent" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Music Languages</h3>
+              </div>
+              <button
+                onClick={() => setLangModalOpen(false)}
+                className="p-1 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-inisai-muted">
+              Select one or more languages to tailor your home feed, daily mixes, and recommended charts:
+            </p>
+
+            <div className="grid grid-cols-2 gap-2 pt-2">
+              {[
+                "Tamil",
+                "English",
+                "Hindi",
+                "Telugu",
+                "Malayalam",
+                "Kannada",
+                "Punjabi",
+              ].map((lang) => {
+                const isSelected = preferredLanguages.includes(lang);
+                return (
+                  <button
+                    key={lang}
+                    onClick={() => toggleLanguage(lang)}
+                    className={`flex items-center justify-between px-4 py-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer ${
+                      isSelected
+                        ? "bg-inisai-accent/15 border-inisai-accent text-inisai-accent"
+                        : "bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-700 dark:text-white/80 hover:border-slate-300"
+                    }`}
+                  >
+                    <span>{lang}</span>
+                    {isSelected && <Check className="w-4 h-4 text-inisai-accent" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="pt-4 flex justify-end">
+              <button
+                onClick={() => setLangModalOpen(false)}
+                className="px-5 py-2.5 rounded-full bg-inisai-accent text-white font-bold text-xs shadow-md shadow-inisai-accent/30 hover:opacity-95"
+              >
+                Save & Apply
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

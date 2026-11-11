@@ -12,6 +12,7 @@ export interface CoverImageProps {
   className?: string;
   type?: "track" | "playlist" | "artist" | "album";
   aspect?: "square" | "video" | "none";
+  eager?: boolean;
 }
 
 function getDeterministicGradient(seed: string): string {
@@ -37,6 +38,7 @@ export const CoverImage: React.FC<CoverImageProps> = ({
   className = "",
   type = "track",
   aspect = "none",
+  eager = false,
 }) => {
   const [attemptIndex, setAttemptIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -93,7 +95,9 @@ export const CoverImage: React.FC<CoverImageProps> = ({
           alt={alt || "Artwork"}
           onLoad={() => setLoaded(true)}
           onError={handleImgError}
-          loading="lazy"
+          loading={eager ? "eager" : "lazy"}
+          decoding={eager ? "sync" : "async"}
+          fetchPriority={eager ? "high" : "auto"}
           referrerPolicy="no-referrer"
           className={`w-full h-full object-cover transition-opacity duration-300 ${
             loaded ? "opacity-100" : "opacity-0"

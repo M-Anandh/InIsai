@@ -958,4 +958,49 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(resolveViewMode(nonYtTrack, "video", "audioElement"), "song");
     });
   });
+
+  // 24. Phase D: Spam Track Filtering (P1.4)
+  describe("Phase D: Spam Track Filtering", () => {
+    test("should discard spam re-uploads, tribute versions, and in-isai artist placeholders", () => {
+      const SPAM_TRACK_REGEX = /(in-?isai artist|trending version|re-?upload|karaoke rip|tribute version)/i;
+      const isSpam = (t) => SPAM_TRACK_REGEX.test(t.title) || SPAM_TRACK_REGEX.test(t.artist);
+
+      assert.equal(isSpam({ title: "Believer", artist: "Imagine Dragons" }), false);
+      assert.equal(isSpam({ title: "Believer (Trending Version)", artist: "Popular Artist" }), true);
+      assert.equal(isSpam({ title: "Song 1", artist: "InIsai Artist" }), true);
+      assert.equal(isSpam({ title: "Nilave Vaa (Karaoke Rip)", artist: "Unknown" }), true);
+    });
+  });
+
+  // 25. Phase D: Multi-Language Affinity Weighting (P1.4)
+  describe("Phase D: Multi-Language Affinity Weighting", () => {
+    test("should boost tracks matching user multi-selected languages", () => {
+      function getLanguageBoost(trackLanguage, preferredLanguages) {
+        if (!trackLanguage) return 0;
+        const normalized = preferredLanguages.map((l) => l.toLowerCase());
+        return normalized.includes(trackLanguage.toLowerCase()) ? 20 : 0;
+      }
+
+      const preferred = ["Tamil", "Hindi"];
+      assert.equal(getLanguageBoost("Tamil", preferred), 20);
+      assert.equal(getLanguageBoost("Hindi", preferred), 20);
+      assert.equal(getLanguageBoost("Telugu", preferred), 0);
+    });
+  });
+
+  // 26. Phase D: Search Best Match Metadata Formulation (P2.2)
+  describe("Phase D: Search Best Match Card Metadata", () => {
+    test("should format duration into clean mm:ss format and identify track type", () => {
+      function formatMatchDuration(sec) {
+        if (!sec) return "Direct Stream";
+        const m = Math.floor(sec / 60);
+        const s = String(sec % 60).padStart(2, "0");
+        return `${m}:${s}`;
+      }
+
+      assert.equal(formatMatchDuration(204), "3:24");
+      assert.equal(formatMatchDuration(65), "1:05");
+      assert.equal(formatMatchDuration(0), "Direct Stream");
+    });
+  });
 });

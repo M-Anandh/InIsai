@@ -24,6 +24,23 @@ export function buildUserMusicProfile(
   const baseLang = user?.preferredLanguage || "Tamil";
   preferredLanguages[baseLang.toLowerCase()] = 10;
 
+  // Stored multi-select language preferences from localStorage
+  if (typeof window !== "undefined") {
+    try {
+      const raw = localStorage.getItem("inisai_preferred_languages");
+      if (raw) {
+        const storedLangs = JSON.parse(raw);
+        if (Array.isArray(storedLangs)) {
+          for (const l of storedLangs) {
+            if (typeof l === "string") {
+              preferredLanguages[l.toLowerCase()] = (preferredLanguages[l.toLowerCase()] || 0) + 15;
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
   // Integrate IndexedDB time-decayed taste signals if present
   if (signalSummary) {
     for (const a of signalSummary.topArtists) {

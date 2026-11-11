@@ -55,6 +55,8 @@ export function scoreTrack(
   return score;
 }
 
+const SPAM_TRACK_REGEX = /(in-?isai artist|trending version|re-?upload|karaoke rip|tribute version)/i;
+
 export function selectDynamicFeaturedTrack(
   candidates: Track[],
   affinity: UserMusicAffinity,
@@ -62,7 +64,11 @@ export function selectDynamicFeaturedTrack(
 ): Track | null {
   if (!candidates || candidates.length === 0) return null;
   const recentIds = new Set(history.slice(0, 3).map((t) => t.id));
-  const scored = candidates
+  const validCandidates = candidates.filter(
+    (t) => !SPAM_TRACK_REGEX.test(t.title) && !SPAM_TRACK_REGEX.test(t.artist)
+  );
+  const pool = validCandidates.length > 0 ? validCandidates : candidates;
+  const scored = pool
     .map((track) => ({ track, score: scoreTrack(track, affinity, recentIds) }))
     .sort((a, b) => b.score - a.score);
   return scored[0]?.track || candidates[0];
@@ -76,8 +82,12 @@ export function rankPersonalizedRecommendations(
 ): Track[] {
   if (!candidates || candidates.length === 0) return [];
   const recentIds = new Set(history.slice(0, 6).map((t) => t.id));
+  const validCandidates = candidates.filter(
+    (t) => !SPAM_TRACK_REGEX.test(t.title) && !SPAM_TRACK_REGEX.test(t.artist)
+  );
+  const pool = validCandidates.length > 0 ? validCandidates : candidates;
 
-  const scored = candidates
+  const scored = pool
     .map((track) => ({ track, score: scoreTrack(track, affinity, recentIds) }))
     .sort((a, b) => b.score - a.score);
 
