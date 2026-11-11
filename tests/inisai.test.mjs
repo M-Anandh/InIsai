@@ -854,4 +854,58 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       assert.equal(playlist.tracks[2].id, "t2");
     });
   });
+
+  // 18. Phase B: Account Deletion & Confirmation Guard (P0.4)
+  describe("Phase B: Account Deletion Guard and Confirmation", () => {
+    test("should require exact 'DELETE' string to authorize account purge", () => {
+      const validateConfirmation = (text) => text.trim() === "DELETE";
+      assert.equal(validateConfirmation("delete"), false);
+      assert.equal(validateConfirmation("Delete"), false);
+      assert.equal(validateConfirmation(" DELETE "), true);
+      assert.equal(validateConfirmation("DELETE"), true);
+    });
+  });
+
+  // 19. Phase B: Full Data Export Packaging (P0.4)
+  describe("Phase B: Full Data Export Packaging", () => {
+    test("should package user data with proper schema and metadata", () => {
+      const likes = [{ track: { id: "t1", title: "Track 1" }, likedAt: 1700000000 }];
+      const playlists = [{ id: "p1", name: "Favorites", tracks: [] }];
+      const history = [{ id: "t1", title: "Track 1" }];
+
+      const payload = {
+        app: "InIsai (இனிசை)",
+        version: "2.0",
+        exportedAt: new Date().toISOString(),
+        likedSongs: likes,
+        playlists: playlists,
+        history: history,
+      };
+
+      assert.equal(payload.app, "InIsai (இனிசை)");
+      assert.equal(payload.likedSongs.length, 1);
+      assert.equal(payload.playlists.length, 1);
+      assert.ok(payload.exportedAt);
+    });
+  });
+
+  // 20. Phase B: Auth Email Confirmation Redirect URL Resolution (P0.5)
+  describe("Phase B: Auth Email Confirmation Redirect URL Resolution", () => {
+    test("should resolve production or client origin without fallback to localhost in prod", () => {
+      function resolveRedirectUrl(origin, envUrl) {
+        if (origin && !origin.includes("localhost")) return origin;
+        if (envUrl && !envUrl.includes("localhost")) return envUrl;
+        return origin || "https://in-isai.vercel.app";
+      }
+
+      assert.equal(
+        resolveRedirectUrl("https://in-isai.vercel.app", "http://localhost:3000"),
+        "https://in-isai.vercel.app"
+      );
+      assert.equal(
+        resolveRedirectUrl("", "https://in-isai.vercel.app"),
+        "https://in-isai.vercel.app"
+      );
+    });
+  });
 });

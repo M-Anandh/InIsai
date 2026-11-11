@@ -14,10 +14,11 @@ interface AuthState {
   userPlaylists: Playlist[];
   
   initialize: () => Promise<void>;
-  signUp: (email: string, pass: string, name: string) => Promise<{ error?: string }>;
+  signUp: (email: string, pass: string, name: string) => Promise<{ error?: string; needsConfirmation?: boolean }>;
   signIn: (email: string, pass: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   
   // Liked tracks
   toggleLikeTrack: (track: Track) => Promise<void>;
@@ -140,14 +141,25 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
+          const siteUrl =
+            typeof window !== "undefined"
+              ? window.location.origin
+              : process.env.NEXT_PUBLIC_SITE_URL || "https://in-isai.vercel.app";
+
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
               data: { full_name: name },
+              emailRedirectTo: siteUrl,
             },
           });
           if (error) return { error: error.message };
+
+          // If email confirmation is required and session is not yet granted
+          if (data.user && !data.session) {
+            return { needsConfirmation: true };
+          }
 
           if (data.user) {
             set({
@@ -404,6 +416,30 @@ export const useAuthStore = create<AuthState>()(
           }
         }
         return {};
+      },
+
+      deleteAccount: async () => {
+        try {
+          if (isSupabaseConfigured() && get().isAuthenticated) {
+            const { data } = await supabase.auth.getSession();
+            const token = data.session?.access_token;
+            if (token) {
+              await fetch("/api/account/delete", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              });
+            }
+          }
+          const { purgeAllLocalUserData } = await import("@/lib/user-data");
+          await purgeAllLocalUserData();
+          await get().signOut();
+          return { success: true };
+        } catch (err: any) {
+          return { success: false, error: err?.message || "Could not delete account." };
+        }
       },
     }),
     {

@@ -17,6 +17,7 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +48,8 @@ export default function LoginPage() {
 
       if (res.error) {
         setErrorMsg(res.error);
+      } else if (res.needsConfirmation) {
+        setConfirmationSent(true);
       } else {
         router.push("/");
       }
@@ -66,6 +69,42 @@ export default function LoginPage() {
   const handleGuest = () => {
     router.push("/");
   };
+
+  if (confirmationSent) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
+        <div className="w-full max-w-md bg-inisai-card border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 text-center">
+          <InisaiLogo size="lg" className="justify-center" />
+          <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
+            <Mail className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Check your email</h2>
+            <p className="text-xs text-inisai-muted leading-relaxed">
+              We sent a verification link to <span className="font-semibold text-white">{email}</span>. Click the link in your email to activate your account and start streaming.
+            </p>
+          </div>
+          <div className="pt-4 space-y-2">
+            <button
+              onClick={() => {
+                setConfirmationSent(false);
+                setMode("login");
+              }}
+              className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-colors"
+            >
+              Back to Sign In
+            </button>
+            <button
+              onClick={handleGuest}
+              className="w-full py-2.5 rounded-xl bg-transparent hover:bg-white/5 text-inisai-muted hover:text-white text-xs transition-colors"
+            >
+              Continue in Guest Mode
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
