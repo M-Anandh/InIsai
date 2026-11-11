@@ -300,3 +300,4 @@ export const usePlaylistStore = create<PlaylistState>((set, get) => ({
     await idbSet(IDB_PLAYLISTS_KEY, []);
   },
 }));
+

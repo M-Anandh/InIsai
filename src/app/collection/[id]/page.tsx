@@ -10,3 +10,4 @@ export default function CollectionPage() {
 
   return <PlaylistDetailView id={id} type="collection" />;
 }
+

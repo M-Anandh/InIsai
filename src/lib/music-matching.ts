@@ -131,3 +131,4 @@ export function formatTotalDuration(seconds: number): string {
   }
   return `${secs} sec`;
 }
+

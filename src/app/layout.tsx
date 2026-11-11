@@ -9,6 +9,7 @@ import { PlayerProvider } from "@/components/player/PlayerProvider";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 import { FontLoader } from "@/components/ui/FontLoader";
+import { SWUpdateNotifier } from "@/components/pwa/SWUpdateNotifier";
 
 export const metadata: Metadata = {
   title: "InIsai — Every Beat, Your World",
@@ -110,6 +111,7 @@ export default function RootLayout({
 
           {/* Mobile Bottom Navigation */}
           <MobileNav />
+          <SWUpdateNotifier />
         </PlayerProvider>
 
         {/* Service Worker Registration */}

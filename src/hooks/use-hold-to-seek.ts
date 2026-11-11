@@ -70,3 +70,4 @@ export function useHoldToSeek({ onTap, onSeekRelative }: HoldToSeekOptions) {
     accumulatedSeconds,
   };
 }
+

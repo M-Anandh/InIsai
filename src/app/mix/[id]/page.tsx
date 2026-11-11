@@ -10,3 +10,4 @@ export default function MixDetailPage() {
 
   return <PlaylistDetailView id={id} type="mix" />;
 }
+

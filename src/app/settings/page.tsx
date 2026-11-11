@@ -544,12 +544,16 @@ export default function SettingsPage() {
         <p>
           Offline caching applies strictly to your own device files. Streaming music plays cleanly through compliant provider players.
         </p>
-        <div className="flex items-center space-x-4 pt-2 text-inisai-accent font-medium">
+        <div className="flex flex-wrap items-center space-x-3 pt-2 text-inisai-accent font-medium">
           <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
           <span>•</span>
           <Link href="/terms" className="hover:underline">Terms of Service</Link>
           <span>•</span>
-          <span className="text-slate-400">InIsai v2.0</span>
+          <Link href="/debug" className="hover:underline">System Diagnostics</Link>
+          <span>•</span>
+          <span className="text-slate-400 font-mono text-[11px]">
+            v{process.env.NEXT_PUBLIC_APP_VERSION || "2.1.0"} · {process.env.NEXT_PUBLIC_BUILD_SHA || "1329352"} · {process.env.NEXT_PUBLIC_BUILD_TIME ? new Date(process.env.NEXT_PUBLIC_BUILD_TIME).toLocaleDateString() : new Date().toLocaleDateString()}
+          </span>
         </div>
       </section>
 
