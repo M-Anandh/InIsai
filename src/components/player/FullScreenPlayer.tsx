@@ -10,6 +10,7 @@ import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
 import { extractArtworkPalette, DynamicPalette } from "@/lib/theme/palette-extractor";
 import { engineCoordinator } from "@/lib/player/EngineCoordinator";
+import { useHoldToSeek } from "@/hooks/use-hold-to-seek";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { LyricsView } from "./LyricsView";
 import { QueueView } from "./QueueView";
@@ -32,6 +33,7 @@ import {
   Sliders,
   Moon,
   Video,
+  Music,
   Radio,
   Activity,
   FolderPlus,
@@ -89,6 +91,8 @@ export const FullScreenPlayer: React.FC = () => {
   const [addToPlaylistOpen, setAddToPlaylistOpen] = useState(false);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverXPercent, setHoverXPercent] = useState<number>(0);
+  const [seekFeedback, setSeekFeedback] = useState<{ text: string; side: "left" | "right" } | null>(null);
+  const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
 
   const videoSlotRef = useRef<HTMLDivElement | null>(null);
   const swipeStartY = useRef<number | null>(null);
@@ -99,6 +103,53 @@ export const FullScreenPlayer: React.FC = () => {
         navigator.vibrate(10);
       }
     } catch {}
+  };
+
+  const prevHold = useHoldToSeek({
+    onTap: () => {
+      triggerHaptic();
+      if (currentTime > 3) {
+        seek(0);
+      } else {
+        prevTrack();
+      }
+    },
+    onSeekRelative: (delta) => {
+      triggerHaptic();
+      seek(Math.max(0, Math.min(duration || 0, currentTime + delta)));
+    },
+  });
+
+  const nextHold = useHoldToSeek({
+    onTap: () => {
+      triggerHaptic();
+      nextTrack();
+    },
+    onSeekRelative: (delta) => {
+      triggerHaptic();
+      seek(Math.max(0, Math.min(duration || 0, currentTime + delta)));
+    },
+  });
+
+  const handleArtworkClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const isLeft = clickX < rect.width / 2;
+    const now = Date.now();
+    if (now - lastTapRef.current.time < 350) {
+      triggerHaptic();
+      if (isLeft) {
+        seek(Math.max(0, currentTime - 10));
+        setSeekFeedback({ text: "-10s", side: "left" });
+      } else {
+        seek(Math.min(duration || currentTime + 10, currentTime + 10));
+        setSeekFeedback({ text: "+10s", side: "right" });
+      }
+      setTimeout(() => setSeekFeedback(null), 800);
+      lastTapRef.current = { time: 0, x: 0 };
+    } else {
+      lastTapRef.current = { time: now, x: clickX };
+    }
   };
 
   // Extract dynamic artwork palette with 600ms transition
@@ -428,7 +479,7 @@ export const FullScreenPlayer: React.FC = () => {
 
         {activeDrawerTab === "nowPlaying" && (
           <div className="flex flex-col items-center justify-between w-full max-w-md mx-auto flex-1 py-1 space-y-4">
-            {/* Optional Audio / Video Switcher when YT engine active */}
+            {/* Optional Song / Video Switcher when YT engine active */}
             {currentTrack.youtubeVideoId && engineId === "youtube" && (
               <div className="flex items-center space-x-1 p-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md">
                 <button
@@ -437,8 +488,8 @@ export const FullScreenPlayer: React.FC = () => {
                     mediaMode === "audio" ? "bg-white text-black shadow" : "text-white/70 hover:text-white"
                   }`}
                 >
-                  <Radio className="w-3.5 h-3.5" />
-                  <span>Audio</span>
+                  <Music className="w-3.5 h-3.5" />
+                  <span>Song</span>
                 </button>
                 <button
                   onClick={() => setMediaMode("video")}
@@ -452,7 +503,7 @@ export const FullScreenPlayer: React.FC = () => {
               </div>
             )}
 
-            {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork */}
+            {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork with Double-Tap Seek */}
             <div className="w-full flex items-center justify-center my-auto py-1">
               {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
                 <div
@@ -463,7 +514,8 @@ export const FullScreenPlayer: React.FC = () => {
                 </div>
               ) : (
                 <div
-                  className={`relative w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 ${
+                  onClick={handleArtworkClick}
+                  className={`relative w-64 h-64 sm:w-80 sm:h-80 max-w-[78vw] max-h-[36vh] sm:max-h-[42vh] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
                     isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
                   }`}
                   style={{
@@ -471,6 +523,7 @@ export const FullScreenPlayer: React.FC = () => {
                       ? `0 24px 60px -10px ${palette.glow}`
                       : "0 16px 40px -12px rgba(0,0,0,0.65)",
                   }}
+                  title="Double tap left/right to seek ±10s"
                 >
                   <CoverImage
                     src={currentTrack.artworkUrl}
@@ -479,6 +532,23 @@ export const FullScreenPlayer: React.FC = () => {
                     type="track"
                     aspect="square"
                   />
+
+                  {/* Double-Tap Gesture Feedback Ripple */}
+                  {seekFeedback && (
+                    <div
+                      className={`absolute inset-y-0 ${
+                        seekFeedback.side === "left"
+                          ? "left-0 w-1/2 rounded-l-3xl bg-black/50"
+                          : "right-0 w-1/2 rounded-r-3xl bg-black/50"
+                      } flex items-center justify-center pointer-events-none transition-opacity animate-in fade-in duration-200`}
+                    >
+                      <div className="flex items-center space-x-1.5 text-white font-bold text-xs bg-black/70 px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
+                        <span>{seekFeedback.side === "left" ? "<<" : ""}</span>
+                        <span>{seekFeedback.text}</span>
+                        <span>{seekFeedback.side === "right" ? ">>" : ""}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -589,14 +659,20 @@ export const FullScreenPlayer: React.FC = () => {
               </button>
 
               <button
-                onClick={() => {
-                  triggerHaptic();
-                  prevTrack();
-                }}
-                aria-label="Previous Track"
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer"
+                onMouseDown={() => prevHold.start(-1)}
+                onMouseUp={prevHold.stop}
+                onMouseLeave={prevHold.stop}
+                onTouchStart={() => prevHold.start(-1)}
+                onTouchEnd={prevHold.stop}
+                aria-label="Previous Track (Hold to rewind)"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer relative"
               >
                 <SkipBack className="w-7 h-7 fill-current" />
+                {prevHold.isHolding && (
+                  <span className="absolute -top-7 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[10px] font-mono text-white whitespace-nowrap animate-pulse">
+                    {prevHold.accumulatedSeconds}s &lt;&lt;
+                  </span>
+                )}
               </button>
 
               <button
@@ -615,14 +691,20 @@ export const FullScreenPlayer: React.FC = () => {
               </button>
 
               <button
-                onClick={() => {
-                  triggerHaptic();
-                  nextTrack();
-                }}
-                aria-label="Next Track"
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer"
+                onMouseDown={() => nextHold.start(1)}
+                onMouseUp={nextHold.stop}
+                onMouseLeave={nextHold.stop}
+                onTouchStart={() => nextHold.start(1)}
+                onTouchEnd={nextHold.stop}
+                aria-label="Next Track (Hold to fast forward)"
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white/90 hover:text-white active:scale-90 transition-transform cursor-pointer relative"
               >
                 <SkipForward className="w-7 h-7 fill-current" />
+                {nextHold.isHolding && (
+                  <span className="absolute -top-7 px-2 py-0.5 rounded-md bg-black/80 border border-white/20 text-[10px] font-mono text-white whitespace-nowrap animate-pulse">
+                    &gt;&gt; +{nextHold.accumulatedSeconds}s
+                  </span>
+                )}
               </button>
 
               <button

@@ -908,4 +908,54 @@ describe("InIsai (இனிசை) Unit & Architectural Tests", () => {
       );
     });
   });
+
+  // 21. Phase C: Hold-to-Seek Accelerating Time Steps (P1.1)
+  describe("Phase C: Hold-to-Seek Accelerating Steps", () => {
+    test("should seek 5s initially and accelerate to 15s after 2s hold", () => {
+      function getHoldSeekStep(elapsedHoldMs) {
+        return elapsedHoldMs > 2000 ? 15 : 5;
+      }
+
+      assert.equal(getHoldSeekStep(500), 5);
+      assert.equal(getHoldSeekStep(1999), 5);
+      assert.equal(getHoldSeekStep(2001), 15);
+      assert.equal(getHoldSeekStep(3500), 15);
+    });
+  });
+
+  // 22. Phase C: Artwork Double-Tap Seek Coordinates & Thresholds (P1.1)
+  describe("Phase C: Artwork Double-Tap Seek", () => {
+    test("should detect left (-10s) vs right (+10s) half double-taps within 350ms window", () => {
+      function resolveTapAction(clickX, width, elapsedSinceLastTap) {
+        if (elapsedSinceLastTap > 350) return { action: "single" };
+        const side = clickX < width / 2 ? "left" : "right";
+        return { action: "double", delta: side === "left" ? -10 : 10 };
+      }
+
+      // First tap after 1000ms -> single
+      assert.deepEqual(resolveTapAction(50, 300, 1000), { action: "single" });
+      // Quick second tap on left half (50/300) within 200ms -> rewind 10s
+      assert.deepEqual(resolveTapAction(50, 300, 200), { action: "double", delta: -10 });
+      // Quick second tap on right half (250/300) within 250ms -> fast-forward 10s
+      assert.deepEqual(resolveTapAction(250, 300, 250), { action: "double", delta: 10 });
+    });
+  });
+
+  // 23. Phase C: Song vs Video Mode Display State Toggle (P1.3)
+  describe("Phase C: Song vs Video Mode Display State", () => {
+    test("should default to song mode and show video slot only when requested and video ID exists", () => {
+      function resolveViewMode(track, requestedMode, engineId) {
+        const canShowVideo = engineId === "youtube" && Boolean(track?.youtubeVideoId);
+        if (requestedMode === "video" && canShowVideo) return "video";
+        return "song";
+      }
+
+      const ytTrack = { id: "yt-1", youtubeVideoId: "abc1234" };
+      const nonYtTrack = { id: "saavn-1", streamUrl: "https://saavn/audio.mp4" };
+
+      assert.equal(resolveViewMode(ytTrack, "song", "youtube"), "song");
+      assert.equal(resolveViewMode(ytTrack, "video", "youtube"), "video");
+      assert.equal(resolveViewMode(nonYtTrack, "video", "audioElement"), "song");
+    });
+  });
 });

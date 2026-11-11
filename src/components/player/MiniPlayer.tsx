@@ -4,6 +4,7 @@ import React, { useRef } from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { useLikesStore } from "@/stores/likes-store";
 import { useMounted } from "@/hooks/use-mounted";
+import { useHoldToSeek } from "@/hooks/use-hold-to-seek";
 import { CoverImage } from "@/components/ui/CoverImage";
 import { formatDuration } from "@/lib/utils";
 import {
@@ -54,6 +55,32 @@ export const MiniPlayer: React.FC = () => {
       }
     } catch {}
   };
+
+  const prevHold = useHoldToSeek({
+    onTap: () => {
+      haptic();
+      if (currentTime > 3) {
+        seek(0);
+      } else {
+        prevTrack();
+      }
+    },
+    onSeekRelative: (delta) => {
+      haptic();
+      seek(Math.max(0, Math.min(duration || 0, currentTime + delta)));
+    },
+  });
+
+  const nextHold = useHoldToSeek({
+    onTap: () => {
+      haptic();
+      nextTrack();
+    },
+    onSeekRelative: (delta) => {
+      haptic();
+      seek(Math.max(0, Math.min(duration || 0, currentTime + delta)));
+    },
+  });
 
   const handleTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
@@ -154,14 +181,20 @@ export const MiniPlayer: React.FC = () => {
         <div className="hidden md:flex flex-col items-center justify-center space-y-0.5 flex-shrink-0">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => {
-                haptic();
-                prevTrack();
-              }}
-              aria-label="Previous Track"
-              className="p-1.5 text-slate-600 dark:text-white/75 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+              onMouseDown={() => prevHold.start(-1)}
+              onMouseUp={prevHold.stop}
+              onMouseLeave={prevHold.stop}
+              onTouchStart={() => prevHold.start(-1)}
+              onTouchEnd={prevHold.stop}
+              aria-label="Previous Track (Hold to rewind)"
+              className="p-1.5 text-slate-600 dark:text-white/75 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer relative"
             >
               <SkipBack className="w-4 h-4" />
+              {prevHold.isHolding && (
+                <span className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-mono text-white whitespace-nowrap">
+                  {prevHold.accumulatedSeconds}s &lt;&lt;
+                </span>
+              )}
             </button>
 
             <button
@@ -180,14 +213,20 @@ export const MiniPlayer: React.FC = () => {
             </button>
 
             <button
-              onClick={() => {
-                haptic();
-                nextTrack();
-              }}
-              aria-label="Next Track"
-              className="p-1.5 text-slate-600 dark:text-white/75 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+              onMouseDown={() => nextHold.start(1)}
+              onMouseUp={nextHold.stop}
+              onMouseLeave={nextHold.stop}
+              onTouchStart={() => nextHold.start(1)}
+              onTouchEnd={nextHold.stop}
+              aria-label="Next Track (Hold to fast forward)"
+              className="p-1.5 text-slate-600 dark:text-white/75 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer relative"
             >
               <SkipForward className="w-4 h-4" />
+              {nextHold.isHolding && (
+                <span className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-black/80 text-[9px] font-mono text-white whitespace-nowrap">
+                  &gt;&gt; +{nextHold.accumulatedSeconds}s
+                </span>
+              )}
             </button>
           </div>
 
