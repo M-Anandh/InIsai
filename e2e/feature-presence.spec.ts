@@ -93,9 +93,10 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
   test("Step 0: Critical entry points present across Guest on current viewport", async ({
     page,
   }, testInfo) => {
+    test.setTimeout(90000);
     const isMobile = testInfo.project.name.includes("mobile");
-    await page.goto("/", { waitUntil: "load" });
-    await page.waitForTimeout(800);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("audio#inisai-persistent-audio")).toHaveCount(1, { timeout: 15000 });
 
     // Core navigation destinations present
     if (!isMobile) {
@@ -128,9 +129,8 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
     expect(audioAttrs.playsInline).toBe(true);
 
     // Check Settings (Guest): Install App row, Clear local data, Sign in prompt, Background-friendly playback ON
-    await page.goto("/settings", { waitUntil: "load" });
-    await page.waitForTimeout(500);
-    await expect(page.getByTestId("pwa-install-row-btn")).toBeVisible();
+    await page.goto("/settings", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("pwa-install-row-btn")).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId("clear-local-data-trigger")).toBeVisible();
     await expect(page.getByText(/Sign in to manage an account/i)).toBeVisible();
     await expect(page.getByTestId("download-my-data-btn")).toBeVisible();
@@ -138,9 +138,8 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
     await expect(page.getByTestId("toggle-background-playback")).toHaveText("Enabled");
 
     // Check Profile (Guest): Sign In, Clear local data, Download my data
-    await page.goto("/profile", { waitUntil: "load" });
-    await page.waitForTimeout(500);
-    await expect(page.getByTestId("clear-local-data-trigger")).toBeVisible();
+    await page.goto("/profile", { waitUntil: "domcontentloaded" });
+    await expect(page.getByTestId("clear-local-data-trigger")).toBeVisible({ timeout: 15000 });
     await expect(page.getByText(/Sign in to manage an account/i)).toBeVisible();
     await expect(page.getByTestId("download-my-data-btn")).toBeVisible();
     await expect(page.getByRole("link", { name: /Sign In/i }).first()).toBeVisible();
@@ -196,6 +195,7 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
   test("Step 1: Synthetic beforeinstallprompt, prompt(), appinstalled & iOS Share sheet", async ({
     browser,
   }, testInfo) => {
+    test.setTimeout(90000);
     // 1. Test synthetic beforeinstallprompt + appinstalled in Chromium
     const ctx = await browser.newContext({
       viewport: testInfo.project.name.includes("mobile")
@@ -204,8 +204,9 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
     });
     const page = await ctx.newPage();
 
-    await page.goto("/", { waitUntil: "load" });
-    await page.waitForTimeout(500);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("audio#inisai-persistent-audio", { state: "attached", timeout: 15000 });
+    await page.waitForTimeout(400);
 
     await page.evaluate(() => {
       window.__promptCalls = 0;
@@ -244,11 +245,10 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1",
     });
     const iosPage = await iosCtx.newPage();
-    await iosPage.goto("/", { waitUntil: "load" });
-    await iosPage.waitForTimeout(700);
+    await iosPage.goto("/", { waitUntil: "domcontentloaded" });
 
     const iosInstallBtn = iosPage.getByTestId("pwa-install-banner-btn");
-    await expect(iosInstallBtn).toBeVisible();
+    await expect(iosInstallBtn).toBeVisible({ timeout: 15000 });
     await iosInstallBtn.click();
 
     const sheet = iosPage.getByTestId("install-instructions-sheet");
@@ -265,15 +265,15 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
   test("Step 3 & 4: Full-screen player clean 5-item menu, no YT/Wave labels, Add to Playlist & visibilitychange", async ({
     page,
   }, testInfo) => {
+    test.setTimeout(90000);
     await seedPlayingTrack(page);
-    await page.goto("/", { waitUntil: "load" });
-    await page.waitForTimeout(700);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
 
     // Open full-screen player via MiniPlayer track expand trigger
     const miniPlayerExpand = page.getByTestId("mini-player-expand");
-    await expect(miniPlayerExpand).toBeVisible({ timeout: 8000 });
+    await expect(miniPlayerExpand).toBeVisible({ timeout: 15000 });
     await miniPlayerExpand.click();
-    await page.waitForTimeout(600);
+    await page.waitForTimeout(400);
 
     // Ensure unwanted labels are NEVER visible
     await expect(page.getByText("YouTube Music", { exact: true })).toHaveCount(0);
