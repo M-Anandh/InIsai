@@ -10,6 +10,7 @@ import { PageTransition } from "@/components/layout/PageTransition";
 import { ThemeSync } from "@/components/ui/ThemeSync";
 import { FontLoader } from "@/components/ui/FontLoader";
 import { SWUpdateNotifier } from "@/components/pwa/SWUpdateNotifier";
+import { InstallProvider } from "@/components/pwa/InstallProvider";
 import { GlobalAddToPlaylistModal } from "@/components/music/GlobalAddToPlaylistModal";
 
 export const metadata: Metadata = {
@@ -68,13 +69,25 @@ export default function RootLayout({
             `,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.__inisaiDeferredPrompt = null;
+              window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                window.__inisaiDeferredPrompt = e;
+              });
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://i.ytimg.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://lh3.googleusercontent.com" crossOrigin="anonymous" />
       </head>
       <body className="min-h-screen bg-[#FBF7F1] dark:bg-[#0B0A10] text-[#1B1824] dark:text-[#F6F3EE] flex flex-col antialiased selection:bg-inisai-accent selection:text-white">
         <FontLoader />
         <ThemeSync />
-        <PlayerProvider>
+        <InstallProvider>
+          <PlayerProvider>
           <div className="flex flex-1 min-h-screen">
             {/* Desktop Sidebar */}
             <Sidebar />
@@ -115,6 +128,7 @@ export default function RootLayout({
           <MobileNav />
           <SWUpdateNotifier />
         </PlayerProvider>
+        </InstallProvider>
 
         {/* Service Worker Registration & Stale Chunk Auto-Recovery */}
         <script

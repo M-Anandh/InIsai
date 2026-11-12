@@ -67,6 +67,9 @@ export async function purgeAllLocalUserData() {
     "inisai_local_tracks_catalog",
     "inisai_provider_prefs",
     "inisai_install_banner_dismissed",
+    "inisai_install_banner_dismissed_at",
+    "inisai_preferred_languages",
+    "inisai_theme",
   ];
 
   for (const key of keysToRemove) {
@@ -75,9 +78,26 @@ export async function purgeAllLocalUserData() {
     } catch {}
   }
 
-  // 3. Reset personalization signals
+  // 3. Reset personalization signals & purge IndexedDB stores
   try {
     await resetAllSignals();
+  } catch {}
+
+  try {
+    if (typeof indexedDB !== "undefined") {
+      const knownDbs = [
+        "inisai_signals_db",
+        "inisai_likes_db",
+        "inisai_taste_db",
+        "inisai_offline_audio_db",
+        "inisai_local_music_db",
+      ];
+      for (const dbName of knownDbs) {
+        try {
+          indexedDB.deleteDatabase(dbName);
+        } catch {}
+      }
+    }
   } catch {}
 
   // 4. Clear Cache Storage

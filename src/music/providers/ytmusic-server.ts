@@ -832,26 +832,97 @@ export async function ytAlbumDetails(albumId: string) {
     const album: any = await withTimeout(yt.music.getAlbum(albumId), 6000, null);
     if (!album) return null;
     const title = album?.header?.title?.text || "Album";
-    const artist = album?.header?.subtitle?.text || "Artist";
-    const artworkUrl = extractHighResArtwork(album?.header);
+    const subtitleText: string = album?.header?.subtitle?.text || "";
+    const secondSubtitleText: string = album?.header?.second_subtitle?.text || "";
+    const subtitleParts = subtitleText.split("•").map((s: string) => s.trim()).filter(Boolean);
+    const yearMatch = subtitleText.match(/\b(19|20)\d{2}\b/) || secondSubtitleText.match(/\b(19|20)\d{2}\b/);
+    const year = yearMatch ? yearMatch[0] : undefined;
+    const musicDirector =
+      subtitleParts.find((p: string) => !/^(album|ep|single|soundtrack|\d{4})$/i.test(p)) ||
+      subtitleText ||
+      "Soundtrack";
+    const rawHeaderArt = extractHighResArtwork(album?.header);
+    const artworkUrl = normalizeThumb(rawHeaderArt)[0] || rawHeaderArt;
     const tracks: Track[] = [];
 
     for (const item of album?.contents || []) {
-      const t = normalizeTrackItem(item, artist);
+      const t = normalizeTrackItem(item, musicDirector);
       if (t) {
-        if (!t.artworkUrl) t.artworkUrl = artworkUrl;
+        const chosenArt = t.artworkUrl || artworkUrl;
+        t.artworkUrl = normalizeThumb(chosenArt)[0] || chosenArt || artworkUrl;
         t.album = title;
         t.albumId = albumId;
         tracks.push(t);
       }
     }
 
-    const result = { id: albumId, title, artist, artworkUrl, tracks };
+    const totalDurationSec = tracks.reduce((sum, t) => sum + (Number(t.duration) || 0), 0);
+
+    const result = {
+      id: albumId,
+      title,
+      artist: musicDirector,
+      musicDirector,
+      year,
+      totalDurationSec,
+      totalDurationText: secondSubtitleText || undefined,
+      artworkUrl,
+      tracks,
+    };
     cache.set(cacheKey, result, 3600);
     return result;
   } catch (err) {
     console.warn("ytAlbumDetails error:", err);
     return null;
+  }
+}
+
+export async function ytResolveMovieAlbum(params: {
+  albumId?: string;
+  title?: string;
+  album?: string;
+  artist?: string;
+}): Promise<{ albumId: string | null; title?: string }> {
+  const { albumId, title = "", album = "", artist = "" } = params;
+  if (albumId && /^(MPRE|OLAK)/i.test(albumId.trim())) {
+    return { albumId: albumId.trim(), title: album || undefined };
+  }
+
+  // Extract film/soundtrack name from patterns like (From "Vettaiyaan") or album string
+  const fromMatch =
+    title.match(/\(from\s*["']?([^"')]+)["']?\)/i) ||
+    album.match(/\(from\s*["']?([^"')]+)["']?\)/i);
+  const rawAlbum =
+    fromMatch?.[1]?.trim() ||
+    (album &&
+    !/^(youtube music|single|unknown|inisai)/i.test(album.trim())
+      ? album
+          .replace(/\(original motion picture soundtrack\)/i, "")
+          .replace(/\(soundtrack\)/i, "")
+          .trim()
+      : "");
+
+  if (!rawAlbum || rawAlbum.length < 2) {
+    return { albumId: null };
+  }
+
+  const cacheKey = `resolve-movie:${rawAlbum.toLowerCase()}::${artist.toLowerCase().slice(0, 40)}`;
+  const cached = cache.get<{ albumId: string | null; title?: string }>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const primaryArtist = artist.split(/,|&|\//)[0]?.trim() || "";
+    const query = `${rawAlbum} ${primaryArtist}`.trim();
+    const res = await ytSearch(query, "album");
+    const firstAlbum = res.albums?.[0];
+    const resolved =
+      firstAlbum && firstAlbum.id
+        ? { albumId: firstAlbum.id, title: firstAlbum.title || rawAlbum }
+        : { albumId: null };
+    cache.set(cacheKey, resolved, 3600);
+    return resolved;
+  } catch {
+    return { albumId: null };
   }
 }
 

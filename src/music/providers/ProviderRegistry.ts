@@ -135,27 +135,39 @@ export class ProviderRegistry {
     const cleanTitle = track.title
       .replace(/\(official.*?\)|\[official.*?\]|\(audio\)|\(video\)|\(lyrics.*?\)/gi, "")
       .trim();
-    const query = `${cleanTitle} ${track.artist.split(",")[0] || ""}`.trim();
+    const primaryArtist = (track.artist || "").split(/,|&|\//)[0]?.trim() || "";
+    const query = `${cleanTitle} ${primaryArtist}`.trim();
 
     try {
       const candidates = await provider.search(query, { limit: 10 });
       const targetSig = normalizeTrackSignature(track.title, track.artist);
+      const normCleanTitle = normalizeTrackSignature(cleanTitle, "");
+      const normArtist = normalizeTrackSignature("", primaryArtist);
 
-      // Exact normalized signature + duration match within +-5s
+      // Strict confident match: normalized signature match AND duration within +-3s
       const exact = candidates.find((c) => {
         const sigMatch = normalizeTrackSignature(c.title, c.artist) === targetSig;
-        const durOk = !track.duration || !c.duration || Math.abs(track.duration - c.duration) <= 5;
+        const durOk = !track.duration || !c.duration || Math.abs(track.duration - c.duration) <= 3;
         return Boolean(c.streamUrl) && sigMatch && durOk;
       });
       if (exact) return exact;
 
-      // Secondary title inclusion match with playable audio stream
-      const loose = candidates.find(
-        (c) =>
-          Boolean(c.streamUrl) &&
-          c.title.toLowerCase().includes(cleanTitle.toLowerCase().slice(0, 10))
-      );
-      return loose || null;
+      // Secondary confident match: normalized title matches & primary artist matches & duration +-3s
+      const confident = candidates.find((c) => {
+        if (!c.streamUrl) return false;
+        const candTitle = normalizeTrackSignature(c.title, "");
+        const candArtist = normalizeTrackSignature("", c.artist);
+        const titleMatches =
+          candTitle === normCleanTitle ||
+          (normCleanTitle.length >= 4 && candTitle.includes(normCleanTitle));
+        const artistMatches =
+          !normArtist ||
+          candArtist.includes(normArtist) ||
+          normArtist.includes(candArtist.split(" ")[0] || "");
+        const durOk = !track.duration || !c.duration || Math.abs(track.duration - c.duration) <= 3;
+        return titleMatches && artistMatches && durOk;
+      });
+      return confident || null;
     } catch {
       return null;
     }

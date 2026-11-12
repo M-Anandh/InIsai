@@ -59,9 +59,11 @@ export const SWUpdateNotifier: React.FC = () => {
       });
     });
 
+    // Only reload automatically when replacing an ALREADY controlling service worker (skip first-time claim)
+    const hadController = Boolean(navigator.serviceWorker.controller);
     let refreshing = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!refreshing) {
+      if (hadController && !refreshing) {
         refreshing = true;
         window.location.reload();
       }

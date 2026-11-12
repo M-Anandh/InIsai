@@ -5,7 +5,8 @@ import Link from "next/link";
 import { INISAI_OFFICIAL_COLLECTIONS } from "@/music/collections";
 import { useAuthStore } from "@/stores/auth-store";
 import { BackNavigation } from "@/components/layout/BackNavigation";
-import { Activity, CheckCircle, XCircle, RefreshCw, Cpu, Server, Globe, HardDrive } from "lucide-react";
+import { useInstall, InstallDiagnostics } from "@/components/pwa/InstallProvider";
+import { Activity, CheckCircle, XCircle, RefreshCw, Cpu, Server, Globe, HardDrive, Smartphone } from "lucide-react";
 
 interface CollectionDebugStatus {
   id: string;
@@ -36,6 +37,9 @@ interface CoverAuditData {
 
 export default function DebugPage() {
   const { user } = useAuthStore();
+  const { getDiagnostics } = useInstall();
+  const [installDiag, setInstallDiag] = useState<InstallDiagnostics | null>(null);
+  const [isDebugMode, setIsDebugMode] = useState(false);
   const [collections, setCollections] = useState<CollectionDebugStatus[]>([]);
   const [swVersion, setSwVersion] = useState<string>("Checking...");
   const [langPrefs, setLangPrefs] = useState<string[]>([]);
@@ -122,14 +126,18 @@ export default function DebugPage() {
     }
     setCollections(results);
 
-    // 4. Cover Images Audit if debug=1
-    if (typeof window !== "undefined" && window.location.search.includes("debug=1")) {
-      setLoadingCoverAudit(true);
-      fetch("/api/debug/covers")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => setCoverAudit(data))
-        .catch(() => {})
-        .finally(() => setLoadingCoverAudit(false));
+    // 4. Cover Images Audit & PWA Install Diagnostics if debug=1
+    if (typeof window !== "undefined") {
+      setInstallDiag(getDiagnostics());
+      if (window.location.search.includes("debug=1")) {
+        setIsDebugMode(true);
+        setLoadingCoverAudit(true);
+        fetch("/api/debug/covers")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((data) => setCoverAudit(data))
+          .catch(() => {})
+          .finally(() => setLoadingCoverAudit(false));
+      }
     }
 
     setIsRefreshing(false);
@@ -258,6 +266,43 @@ export default function DebugPage() {
           ))}
         </div>
       </section>
+
+      {/* PWA Installability Diagnostics (?debug=1) */}
+      {(isDebugMode || installDiag) && installDiag && (
+        <section
+          data-testid="pwa-install-diagnostics"
+          className="bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-3xl p-6 space-y-4 shadow-sm"
+        >
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+            <Smartphone className="w-5 h-5 text-inisai-accent" />
+            <span>PWA Installability & Banner State</span>
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-100 dark:border-white/5">
+              <span className="text-slate-400 text-[10px]">Platform</span>
+              <p className="font-bold text-slate-900 dark:text-white">{installDiag.platform}</p>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-100 dark:border-white/5">
+              <span className="text-slate-400 text-[10px]">Deferred Prompt</span>
+              <p className="font-bold text-slate-900 dark:text-white">
+                {installDiag.hasDeferredPrompt ? "Captured" : "Not fired yet"}
+              </p>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-100 dark:border-white/5">
+              <span className="text-slate-400 text-[10px]">Installed / Standalone</span>
+              <p className="font-bold text-slate-900 dark:text-white">
+                {installDiag.isInstalled ? "Yes" : "No"} (media: {String(installDiag.standaloneMediaMatch)})
+              </p>
+            </div>
+            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-black/30 border border-slate-100 dark:border-white/5">
+              <span className="text-slate-400 text-[10px]">SW Controlled / Dismissed</span>
+              <p className="font-bold text-slate-900 dark:text-white">
+                SW:{String(installDiag.swControlled)} · Dismissed:{String(installDiag.bannerDismissed)}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Cover Images Quality & Rejection Audit (/debug?debug=1) */}
       <section className="bg-white dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-3xl p-6 space-y-4 shadow-sm">

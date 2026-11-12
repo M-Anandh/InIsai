@@ -3,7 +3,10 @@
 import React, { createContext, useContext, useEffect, useRef } from "react";
 import { usePlayerStore } from "@/stores/player-store";
 import { engineCoordinator } from "@/lib/player/EngineCoordinator";
-import { recordSignal } from "@/lib/personalization/signal-tracker";
+import {
+  audioElementEngine,
+  PERSISTENT_AUDIO_ELEMENT_ID,
+} from "@/lib/player/AudioElementEngine";
 
 interface PlayerContextValue {
   audioReady: boolean;
@@ -15,34 +18,30 @@ export const usePlayer = () => useContext(PlayerContext);
 
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
-    currentTrack,
-    isPlaying,
     toastMessage,
-    engineId,
+    isPlaying,
     isFullScreenOpen,
-    pause,
-    resume,
-    nextTrack,
-    prevTrack,
-    seek,
-    setToastMessage,
-    handleEngineFatalError,
   } = usePlayerStore();
 
   const isMountedRef = useRef(false);
-  const intendedPlayingBeforeBackgroundRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Setup persistent EngineCoordinator & Media Session handlers once at root
+  // Bind persistent root DOM <audio> and EngineCoordinator / Media Session handlers once
   useEffect(() => {
+    if (audioRef.current) {
+      audioElementEngine.bindDomElement(audioRef.current);
+    }
+
     if (isMountedRef.current) return;
     isMountedRef.current = true;
 
     engineCoordinator.setCallbacks(
       (engineState) => {
         const currentStore = usePlayerStore.getState();
+        const dur = engineState.duration || currentStore.currentTrack?.duration || 0;
         usePlayerStore.setState({
           currentTime: engineState.currentTime,
-          duration: engineState.duration || currentStore.currentTrack?.duration || 0,
+          duration: dur,
           buffered: engineState.buffered,
           isPlaying: engineState.isPlaying,
           isLoading: engineState.isLoading,
@@ -52,47 +51,38 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           videoQuality: engineState.videoQuality,
           latencyMs: engineState.latencyMs,
         });
+        currentStore.preResolveNextTrackIfNeeded(engineState.currentTime, dur);
       },
       () => {
-        const state = usePlayerStore.getState();
-        if (state.currentTrack) {
-          recordSignal(state.repeatMode === "one" ? "repeat" : "completion", state.currentTrack);
-        }
-        if (state.repeatMode === "one") {
-          state.seek(0);
-          engineCoordinator.play();
-        } else {
-          state.nextTrack();
-        }
+        usePlayerStore.getState().handleTrackEndedFastAdvance();
       },
       (code, track) => {
-        usePlayerStore.getState().handleEngineFatalError(code, track);
+        void usePlayerStore.getState().handleEngineFatalError(code, track);
       }
     );
 
     engineCoordinator.setupMediaSessionHandlers({
       onPlay: () => usePlayerStore.getState().resume(),
       onPause: () => usePlayerStore.getState().pause(),
-      onNext: () => usePlayerStore.getState().nextTrack(),
+      onNext: () => void usePlayerStore.getState().nextTrack(),
       onPrev: () => usePlayerStore.getState().prevTrack(),
       onSeek: (time) => usePlayerStore.getState().seek(time),
     });
 
-    // Mobile/PWA visibility resilience: NEVER pause on background; attempt clean resume on foreground return
+    // Background resilience: NEVER pause on visibilitychange / blur / pagehide / freeze.
+    // On returning visible, if !userPaused and OS paused active audio, resume cleanly.
     const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
       const state = usePlayerStore.getState();
-      if (document.visibilityState === "hidden") {
-        intendedPlayingBeforeBackgroundRef.current = state.isPlaying;
-      } else if (document.visibilityState === "visible") {
-        if (intendedPlayingBeforeBackgroundRef.current && state.currentTrack && !state.isPlaying) {
+      if (!state.currentTrack || state.userPaused) return;
+
+      if (state.engineId === "audio") {
+        if (engineCoordinator.isAudioElementPaused()) {
           engineCoordinator.play();
-          if (state.engineId === "youtube" && !state.settings.preferAudioFallback) {
-            state.setToastMessage(
-              "Background play works best with the InIsai audio source (Settings → Sources)"
-            );
-          }
         }
-        intendedPlayingBeforeBackgroundRef.current = false;
+      } else if (state.engineId === "youtube" && !state.isPlaying) {
+        engineCoordinator.play();
+        state.setToastMessage("Some songs only play while the app is open");
       }
     };
 
@@ -100,7 +90,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [resume, pause, nextTrack, prevTrack, seek, setToastMessage, handleEngineFatalError]);
+  }, []);
 
   // Keep WakeLock synchronized cleanly while FullScreen player is open and playing
   useEffect(() => {
@@ -109,6 +99,15 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return (
     <PlayerContext.Provider value={{ audioReady: true }}>
+      {/* Single persistent DOM audio element reused across tracks to maintain mobile OS session */}
+      <audio
+        ref={audioRef}
+        id={PERSISTENT_AUDIO_ELEMENT_ID}
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+        className="hidden"
+      />
       {children}
 
       {/* Non-intrusive global player toast notification (error recovery / sleep timer / mobile bg hint) */}

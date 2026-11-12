@@ -437,13 +437,20 @@ export const useAuthStore = create<AuthState>()(
             const { data } = await supabase.auth.getSession();
             const token = data.session?.access_token;
             if (token) {
-              await fetch("/api/account/delete", {
+              const res = await fetch("/api/account/delete", {
                 method: "POST",
                 headers: {
                   Authorization: `Bearer ${token}`,
                   "Content-Type": "application/json",
                 },
               });
+              if (!res.ok) {
+                const payload = await res.json().catch(() => ({}));
+                return {
+                  success: false,
+                  error: payload?.error || `Account deletion failed (${res.status})`,
+                };
+              }
             }
           }
           const { purgeAllLocalUserData } = await import("@/lib/user-data");

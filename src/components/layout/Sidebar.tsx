@@ -141,6 +141,11 @@ export const Sidebar: React.FC = () => {
           </button>
         )}
 
+        {/* Desktop Sidebar Install App Entry */}
+        <div className="pt-1">
+          <PWAInstaller variant="sidebar" />
+        </div>
+
         {/* Creator Attribution */}
         <div className="pt-2 px-3 text-[10px] text-inisai-muted/60">
           <p>InIsai © 2026</p>

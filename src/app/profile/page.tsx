@@ -6,6 +6,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { usePlayerStore } from "@/stores/player-store";
 import { useMounted } from "@/hooks/use-mounted";
 import { BackNavigation } from "@/components/layout/BackNavigation";
+import { PWAInstaller } from "@/components/pwa/PWAInstaller";
+import { AccountDangerZone } from "@/components/account/AccountDangerZone";
 import {
   User,
   Check,
@@ -345,6 +347,20 @@ export default function ProfilePage() {
           </Link>
         </div>
       )}
+
+      {/* Mobile App Install Row */}
+      <div className="md:hidden bg-white/80 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-3xl p-5 flex items-center justify-between gap-3 shadow-sm">
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-slate-900 dark:text-white">Install InIsai App</p>
+          <p className="text-[11px] text-slate-600 dark:text-inisai-muted truncate">
+            Add to your home screen for quick launch & background play
+          </p>
+        </div>
+        <PWAInstaller variant="row" />
+      </div>
+
+      {/* Danger Zone & Data Portability (Signed-in Delete Account / Guest Clear Local Data) */}
+      <AccountDangerZone variant="profile" />
     </div>
   );
 }

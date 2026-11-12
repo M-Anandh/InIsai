@@ -248,16 +248,6 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
         className="w-full h-full block cursor-pointer"
         aria-label="Audio Waveform Visualizer"
       />
-      <div className="flex items-center space-x-1.5 mt-0.5 pointer-events-none">
-        <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            supportsVisualizer ? "bg-emerald-400 animate-pulse" : "bg-purple-400/70"
-          }`}
-        />
-        <span className="text-[10px] font-mono tracking-wider uppercase text-white/45">
-          {supportsVisualizer ? "Live Audio Wave" : "Ambient Wave"}
-        </span>
-      </div>
     </div>
   );
 };

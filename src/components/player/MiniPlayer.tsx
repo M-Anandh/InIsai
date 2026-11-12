@@ -121,6 +121,17 @@ export const MiniPlayer: React.FC = () => {
             setActiveDrawerTab("nowPlaying");
             setFullScreenOpen(true);
           }}
+          role="button"
+          tabIndex={0}
+          aria-label="Expand full screen player"
+          data-testid="mini-player-expand"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveDrawerTab("nowPlaying");
+              setFullScreenOpen(true);
+            }
+          }}
           className="flex items-center space-x-3 min-w-0 flex-1 cursor-pointer group"
         >
           <div className="relative w-11 h-11 rounded-xl overflow-hidden shadow-md flex-shrink-0 border border-slate-200/60 dark:border-white/10">

@@ -65,6 +65,7 @@ interface PlayerState {
   // Current playback
   currentTrack: Track | null;
   isPlaying: boolean;
+  userPaused: boolean;
   isLoading: boolean;
   currentTime: number;
   duration: number;
@@ -136,8 +137,10 @@ interface PlayerState {
   setSleepTimer: (minutes: number | "end_of_track" | null) => void;
   setPreference: (key: keyof PlayerSettings, value: any) => void;
 
-  // Error recovery
+  // Error recovery & background continuity
   handleEngineFatalError: (code: string | number, failedTrack: Track) => Promise<void>;
+  preResolveNextTrackIfNeeded: (currentTime: number, duration: number) => void;
+  handleTrackEndedFastAdvance: () => void;
 }
 
 const defaultSettings: PlayerSettings = {
@@ -161,12 +164,20 @@ const defaultSettings: PlayerSettings = {
 
 let sleepTimerInterval: ReturnType<typeof setInterval> | null = null;
 const attemptedRecoveries = new Set<string>();
+const STREAM_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+export const preResolvedStreams = new Map<
+  string,
+  { track: Track; url: string; expiresAt: number }
+>();
+const preResolvingIds = new Set<string>();
+let shownMobileYtHint = false;
 
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set, get) => ({
       currentTrack: null,
       isPlaying: false,
+      userPaused: false,
       isLoading: false,
       currentTime: 0,
       duration: 0,
@@ -222,19 +233,30 @@ export const usePlayerStore = create<PlayerState>()(
         let trackToPlay = { ...track };
         const { settings } = get();
 
-        // Optional setting: if user prefers background-friendly audio source and track is YouTube,
-        // cross-match against direct audio source first while preserving metadata & videoId
+        // Route Song mode via direct <audio> when a confident match exists & background-friendly playback is enabled (and not explicitly in video mode)
         if (
           settings.preferAudioFallback &&
+          !settings.videoMode &&
           (trackToPlay.sourceType === "youtube" || trackToPlay.sourceType === "ytmusic" || !trackToPlay.streamUrl)
         ) {
-          try {
-            const matched = await providerRegistry.findAudioMatch(trackToPlay, "saavn");
-            if (matched?.streamUrl) {
-              trackToPlay.streamUrl = matched.streamUrl;
-              trackToPlay.bitrate = matched.bitrate || "320 kbps Audio";
-            }
-          } catch {}
+          const cached = preResolvedStreams.get(trackToPlay.id);
+          if (cached && cached.expiresAt > Date.now() && cached.url) {
+            trackToPlay.streamUrl = cached.url;
+            trackToPlay.bitrate = cached.track.bitrate || "320 kbps Audio";
+          } else {
+            try {
+              const matched = await providerRegistry.findAudioMatch(trackToPlay, "saavn");
+              if (matched?.streamUrl) {
+                trackToPlay.streamUrl = matched.streamUrl;
+                trackToPlay.bitrate = matched.bitrate || "320 kbps Audio";
+                preResolvedStreams.set(trackToPlay.id, {
+                  track: trackToPlay,
+                  url: matched.streamUrl,
+                  expiresAt: Date.now() + STREAM_CACHE_TTL_MS,
+                });
+              }
+            } catch {}
+          }
         }
 
         set({
@@ -242,6 +264,7 @@ export const usePlayerStore = create<PlayerState>()(
           queue: updatedQueue,
           queueIndex: index,
           playbackContext: resolvedContext,
+          userPaused: false,
           isLoading: true,
           error: null,
         });
@@ -251,6 +274,11 @@ export const usePlayerStore = create<PlayerState>()(
           engineId: engineUsed,
           engineCapabilities: { ...engineCoordinator.getCapabilities() },
         });
+
+        if (engineUsed === "youtube" && !shownMobileYtHint && typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)) {
+          shownMobileYtHint = true;
+          get().setToastMessage("Some songs only play while the app is open");
+        }
 
         // Gapless prebuffer next track if AudioElementEngine
         if (index + 1 < updatedQueue.length) {
@@ -361,21 +389,152 @@ export const usePlayerStore = create<PlayerState>()(
         }
         if (isPlaying) {
           engineCoordinator.pause();
-          set({ isPlaying: false });
+          set({ isPlaying: false, userPaused: true });
         } else {
+          set({ isPlaying: true, userPaused: false });
           engineCoordinator.play();
-          set({ isPlaying: true });
         }
       },
 
       pause: () => {
         engineCoordinator.pause();
-        set({ isPlaying: false });
+        set({ isPlaying: false, userPaused: true });
       },
 
       resume: () => {
+        set({ isPlaying: true, userPaused: false });
         engineCoordinator.play();
-        set({ isPlaying: true });
+      },
+
+      preResolveNextTrackIfNeeded: (currentTime: number, duration: number) => {
+        if (!duration || duration <= 0 || duration - currentTime > 22) return;
+        const { queue, queueIndex, repeatMode, settings } = get();
+        if (queue.length === 0) return;
+        const nextIdx =
+          queueIndex + 1 < queue.length
+            ? queueIndex + 1
+            : repeatMode === "all"
+            ? 0
+            : -1;
+        if (nextIdx < 0) return;
+
+        const candidate = queue[nextIdx];
+        if (!candidate) return;
+
+        const existing = preResolvedStreams.get(candidate.id);
+        if (existing && existing.expiresAt > Date.now()) return;
+        if (preResolvingIds.has(candidate.id)) return;
+
+        if (candidate.streamUrl) {
+          preResolvedStreams.set(candidate.id, {
+            track: candidate,
+            url: candidate.streamUrl,
+            expiresAt: Date.now() + STREAM_CACHE_TTL_MS,
+          });
+          return;
+        }
+
+        if (!settings.preferAudioFallback || settings.videoMode) return;
+        preResolvingIds.add(candidate.id);
+        providerRegistry
+          .findAudioMatch(candidate, "saavn")
+          .then((matched) => {
+            if (matched?.streamUrl) {
+              const resolvedTrack = {
+                ...candidate,
+                streamUrl: matched.streamUrl,
+                bitrate: matched.bitrate || "320 kbps Audio",
+              };
+              preResolvedStreams.set(candidate.id, {
+                track: resolvedTrack,
+                url: matched.streamUrl,
+                expiresAt: Date.now() + STREAM_CACHE_TTL_MS,
+              });
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            preResolvingIds.delete(candidate.id);
+          });
+      },
+
+      handleTrackEndedFastAdvance: () => {
+        const {
+          currentTrack,
+          repeatMode,
+          sleepTimerEndOfTrack,
+          queue,
+          queueIndex,
+          settings,
+          history,
+        } = get();
+
+        if (currentTrack) {
+          recordSignal(repeatMode === "one" ? "repeat" : "completion", currentTrack);
+        }
+
+        if (sleepTimerEndOfTrack) {
+          engineCoordinator.pause();
+          set({ isPlaying: false, userPaused: true, sleepTimerEndOfTrack: false });
+          get().setToastMessage("Sleep timer paused playback at end of track");
+          return;
+        }
+
+        if (repeatMode === "one" && currentTrack) {
+          set({ userPaused: false });
+          engineCoordinator.seek(0);
+          engineCoordinator.play();
+          return;
+        }
+
+        const nextIdx =
+          queueIndex + 1 < queue.length
+            ? queueIndex + 1
+            : repeatMode === "all" && queue.length > 0
+            ? 0
+            : -1;
+
+        if (nextIdx >= 0 && queue[nextIdx]) {
+          const nextCandidate = queue[nextIdx];
+          const cached = preResolvedStreams.get(nextCandidate.id);
+          const directUrl =
+            (cached && cached.expiresAt > Date.now() ? cached.url : null) ||
+            (nextCandidate.streamUrl && nextCandidate.sourceType !== "local"
+              ? nextCandidate.streamUrl
+              : null);
+
+          if (directUrl) {
+            const nextTrackObj =
+              cached && cached.expiresAt > Date.now() ? cached.track : nextCandidate;
+            set({
+              currentTrack: nextTrackObj,
+              queueIndex: nextIdx,
+              userPaused: false,
+              isLoading: true,
+              error: null,
+              engineId: "audio",
+              history: [
+                nextTrackObj,
+                ...history.filter((t) => t.id !== nextTrackObj.id),
+              ].slice(0, 60),
+            });
+
+            // Synchronous src swap + play() inside ended handler; retry once on failure
+            engineCoordinator
+              .playImmediateAudio(nextTrackObj, directUrl, settings)
+              .catch(() => {
+                preResolvedStreams.delete(nextTrackObj.id);
+                engineCoordinator
+                  .playImmediateAudio(nextTrackObj, directUrl, settings)
+                  .catch(() => {
+                    void get().handleEngineFatalError("ENDED_PLAY_FAILED", nextTrackObj);
+                  });
+              });
+            return;
+          }
+        }
+
+        void get().nextTrack();
       },
 
       nextTrack: async () => {

@@ -9,6 +9,7 @@ export class EngineCoordinator {
   private activeEngine: PlaybackEngine = audioElementEngine;
   private localProvider = new LocalProvider();
   private wakeLockSentinel: any = null;
+  private lastPositionUpdateMs = 0;
 
   private onStateChange: EngineStateCallback | null = null;
   private onTrackEnded: (() => void) | null = null;
@@ -121,6 +122,26 @@ export class EngineCoordinator {
     this.activeEngine.pause();
   }
 
+  public isAudioElementPaused(): boolean {
+    return audioElementEngine.isPaused();
+  }
+
+  public async playImmediateAudio(
+    track: Track,
+    streamUrl: string,
+    settings?: PlayerSettings
+  ): Promise<void> {
+    if (this.activeEngine !== audioElementEngine) {
+      this.activeEngine.pause();
+      if (this.activeEngine.id === "youtube") {
+        youtubeIframeEngine.setVisualViewportRect(null);
+      }
+      this.activeEngine = audioElementEngine;
+    }
+    this.updateMediaSessionMetadata(track);
+    await audioElementEngine.playImmediateOnEnded(track, streamUrl, settings);
+  }
+
   public seek(seconds: number) {
     this.activeEngine.seek(seconds);
   }
@@ -217,6 +238,7 @@ export class EngineCoordinator {
     }
   }
 
+  // Unified Media Session Management (supports 96/128/256/512 artwork + full action handlers)
   private updateMediaSessionMetadata(track: Track) {
     if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
     const art = track.artworkUrl || "/icons/icon-512.png";
@@ -227,6 +249,7 @@ export class EngineCoordinator {
         album: track.album || "InIsai Music",
         artwork: [
           { src: art, sizes: "96x96", type: "image/jpeg" },
+          { src: art, sizes: "128x128", type: "image/jpeg" },
           { src: art, sizes: "256x256", type: "image/jpeg" },
           { src: art, sizes: "512x512", type: "image/jpeg" },
         ],
@@ -241,6 +264,9 @@ export class EngineCoordinator {
       !("setPositionState" in navigator.mediaSession)
     )
       return;
+    const now = Date.now();
+    if (now - this.lastPositionUpdateMs < 950) return;
+    this.lastPositionUpdateMs = now;
     try {
       if (duration > 0 && !isNaN(duration) && currentTime >= 0) {
         navigator.mediaSession.setPositionState({

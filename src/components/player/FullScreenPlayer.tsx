@@ -34,14 +34,14 @@ import {
   Moon,
   Video,
   Music,
-  Radio,
   Activity,
   FolderPlus,
   Share2,
   Disc,
-  User,
   X,
 } from "lucide-react";
+
+const movieAlbumCache = new Map<string, string | null>();
 
 export const FullScreenPlayer: React.FC = () => {
   const router = useRouter();
@@ -88,6 +88,7 @@ export const FullScreenPlayer: React.FC = () => {
   const [mediaMode, setMediaMode] = useState<"audio" | "video">("audio");
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sleepSheetOpen, setSleepSheetOpen] = useState(false);
+  const [movieAlbumId, setMovieAlbumId] = useState<string | null>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverXPercent, setHoverXPercent] = useState<number>(0);
   const [seekFeedback, setSeekFeedback] = useState<{ text: string; side: "left" | "right" } | null>(null);
@@ -184,6 +185,46 @@ export const FullScreenPlayer: React.FC = () => {
       setMediaMode("audio");
     }
   }, [engineId, currentTrack?.id]);
+
+  // Resolve film / album ID for "Movie songs" overflow menu item
+  useEffect(() => {
+    if (!currentTrack) {
+      setMovieAlbumId(null);
+      return;
+    }
+    if (currentTrack.albumId && /^(MPRE|OLAK)/i.test(currentTrack.albumId)) {
+      setMovieAlbumId(currentTrack.albumId);
+      return;
+    }
+    const cacheKey = currentTrack.id;
+    if (movieAlbumCache.has(cacheKey)) {
+      setMovieAlbumId(movieAlbumCache.get(cacheKey) || null);
+      return;
+    }
+    let cancelled = false;
+    setMovieAlbumId(null);
+    const params = new URLSearchParams();
+    if (currentTrack.albumId) params.set("albumId", currentTrack.albumId);
+    if (currentTrack.title) params.set("title", currentTrack.title);
+    if (currentTrack.album) params.set("album", currentTrack.album);
+    if (currentTrack.artist) params.set("artist", currentTrack.artist);
+
+    fetch(`/api/yt/resolve-movie?${params.toString()}`)
+      .then((r) => (r.ok ? r.json() : { albumId: null }))
+      .then((data) => {
+        if (cancelled) return;
+        const resolved = data?.albumId || null;
+        movieAlbumCache.set(cacheKey, resolved);
+        setMovieAlbumId(resolved);
+      })
+      .catch(() => {
+        if (!cancelled) setMovieAlbumId(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentTrack?.id, currentTrack?.albumId, currentTrack?.album, currentTrack?.artist, currentTrack?.title]);
 
   // Sync single persistent YT IFrame bounding box cleanly
   useEffect(() => {
@@ -343,9 +384,11 @@ export const FullScreenPlayer: React.FC = () => {
           {overflowOpen && (
             <div
               onClick={(e) => e.stopPropagation()}
+              data-testid="player-overflow-menu"
               className="absolute right-0 top-12 z-50 w-56 rounded-2xl bg-[#1C1928]/95 backdrop-blur-2xl border border-white/15 shadow-2xl p-1.5 text-xs font-medium space-y-0.5"
             >
               <button
+                type="button"
                 onClick={() => {
                   if (currentTrack) useAddToPlaylistStore.getState().open(currentTrack);
                   setOverflowOpen(false);
@@ -357,6 +400,7 @@ export const FullScreenPlayer: React.FC = () => {
               </button>
 
               <button
+                type="button"
                 onClick={async () => {
                   setOverflowOpen(false);
                   const shareData = {
@@ -380,6 +424,7 @@ export const FullScreenPlayer: React.FC = () => {
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   setSleepSheetOpen(true);
                   setOverflowOpen(false);
@@ -395,50 +440,28 @@ export const FullScreenPlayer: React.FC = () => {
                 )}
               </button>
 
-              {currentTrack.artistId && (
+              {movieAlbumId && (
                 <button
+                  type="button"
                   onClick={() => {
                     setOverflowOpen(false);
                     setFullScreenOpen(false);
-                    router.push(`/artist/${encodeURIComponent(currentTrack.artistId!)}`);
+                    router.push(
+                      `/album/${encodeURIComponent(movieAlbumId)}?highlight=${encodeURIComponent(
+                        currentTrack.id
+                      )}&fromPlayer=1`
+                    );
                   }}
-                  className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
-                >
-                  <User className="w-4 h-4 text-amber-400" />
-                  <span>Go to Artist</span>
-                </button>
-              )}
-
-              {currentTrack.albumId && (
-                <button
-                  onClick={() => {
-                    setOverflowOpen(false);
-                    setFullScreenOpen(false);
-                    router.push(`/album/${encodeURIComponent(currentTrack.albumId!)}`);
-                  }}
+                  data-testid="menu-movie-songs"
                   className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
                 >
                   <Disc className="w-4 h-4 text-pink-400" />
-                  <span>Go to Album</span>
-                </button>
-              )}
-
-              {currentTrack.youtubeVideoId && engineId === "youtube" && (
-                <button
-                  onClick={() => {
-                    setMediaMode((m) => (m === "video" ? "audio" : "video"));
-                    setOverflowOpen(false);
-                  }}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
-                >
-                  <span className="flex items-center space-x-2">
-                    <Video className="w-4 h-4 text-rose-400" />
-                    <span>{mediaMode === "video" ? "Switch to Artwork" : "Watch Official Video"}</span>
-                  </span>
+                  <span>Movie songs</span>
                 </button>
               )}
 
               <button
+                type="button"
                 onClick={() => {
                   setPreference("statsForNerd", !settings.statsForNerd);
                   setOverflowOpen(false);
@@ -452,18 +475,6 @@ export const FullScreenPlayer: React.FC = () => {
                 <span className="text-[10px] text-white/50">
                   {settings.statsForNerd ? "On" : "Off"}
                 </span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setOverflowOpen(false);
-                  setFullScreenOpen(false);
-                  router.push("/settings/sources");
-                }}
-                className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
-              >
-                <Radio className="w-4 h-4 text-inisai-accent" />
-                <span>Manage Audio Sources</span>
               </button>
             </div>
           )}
@@ -598,12 +609,6 @@ export const FullScreenPlayer: React.FC = () => {
                     {currentTrack.artist}
                     {currentTrack.album && currentTrack.album !== "YouTube Music" && ` • ${currentTrack.album}`}
                   </p>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <span className="inline-block px-2 py-0.5 rounded-full bg-white/10 text-[10px] font-medium text-white/70">
-                      {currentTrack.sourceAttribution ||
-                        (engineId === "youtube" ? "YouTube Music" : "InIsai Audio")}
-                    </span>
-                  </div>
                 </div>
 
                 <button
