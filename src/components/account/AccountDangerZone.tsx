@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -293,14 +294,16 @@ export const AccountDangerZone: React.FC<AccountDangerZoneProps> = ({
       </section>
 
       {/* Signed-in Delete Account Confirmation Modal */}
-      {showDeleteModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-account-title"
-          data-testid="delete-account-modal"
-          className="fixed inset-0 z-[95] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-        >
+      {showDeleteModal &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-title"
+            data-testid="delete-account-modal"
+            className="fixed inset-0 z-[95] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
           <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-rose-500/30 rounded-3xl p-6 space-y-4 shadow-2xl">
             <div className="flex items-center space-x-3 text-rose-500">
               <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
@@ -399,18 +402,21 @@ export const AccountDangerZone: React.FC<AccountDangerZoneProps> = ({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
 
       {/* Guest Clear Local Data Modal */}
-      {showClearModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="clear-local-title"
-          data-testid="clear-local-data-modal"
-          className="fixed inset-0 z-[95] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-        >
+      {showClearModal &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clear-local-title"
+            data-testid="clear-local-data-modal"
+            className="fixed inset-0 z-[95] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          >
           <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-white/15 rounded-3xl p-6 space-y-4 shadow-2xl">
             <div className="flex items-center space-x-3 text-rose-500">
               <div className="p-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
@@ -451,8 +457,9 @@ export const AccountDangerZone: React.FC<AccountDangerZoneProps> = ({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </>
   );
 };

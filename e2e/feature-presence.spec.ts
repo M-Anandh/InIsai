@@ -116,11 +116,14 @@ test.describe("InIsai Regression Guard — Feature Presence, Install, Delete, Pl
     // Persistent <audio id="inisai-persistent-audio"> exists in DOM root and is not muted
     const audioEl = page.locator("audio#inisai-persistent-audio");
     await expect(audioEl).toHaveCount(1);
-    const audioAttrs = await audioEl.evaluate((el: HTMLAudioElement) => ({
-      muted: el.muted,
-      playsInline: el.playsInline || el.hasAttribute("playsinline"),
-      preload: el.preload,
-    }));
+    const audioAttrs = await audioEl.evaluate((el) => {
+      const audio = el as HTMLAudioElement & { playsInline?: boolean };
+      return {
+        muted: audio.muted,
+        playsInline: Boolean(audio.playsInline || audio.hasAttribute("playsinline")),
+        preload: audio.preload,
+      };
+    });
     expect(audioAttrs.muted).toBe(false);
     expect(audioAttrs.playsInline).toBe(true);
 
