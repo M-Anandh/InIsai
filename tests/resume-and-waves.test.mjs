@@ -140,24 +140,19 @@ test("Search page eliminates Go to artist and View artist from Songs and All vie
   assert.match(content, /activeFilter === ["']Songs["']\s*\)\s*return null/, "matchingArtist must not hijack Songs view");
 });
 
-test("WaveVisualizer is raised to ~140-180px on mobile and ~200-240px on desktop with 5 distinct styles", () => {
+test("WaveVisualizer is kept as classic centered-mirrored bars with flowing harmonic ribbons", () => {
   const visualizerPath = path.join(ROOT, "src", "components", "player", "WaveVisualizer.tsx");
   const playerPath = path.join(ROOT, "src", "components", "player", "FullScreenPlayer.tsx");
   const visContent = fs.readFileSync(visualizerPath, "utf8");
   const playerContent = fs.readFileSync(playerPath, "utf8");
 
-  // Height checks in FullScreenPlayer
-  assert.match(playerContent, /h-36 sm:h-44 md:h-52/, "WaveVisualizer must be tall (~140-180px mobile, ~208px desktop)");
+  // FullScreenPlayer uses classic balanced height
+  assert.match(playerContent, /h-8 sm:h-10/, "WaveVisualizer in FullScreenPlayer must use classic clean height");
 
-  // 5 styles present
-  for (const style of ["bars", "ribbons", "mountain", "radial", "particles"]) {
-    assert.ok(visContent.includes(`activeStyle === "${style}"`), `WaveVisualizer must implement style ${style}`);
-  }
-
-  // Adaptive gain, power curve, and intensity
-  assert.match(visContent, /Math\.pow\(Math\.max\(0\.02, target\), 0\.72\)/, "Must apply power curve ~0.7");
-  assert.match(visContent, /adaptiveGain/, "Must use adaptive gain normalization");
-  assert.match(visContent, /intensityMultiplier/, "Must support Low, Medium, High intensity scaling");
+  // Center-mirrored vertical bars and flowing ribbons
+  assert.match(visContent, /Flowing Sine Wave Ribbons/, "Must contain flowing harmonic sine wave ribbons");
+  assert.match(visContent, /Center-Mirrored Vertical Equalizer Bars/, "Must contain center-mirrored vertical equalizer bars");
+  assert.match(visContent, /#FF8A3D[\s\S]*?#FF3D77[\s\S]*?#7A5CFF[\s\S]*?#20C7E8/, "Must use brand harmonic gradient");
 });
 
 test("Background warning is formatted plainly with switch-to-audio action and shown only for YouTube tracks", () => {

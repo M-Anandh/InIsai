@@ -172,11 +172,11 @@ test.describe("Step 2: Resume where you left off", () => {
   });
 });
 
-test.describe("Step 4: Waves v2 visualizer styles & height", () => {
-  test("full-screen player renders tall wave visualizer across styles with screenshots", async ({
+test.describe("Step 4: Classic wave visualizer in FullScreenPlayer", () => {
+  test("full-screen player renders classic balanced wave visualizer", async ({
     page,
-  }, testInfo) => {
-    test.setTimeout(90000);
+  }) => {
+    test.setTimeout(45000);
 
     const mockSession = {
       trackKey: "saavn:arabic-kuthu",
@@ -214,49 +214,21 @@ test.describe("Step 4: Waves v2 visualizer styles & height", () => {
       wasPlaying: false,
     };
 
-    await page.addInitScript((session) => {
-      localStorage.setItem("inisai_playback_session_sync", JSON.stringify(session));
-    }, mockSession);
-
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(2000);
+    await page.evaluate((session) => {
+      localStorage.setItem("inisai_playback_session_sync", JSON.stringify(session));
+      const store = (window as any).__inisaiPlayerStore?.getState?.();
+      if (store) store.restoreSession(session);
+    }, mockSession);
 
     // Expand FullScreen player
     const miniPlayer = page.locator('[data-testid="mini-player-expand"]').first();
     await miniPlayer.click();
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1000);
 
-    // Verify wave visualizer container exists
-    const waveContainer = page.locator('[data-testid="wave-visualizer-container"]').first();
-    await expect(waveContainer).toBeVisible({ timeout: 10000 });
-
-    const box = await waveContainer.boundingBox();
-    expect(box).not.toBeNull();
-    if (box) {
-      // Height should be >= 140px on mobile and desktop
-      expect(box.height).toBeGreaterThanOrEqual(130);
-    }
-
-    // Capture screenshot of wave in current project mode
-    const projectName = testInfo.project.name;
-    const screenshotPath = path.join(SCREENSHOT_DIR, `wave-visualizer-${projectName}.png`);
-    await page.screenshot({ path: screenshotPath, fullPage: false });
-
-    // Open Settings to verify Visual Effects options
-    await page.goto("/settings", { waitUntil: "domcontentloaded" });
-    await page.waitForTimeout(1500);
-
-    const styleSelect = page.locator('[data-testid="select-wave-style"]');
-    await expect(styleSelect).toBeVisible();
-
-    const highIntensityBtn = page.locator('[data-testid="wave-intensity-high"]');
-    await expect(highIntensityBtn).toBeVisible();
-
-    const cellularToggle = page.locator('[data-testid="toggle-detailed-waves-cellular"]');
-    await expect(cellularToggle).toBeVisible();
-
-    const settingsScreenshotPath = path.join(SCREENSHOT_DIR, `settings-visual-effects-${projectName}.png`);
-    await page.screenshot({ path: settingsScreenshotPath, fullPage: false });
+    // Verify wave canvas exists and is visible
+    const waveCanvas = page.locator('canvas[aria-label="Audio Waveform Visualizer"]').first();
+    await expect(waveCanvas).toBeVisible({ timeout: 10000 });
   });
 });
 
