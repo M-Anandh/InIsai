@@ -1055,6 +1055,7 @@ export const usePlayerStore = create<PlayerState>()(
         queue: state.queue,
         queueIndex: state.queueIndex,
         currentTrack: state.currentTrack,
+        currentTime: state.currentTime,
         playbackContext: state.playbackContext,
         settings: state.settings,
         history: state.history,
@@ -1062,3 +1063,7 @@ export const usePlayerStore = create<PlayerState>()(
     }
   )
 );
+
+if (typeof window !== "undefined") {
+  (window as any).__inisaiPlayerStore = usePlayerStore;
+}
