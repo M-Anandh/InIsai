@@ -627,9 +627,9 @@ export const FullScreenPlayer: React.FC = () => {
                 </button>
               </div>
 
-              {/* Center-Mirrored Multi-Layer Wave Visualizer with Harmonic Glow */}
-              <div className="w-full max-w-sm mx-auto my-0.5">
-                <WaveVisualizer className="w-full h-8 sm:h-10" barCount={48} />
+              {/* Center-Mirrored Multi-Layer Wave Visualizer with Harmonic Glow (Waves v2) */}
+              <div className="w-full max-w-md mx-auto my-1">
+                <WaveVisualizer className="w-full h-36 sm:h-44 md:h-52" barCount={48} palette={palette} />
               </div>
 
               {/* Scrubber with Hover/Drag Preview Tooltip & Buffered Bar */}

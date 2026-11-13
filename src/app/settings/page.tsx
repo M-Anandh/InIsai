@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
-  const { settings, setCrossfade, setPlaybackRate, toggleEqualizer, setPreference } =
+  const { settings, setCrossfade, setPlaybackRate, toggleEqualizer, setPreference, currentTrack, engineId, switchToAudioVersion } =
     usePlayerStore();
   const { user, theme, toggleTheme, signOut } = useAuthStore();
   const mounted = useMounted();
@@ -211,7 +211,7 @@ export default function SettingsPage() {
             <div>
               <p className="font-semibold text-slate-900 dark:text-white">Background-friendly playback</p>
               <p className="text-slate-500 dark:text-inisai-muted">
-                Route Song mode via direct audio when available; some songs only play while the app is open
+                Route Song mode via direct audio when available for seamless background listening
               </p>
             </div>
             <button
@@ -226,6 +226,32 @@ export default function SettingsPage() {
               {settings.preferAudioFallback ? "Enabled" : "Off"}
             </button>
           </div>
+
+          {currentTrack && engineId === "youtube" && (
+            <div
+              className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              data-testid="settings-playback-yt-warning"
+            >
+              <div className="flex items-start space-x-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 flex-shrink-0 mt-1 animate-pulse" />
+                <div>
+                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                    This song plays only while InIsai is open.
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                    Choose the audio version for background play.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void switchToAudioVersion()}
+                className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs transition-colors self-start sm:self-auto cursor-pointer"
+              >
+                Switch to Audio
+              </button>
+            </div>
+          )}
 
           <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5">
             <div>
@@ -276,6 +302,96 @@ export default function SettingsPage() {
             >
               Manage Sources
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Visual Effects (Waves v2) */}
+      <section className="bg-white/80 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 rounded-3xl p-6 space-y-5 shadow-sm">
+        <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center space-x-2">
+          <Sparkles className="w-5 h-5 text-inisai-accent" />
+          <span>Visual Effects</span>
+        </h2>
+
+        <div className="space-y-4 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Wave Style</p>
+              <p className="text-slate-500 dark:text-inisai-muted">
+                Choose a visualizer style or let InIsai auto-pick based on track tune
+              </p>
+            </div>
+            <select
+              value={settings.waveStyle || "auto"}
+              onChange={(e) => setPreference("waveStyle", e.target.value)}
+              data-testid="select-wave-style"
+              className="bg-slate-100 dark:bg-black/50 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-3 py-1.5 rounded-xl text-xs outline-none cursor-pointer"
+            >
+              <option value="auto">Auto (from Track Tune)</option>
+              <option value="bars">Bars+ (Dynamic mirrored bars)</option>
+              <option value="ribbons">Ribbons (Flowing sine harmonics)</option>
+              <option value="mountain">Mountain (Filled spectrum area)</option>
+              <option value="radial">Radial Pulse (Concentric rings)</option>
+              <option value="particles">Particles (Floating treble sparkles)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Waveform Intensity</p>
+              <p className="text-slate-500 dark:text-inisai-muted">
+                Scale peak visualizer height and bass pulse dynamics
+              </p>
+            </div>
+            <div className="flex items-center space-x-1.5">
+              {(["low", "medium", "high"] as const).map((lvl) => {
+                const current = settings.waveIntensity || "medium";
+                const isSel = current === lvl;
+                return (
+                  <button
+                    key={lvl}
+                    type="button"
+                    onClick={() => setPreference("waveIntensity", lvl)}
+                    data-testid={`wave-intensity-${lvl}`}
+                    className={`px-3 py-1.5 rounded-xl font-semibold capitalize transition-all cursor-pointer ${
+                      isSel
+                        ? "bg-inisai-accent text-white shadow-sm"
+                        : "bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10"
+                    }`}
+                  >
+                    {lvl}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Detailed waves use extra data</p>
+              <p className="text-slate-500 dark:text-inisai-muted">
+                Analyze direct audio streams on cellular to build full tune waveforms (default: Wi-Fi only)
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreference("detailedWavesExtraData", !settings.detailedWavesExtraData)}
+              data-testid="toggle-detailed-waves-cellular"
+              className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                settings.detailedWavesExtraData
+                  ? "bg-inisai-accent text-white"
+                  : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-white/60"
+              }`}
+            >
+              {settings.detailedWavesExtraData ? "Allowed" : "Wi-Fi Only"}
+            </button>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-100 dark:bg-black/30 border border-slate-200 dark:border-white/10 text-[11px] text-slate-600 dark:text-inisai-muted space-y-1">
+            <p className="font-semibold text-slate-800 dark:text-slate-200">Audio Visualizer Engine Tiers:</p>
+            <p>• <span className="font-medium text-slate-700 dark:text-slate-300">Live</span>: Real-time Web Audio AnalyserNode (active on desktop foreground).</p>
+            <p>• <span className="font-medium text-slate-700 dark:text-slate-300">Tune profile</span>: On-device acoustic analysis cached locally in IndexedDB (active on mobile & background).</p>
+            <p>• <span className="font-medium text-slate-700 dark:text-slate-300">Ambient</span>: Deterministic non-repeating seeded harmonic wave (active for YouTube-only streams where raw audio bytes cannot be inspected).</p>
           </div>
         </div>
       </section>

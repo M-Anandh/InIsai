@@ -7,10 +7,15 @@ import {
   PlaybackContext,
   EngineId,
   EngineCapabilities,
+  PlaybackSessionState,
 } from "@/types";
 import { engineCoordinator } from "@/lib/player/EngineCoordinator";
 import { providerRegistry } from "@/music/providers/ProviderRegistry";
 import { recordSignal } from "@/lib/personalization/signal-tracker";
+import {
+  persistPlaybackSession,
+  persistPlaybackSessionSync,
+} from "@/lib/player/session-persistence";
 
 export interface EQPresetDefinition {
   name: string;
@@ -141,6 +146,16 @@ interface PlayerState {
   handleEngineFatalError: (code: string | number, failedTrack: Track) => Promise<void>;
   preResolveNextTrackIfNeeded: (currentTime: number, duration: number) => void;
   handleTrackEndedFastAdvance: () => void;
+
+  // Session persistence, resume & background playback warning
+  restoredPosition?: number;
+  youtubeBackgroundWarning: { visible: boolean; message: string; actionText?: string } | null;
+  setYoutubeBackgroundWarning: (warning: { visible: boolean; message: string; actionText?: string } | null) => void;
+  switchToAudioVersion: () => Promise<void>;
+  ensureReadyAndPlay: (targetPosition?: number) => Promise<void>;
+  restoreSession: (session: PlaybackSessionState) => void;
+  persistCurrentSession: (forceImmediate?: boolean) => void;
+  persistCurrentSessionSync: () => void;
 }
 
 const defaultSettings: PlayerSettings = {
@@ -205,6 +220,13 @@ export const usePlayerStore = create<PlayerState>()(
 
       settings: defaultSettings,
 
+      restoredPosition: undefined,
+      youtubeBackgroundWarning: null,
+
+      setYoutubeBackgroundWarning: (warning) => {
+        set({ youtubeBackgroundWarning: warning });
+      },
+
       setPlaybackContext: (context: PlaybackContext | null) => {
         set({ playbackContext: context });
       },
@@ -267,6 +289,7 @@ export const usePlayerStore = create<PlayerState>()(
           userPaused: false,
           isLoading: true,
           error: null,
+          restoredPosition: undefined,
         });
 
         const engineUsed = await engineCoordinator.playTrack(trackToPlay, settings);
@@ -275,10 +298,7 @@ export const usePlayerStore = create<PlayerState>()(
           engineCapabilities: { ...engineCoordinator.getCapabilities() },
         });
 
-        if (engineUsed === "youtube" && !shownMobileYtHint && typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android|Mobile/i.test(navigator.userAgent)) {
-          shownMobileYtHint = true;
-          get().setToastMessage("Some songs only play while the app is open");
-        }
+        get().persistCurrentSession(true);
 
         // Gapless prebuffer next track if AudioElementEngine
         if (index + 1 < updatedQueue.length) {
@@ -382,28 +402,257 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       togglePlay: () => {
-        const { isPlaying, currentTrack, queue } = get();
-        if (!currentTrack && queue.length > 0) {
-          get().playTrack(queue[0]);
-          return;
-        }
+        const { isPlaying } = get();
         if (isPlaying) {
-          engineCoordinator.pause();
-          set({ isPlaying: false, userPaused: true });
+          get().pause();
         } else {
-          set({ isPlaying: true, userPaused: false });
-          engineCoordinator.play();
+          void get().ensureReadyAndPlay();
         }
       },
 
       pause: () => {
         engineCoordinator.pause();
         set({ isPlaying: false, userPaused: true });
+        get().persistCurrentSession(true);
       },
 
       resume: () => {
-        set({ isPlaying: true, userPaused: false });
-        engineCoordinator.play();
+        void get().ensureReadyAndPlay();
+      },
+
+      switchToAudioVersion: async () => {
+        const { currentTrack, currentTime, settings } = get();
+        if (!currentTrack) return;
+        set({ isLoading: true });
+        try {
+          const match = await providerRegistry.findAudioMatch(currentTrack, "saavn");
+          if (match?.streamUrl) {
+            const audioTrack = {
+              ...currentTrack,
+              streamUrl: match.streamUrl,
+              bitrate: match.bitrate || "320 kbps Audio",
+            };
+            set({
+              currentTrack: audioTrack,
+              engineId: "audio",
+              youtubeBackgroundWarning: null,
+            });
+            await engineCoordinator.playTrack(audioTrack, settings);
+            if (currentTime > 0) {
+              engineCoordinator.seek(currentTime);
+            }
+            set({ isPlaying: true, isLoading: false, userPaused: false });
+            get().setToastMessage("Switched to audio version for background playback");
+            get().persistCurrentSession(true);
+            return;
+          }
+        } catch {}
+        set({ isLoading: false });
+        get().setToastMessage("No audio stream match found for this track");
+      },
+
+      ensureReadyAndPlay: async (targetPosition?: number) => {
+        const { currentTrack, queue, queueIndex, settings, restoredPosition } = get();
+        let track = currentTrack;
+        if (!track && queue.length > 0) {
+          const idx = Math.max(0, queueIndex >= 0 ? queueIndex : 0);
+          track = queue[idx];
+          set({ currentTrack: track, queueIndex: idx });
+        }
+        if (!track) return;
+
+        set({ isLoading: true, error: null, userPaused: false });
+
+        const seekTarget =
+          targetPosition !== undefined
+            ? targetPosition
+            : restoredPosition !== undefined
+            ? restoredPosition
+            : get().currentTime;
+
+        // Clear restoredPosition once applied so subsequent playback isn't hijacked
+        set({ restoredPosition: undefined });
+
+        let trackToPlay = { ...track };
+        const wantsAudio = settings.preferAudioFallback && !settings.videoMode;
+
+        // Re-resolve if missing, expired, or direct audio preferred
+        if (
+          wantsAudio &&
+          (!trackToPlay.streamUrl ||
+            trackToPlay.sourceType === "youtube" ||
+            trackToPlay.sourceType === "ytmusic")
+        ) {
+          try {
+            const matched = await providerRegistry.findAudioMatch(trackToPlay, "saavn");
+            if (matched?.streamUrl) {
+              trackToPlay.streamUrl = matched.streamUrl;
+              trackToPlay.bitrate = matched.bitrate || "320 kbps Audio";
+            }
+          } catch {}
+        }
+
+        set({ currentTrack: trackToPlay });
+
+        try {
+          const engineUsed = await engineCoordinator.playTrack(trackToPlay, settings);
+          set({
+            engineId: engineUsed,
+            engineCapabilities: { ...engineCoordinator.getCapabilities() },
+            isPlaying: true,
+            isLoading: false,
+            userPaused: false,
+          });
+
+          // Apply target seek position (clamped to [0, duration - 1])
+          const dur = trackToPlay.duration || get().duration || 0;
+          if (seekTarget > 0 && (dur <= 0 || seekTarget < dur)) {
+            const clamped = dur > 0 ? Math.min(seekTarget, Math.max(0, dur - 1)) : seekTarget;
+            engineCoordinator.seek(clamped);
+            set({ currentTime: clamped });
+          }
+
+          get().persistCurrentSession(true);
+        } catch (err: any) {
+          console.warn("ensureReadyAndPlay error:", err);
+          set({
+            isLoading: false,
+            isPlaying: false,
+            error: err?.message || "Playback failed",
+          });
+        }
+      },
+
+      restoreSession: (session: PlaybackSessionState) => {
+        const { isPlaying, currentTrack } = get();
+        if (currentTrack && isPlaying) return;
+
+        let targetTrack = session.currentTrack;
+        let targetQueue = session.queue && session.queue.length > 0 ? session.queue : targetTrack ? [targetTrack] : [];
+        let targetQueueIndex = session.queueIndex >= 0 ? session.queueIndex : 0;
+        let targetPos = session.positionSeconds || 0;
+        const dur = session.durationSeconds || targetTrack?.duration || 0;
+
+        // Position rules: If within 3s of end, treat as finished and advance to next track starting at 0:00
+        if (dur > 3 && targetPos >= dur - 3) {
+          if (targetQueueIndex + 1 < targetQueue.length) {
+            targetQueueIndex += 1;
+            targetTrack = targetQueue[targetQueueIndex];
+            targetPos = 0;
+          } else {
+            targetPos = 0;
+          }
+        } else if (dur > 0) {
+          targetPos = Math.max(0, Math.min(targetPos, Math.max(0, dur - 1)));
+        }
+
+        set({
+          currentTrack: targetTrack,
+          queue: targetQueue,
+          queueIndex: targetQueueIndex,
+          currentTime: targetPos,
+          duration: dur,
+          isPlaying: false,
+          userPaused: true,
+          engineId: session.engineId || "audio",
+          restoredPosition: targetPos,
+        });
+
+        // Set Media Session metadata and position for lockscreen
+        if (typeof window !== "undefined" && "mediaSession" in navigator && targetTrack) {
+          try {
+            const art = targetTrack.artworkUrl || "/icons/icon-512.png";
+            navigator.mediaSession.metadata = new MediaMetadata({
+              title: targetTrack.title,
+              artist: targetTrack.artist,
+              album: targetTrack.album || "InIsai Music",
+              artwork: [
+                { src: art, sizes: "96x96", type: "image/jpeg" },
+                { src: art, sizes: "128x128", type: "image/jpeg" },
+                { src: art, sizes: "256x256", type: "image/jpeg" },
+                { src: art, sizes: "512x512", type: "image/jpeg" },
+              ],
+            });
+            navigator.mediaSession.playbackState = "paused";
+            if (dur > 0 && "setPositionState" in navigator.mediaSession) {
+              navigator.mediaSession.setPositionState({
+                duration: dur,
+                playbackRate: 1,
+                position: targetPos,
+              });
+            }
+          } catch {}
+        }
+
+        if (targetPos > 0 && targetTrack) {
+          const mm = Math.floor(targetPos / 60);
+          const ss = String(Math.floor(targetPos % 60)).padStart(2, "0");
+          get().setToastMessage(`Resume "${targetTrack.title}" from ${mm}:${ss}`);
+        }
+      },
+
+      persistCurrentSession: (forceImmediate = false) => {
+        const {
+          currentTrack,
+          queue,
+          queueIndex,
+          currentTime,
+          duration,
+          settings,
+          repeatMode,
+          isShuffle,
+          engineId,
+          isPlaying,
+        } = get();
+        if (!currentTrack) return;
+        const session: PlaybackSessionState = {
+          trackKey: `${currentTrack.providerId || currentTrack.sourceType || "audio"}:${currentTrack.id}`,
+          currentTrack,
+          queue,
+          queueIndex,
+          positionSeconds: currentTime || 0,
+          durationSeconds: duration || currentTrack.duration || 0,
+          volume: settings.volume,
+          repeat: repeatMode,
+          shuffle: isShuffle,
+          engineId,
+          mode: settings.videoMode ? "video" : "song",
+          savedAt: Date.now(),
+          wasPlaying: isPlaying,
+        };
+        persistPlaybackSession(session, forceImmediate);
+      },
+
+      persistCurrentSessionSync: () => {
+        const {
+          currentTrack,
+          queue,
+          queueIndex,
+          currentTime,
+          duration,
+          settings,
+          repeatMode,
+          isShuffle,
+          engineId,
+          isPlaying,
+        } = get();
+        if (!currentTrack) return;
+        const session: PlaybackSessionState = {
+          trackKey: `${currentTrack.providerId || currentTrack.sourceType || "audio"}:${currentTrack.id}`,
+          currentTrack,
+          queue,
+          queueIndex,
+          positionSeconds: currentTime || 0,
+          durationSeconds: duration || currentTrack.duration || 0,
+          volume: settings.volume,
+          repeat: repeatMode,
+          shuffle: isShuffle,
+          engineId,
+          mode: settings.videoMode ? "video" : "song",
+          savedAt: Date.now(),
+          wasPlaying: isPlaying,
+        };
+        persistPlaybackSessionSync(session);
       },
 
       preResolveNextTrackIfNeeded: (currentTime: number, duration: number) => {
@@ -585,12 +834,15 @@ export const usePlayerStore = create<PlayerState>()(
           }
         }
 
+        set({ restoredPosition: undefined });
         await get().playTrack(queue[nextIdx]);
       },
 
       prevTrack: () => {
         const { queue, queueIndex, currentTime } = get();
         if (queue.length === 0) return;
+
+        set({ restoredPosition: undefined });
 
         if (currentTime > 3) {
           get().seek(0);
@@ -605,6 +857,7 @@ export const usePlayerStore = create<PlayerState>()(
       seek: (seconds: number) => {
         engineCoordinator.seek(seconds);
         set({ currentTime: seconds });
+        get().persistCurrentSession(true);
       },
 
       setVolume: (vol: number) => {

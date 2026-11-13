@@ -167,4 +167,44 @@ export interface PlayerSettings {
   autoplayRelated?: boolean; // Smart radio continuation when queue finishes
   statsForNerd?: boolean; // Technical telemetry overlay
   videoMode?: boolean; // Optional toggle in Now Playing when YT track active
+  waveStyle?: "auto" | "bars" | "ribbons" | "mountain" | "radial" | "particles";
+  waveIntensity?: "low" | "medium" | "high";
+  detailedWavesExtraData?: boolean; // Analyze tune profiles over cellular (default false: Wi-Fi only)
+}
+
+export interface PlaybackSessionState {
+  trackKey: string;
+  currentTrack: Track;
+  queue: Track[];
+  queueIndex: number;
+  positionSeconds: number;
+  durationSeconds: number;
+  volume: number;
+  repeat: RepeatMode;
+  shuffle: boolean;
+  engineId: EngineId;
+  mode: "song" | "video";
+  savedAt: number;
+  wasPlaying: boolean;
+}
+
+export interface TuneFrame {
+  rms: number;
+  bass: number;
+  mid: number;
+  treble: number;
+  onset: number;
+}
+
+export interface TuneProfile {
+  key: string; // provider:trackId
+  duration: number;
+  bpm: number;
+  energyMean: number;
+  bassShare: number;
+  centroidMean: number;
+  recommendedStyle: "bars" | "ribbons" | "mountain" | "radial" | "particles";
+  peaks: number[]; // ~100 normalized amplitude peaks for scrubber
+  frames: TuneFrame[]; // per-100ms frames
+  computedAt: number;
 }

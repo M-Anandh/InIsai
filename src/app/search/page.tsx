@@ -239,16 +239,18 @@ function SearchContent() {
 
   const isTopPlaying = topResult && currentTrack?.id === topResult.id && isPlaying;
 
-  // Check if top match is an artist
+  // Check if top match is an artist (strictly exact match on All tab)
   const matchingArtist = useMemo(() => {
-    if (!query || artists.length === 0) return null;
+    if (!query || artists.length === 0 || activeFilter === "Songs") return null;
     const cleanQ = query.toLowerCase().replace(/[^a-z0-9]/g, "");
     const firstNorm = (artists[0].name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (firstNorm === cleanQ || cleanQ.startsWith(firstNorm) || firstNorm.startsWith(cleanQ)) {
+    if (firstNorm === cleanQ) {
+      const topSongNorm = (songs[0]?.title || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (topSongNorm === cleanQ) return null;
       return artists[0];
     }
     return null;
-  }, [query, artists]);
+  }, [query, artists, activeFilter, songs]);
 
   const handlePlayTopResult = () => {
     if (!topResult) return;
@@ -419,7 +421,7 @@ function SearchContent() {
 
                       <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-200/60 dark:border-white/10">
                         <span className="text-xs font-semibold text-inisai-accent">
-                          View Artist Profile →
+                          Artist Discography →
                         </span>
                         {songs.length > 0 && (
                           <button

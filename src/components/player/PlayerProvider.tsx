@@ -7,6 +7,7 @@ import {
   audioElementEngine,
   PERSISTENT_AUDIO_ELEMENT_ID,
 } from "@/lib/player/AudioElementEngine";
+import { loadPersistedSession } from "@/lib/player/session-persistence";
 
 interface PlayerContextValue {
   audioReady: boolean;
@@ -19,6 +20,9 @@ export const usePlayer = () => useContext(PlayerContext);
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
     toastMessage,
+    youtubeBackgroundWarning,
+    setYoutubeBackgroundWarning,
+    switchToAudioVersion,
     isPlaying,
     isFullScreenOpen,
   } = usePlayerStore();
@@ -52,6 +56,11 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           latencyMs: engineState.latencyMs,
         });
         currentStore.preResolveNextTrackIfNeeded(engineState.currentTime, dur);
+
+        // Throttled session save during active playback
+        if (engineState.isPlaying) {
+          currentStore.persistCurrentSession(false);
+        }
       },
       () => {
         usePlayerStore.getState().handleTrackEndedFastAdvance();
@@ -62,33 +71,77 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     );
 
     engineCoordinator.setupMediaSessionHandlers({
-      onPlay: () => usePlayerStore.getState().resume(),
+      onPlay: () => void usePlayerStore.getState().ensureReadyAndPlay(),
       onPause: () => usePlayerStore.getState().pause(),
       onNext: () => void usePlayerStore.getState().nextTrack(),
       onPrev: () => usePlayerStore.getState().prevTrack(),
       onSeek: (time) => usePlayerStore.getState().seek(time),
     });
 
+    // Restore persisted playback session on launch
+    loadPersistedSession().then((session) => {
+      if (session && session.currentTrack) {
+        usePlayerStore.getState().restoreSession(session);
+      }
+    });
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        loadPersistedSession().then((session) => {
+          if (session && session.currentTrack) {
+            usePlayerStore.getState().restoreSession(session);
+          }
+        });
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+
     // Background resilience: NEVER pause on visibilitychange / blur / pagehide / freeze.
     // On returning visible, if !userPaused and OS paused active audio, resume cleanly.
     const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") return;
       const state = usePlayerStore.getState();
-      if (!state.currentTrack || state.userPaused) return;
+      if (!state.currentTrack) return;
 
-      if (state.engineId === "audio") {
-        if (engineCoordinator.isAudioElementPaused()) {
-          engineCoordinator.play();
+      if (document.hidden) {
+        // App backgrounded / page hidden
+        if (state.engineId === "youtube" && state.isPlaying) {
+          state.setYoutubeBackgroundWarning({
+            visible: true,
+            message:
+              "This song plays only while InIsai is open. Choose the audio version for background play.",
+            actionText: "Switch to Audio",
+          });
         }
-      } else if (state.engineId === "youtube" && !state.isPlaying) {
-        engineCoordinator.play();
-        state.setToastMessage("Some songs only play while the app is open");
+        state.persistCurrentSessionSync();
+      } else {
+        // Returning to foreground
+        if (!state.userPaused) {
+          if (state.engineId === "audio") {
+            if (engineCoordinator.isAudioElementPaused()) {
+              engineCoordinator.play();
+            }
+          } else if (state.engineId === "youtube" && !state.isPlaying) {
+            engineCoordinator.play();
+          }
+        }
       }
     };
 
+    const handleExit = () => {
+      usePlayerStore.getState().persistCurrentSessionSync();
+    };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handleExit);
+    window.addEventListener("freeze", handleExit);
+    window.addEventListener("beforeunload", handleExit);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
+      window.removeEventListener("pagehide", handleExit);
+      window.removeEventListener("freeze", handleExit);
+      window.removeEventListener("beforeunload", handleExit);
     };
   }, []);
 
@@ -109,6 +162,40 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         className="hidden"
       />
       {children}
+
+      {/* Explicit YouTube Background Playback Alert with Switch-to-Audio CTA */}
+      {youtubeBackgroundWarning && youtubeBackgroundWarning.visible && (
+        <div
+          role="alert"
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-[75] w-[92vw] max-w-md p-3.5 rounded-2xl bg-slate-900/95 dark:bg-[#1C1928]/95 border border-amber-500/35 text-white shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-200"
+          data-testid="yt-background-warning"
+        >
+          <div className="flex items-start space-x-2.5 min-w-0 flex-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 flex-shrink-0 mt-1 animate-pulse" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold leading-tight text-white">
+                {youtubeBackgroundWarning.message}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1.5 flex-shrink-0">
+            <button
+              onClick={() => void switchToAudioVersion()}
+              className="px-3 py-1.5 rounded-xl bg-inisai-accent hover:bg-inisai-accent/90 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+              data-testid="btn-switch-audio-version"
+            >
+              {youtubeBackgroundWarning.actionText || "Switch to Audio"}
+            </button>
+            <button
+              onClick={() => setYoutubeBackgroundWarning(null)}
+              className="p-1 rounded-lg text-white/50 hover:text-white cursor-pointer"
+              aria-label="Dismiss warning"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Non-intrusive global player toast notification (error recovery / sleep timer / mobile bg hint) */}
       {toastMessage && (
