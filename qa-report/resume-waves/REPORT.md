@@ -122,3 +122,4 @@ The following visual artifacts were generated during automated testing:
 - **Desktop Light Visual Effects Settings:** [settings-visual-effects-desktop-light.png](file:///E:/Music/qa-report/resume-waves/screenshots/settings-visual-effects-desktop-light.png)
 - **Mobile Dark Visual Effects Settings:** [settings-visual-effects-mobile-dark.png](file:///E:/Music/qa-report/resume-waves/screenshots/settings-visual-effects-mobile-dark.png)
 - **Mobile Light Visual Effects Settings:** [settings-visual-effects-mobile-light.png](file:///E:/Music/qa-report/resume-waves/screenshots/settings-visual-effects-mobile-light.png)
+

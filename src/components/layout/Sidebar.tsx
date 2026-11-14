@@ -147,13 +147,13 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* Creator Attribution */}
-        <div className="pt-2 px-3 text-[10px] text-inisai-muted/60">
-          <p>InIsai © 2026</p>
+        <div className="pt-3 px-3.5 text-xs text-slate-600 dark:text-inisai-muted">
+          <p className="font-medium">InIsai &copy; 2026</p>
           <a
             href="https://www.linkedin.com/in/anandh-m/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-inisai-accent/70 hover:text-inisai-accent transition-colors"
+            className="text-[#5B3DF5] dark:text-inisai-accent font-semibold hover:underline transition-colors block mt-0.5"
           >
             Crafted by Anandh M
           </a>

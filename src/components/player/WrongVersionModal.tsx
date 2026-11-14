@@ -172,3 +172,4 @@ export const WrongVersionModal: React.FC<WrongVersionModalProps> = ({
     </div>
   );
 };
+

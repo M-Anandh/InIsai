@@ -89,20 +89,20 @@ export default function LikedSongsPage() {
       <BackNavigation fallbackUrl="/library" />
 
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-950/60 via-purple-950/40 to-black/70 border border-rose-500/20 shadow-2xl backdrop-blur-xl">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-rose-50 via-purple-50/70 to-white dark:from-rose-950/60 dark:via-purple-950/40 dark:to-black/70 border border-rose-200/80 dark:border-rose-500/20 shadow-sm dark:shadow-2xl backdrop-blur-xl">
         <div className="flex items-center space-x-5">
-          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-rose-500 to-inisai-accent flex items-center justify-center text-white shadow-2xl shadow-rose-500/40 flex-shrink-0">
+          <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-gradient-to-tr from-rose-500 to-inisai-accent flex items-center justify-center text-white shadow-xl shadow-rose-500/30 flex-shrink-0">
             <Heart className="w-10 h-10 sm:w-14 sm:h-14 fill-white" />
           </div>
           <div className="space-y-1">
-            <span className="text-[11px] uppercase font-mono tracking-widest text-rose-400 font-extrabold flex items-center space-x-1">
+            <span className="text-[11px] uppercase font-mono tracking-widest text-[#C21F55] dark:text-rose-400 font-extrabold flex items-center space-x-1">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Personal Collection</span>
             </span>
-            <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               Liked Songs
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 dark:text-inisai-muted">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-inisai-muted">
               {rawTracks.length} {rawTracks.length === 1 ? "saved song" : "saved songs"} • {formatTotalDuration(totalDuration)}
             </p>
           </div>
@@ -119,7 +119,7 @@ export default function LikedSongsPage() {
             </button>
             <button
               onClick={handleShufflePlay}
-              className="flex items-center space-x-2 px-5 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              className="flex items-center space-x-2 px-5 py-3 rounded-full bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-800 dark:text-white font-bold text-xs sm:text-sm border border-slate-300 dark:border-white/10 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
               title="Shuffle playback"
             >
               <Shuffle className="w-4 h-4" />

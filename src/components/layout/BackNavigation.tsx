@@ -27,7 +27,7 @@ export const BackNavigation: React.FC<BackNavigationProps> = ({
     <div className="flex items-center space-x-3 mb-4">
       <button
         onClick={handleBack}
-        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/80 hover:text-white border border-white/5 text-xs font-semibold transition-all cursor-pointer"
+        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-800 dark:text-white/90 hover:text-slate-900 dark:hover:text-white border border-slate-300/80 dark:border-white/10 text-xs font-semibold transition-all cursor-pointer shadow-sm dark:shadow-none"
         title="Go back"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
@@ -35,7 +35,7 @@ export const BackNavigation: React.FC<BackNavigationProps> = ({
       </button>
 
       {title && (
-        <span className="text-sm font-semibold text-white/70 truncate">
+        <span className="text-sm font-semibold text-slate-700 dark:text-white/70 truncate">
           {title}
         </span>
       )}

@@ -31,3 +31,4 @@ jobs:
           done
           PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 npx playwright test e2e/feature-presence.spec.ts --project=desktop-dark --project=mobile-dark
           kill $SERVER_PID || true
+

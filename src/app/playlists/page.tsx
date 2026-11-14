@@ -35,20 +35,20 @@ export default function PlaylistsPage() {
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <BackNavigation fallbackUrl="/" />
-      <div className="flex items-center justify-between pb-4 border-b border-white/5">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/5">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center space-x-2.5">
-            <ListMusic className="w-8 h-8 text-inisai-teal" />
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center space-x-2.5">
+            <ListMusic className="w-8 h-8 text-[#0A6E86] dark:text-inisai-teal" />
             <span>Playlists</span>
           </h1>
-          <p className="text-xs sm:text-sm text-inisai-muted mt-1">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-inisai-muted mt-1">
             Curated and custom user-created music sets.
           </p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-inisai-teal text-black text-xs font-bold shadow-lg shadow-inisai-teal/20 hover:opacity-90 transition-all"
+          className="flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 dark:bg-inisai-teal text-white dark:text-black text-xs font-bold shadow-lg shadow-teal-500/20 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Create Playlist</span>
@@ -77,7 +77,7 @@ export default function PlaylistsPage() {
 
       {/* Custom User Playlists */}
       <section className="space-y-4 pt-4">
-        <h2 className="text-lg font-bold text-white">Your Custom Playlists</h2>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Your Custom Playlists</h2>
         {displayUserPlaylists.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {displayUserPlaylists.map((pl) => (
@@ -85,7 +85,7 @@ export default function PlaylistsPage() {
                 <PlaylistCard playlist={pl} />
                 <button
                   onClick={() => deletePlaylist(pl.id)}
-                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/50 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white/50 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity z-10 cursor-pointer"
                   title="Delete playlist"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -101,8 +101,11 @@ export default function PlaylistsPage() {
       </section>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-inisai-card border border-white/10 rounded-2xl p-6 max-w-sm w-full text-white space-y-4">
+        <div
+          data-surface="dark"
+          className="surface-dark fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        >
+          <div className="bg-[#1C1928] border border-white/15 rounded-2xl p-6 max-w-sm w-full text-white space-y-4 shadow-2xl">
             <h3 className="font-bold text-lg">Create Playlist</h3>
             <form onSubmit={handleCreate} className="space-y-3">
               <input

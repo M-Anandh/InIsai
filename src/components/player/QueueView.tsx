@@ -93,7 +93,7 @@ export const QueueView: React.FC = () => {
                 className={`flex items-center justify-between p-2 rounded-2xl transition-all w-full min-w-0 gap-1.5 ${
                   isCurrent
                     ? "bg-inisai-accent/20 border border-inisai-accent/40 shadow-sm"
-                    : "bg-white/5 border border-white/5 hover:bg-white/10"
+                    : "bg-white/[0.06] border border-white/10 hover:bg-white/10"
                 }`}
               >
                 <div className="flex items-center space-x-2 flex-1 min-w-0 overflow-hidden">

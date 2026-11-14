@@ -292,9 +292,11 @@ export const FullScreenPlayer: React.FC = () => {
 
   return (
     <div
+      id="fullscreen-player-root"
+      data-surface="dark"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="fixed inset-0 z-50 h-[100dvh] flex flex-col bg-[#0B0A10] text-[#F6F3EE] overflow-hidden overscroll-contain transition-colors duration-500"
+      className="surface-dark fixed inset-0 z-50 h-[100dvh] flex flex-col bg-[#0B0A10] text-[#F6F3EE] overflow-hidden overscroll-contain transition-colors duration-500"
       role="dialog"
       aria-label="Full Screen Music Player"
     >

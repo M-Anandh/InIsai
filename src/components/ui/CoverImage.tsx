@@ -206,13 +206,18 @@ export const CoverImage: React.FC<CoverImageProps> = ({
     );
   }
 
-  // Stage 3: Designed Default Cover (no letters, no icon-on-gradient overlay)
-  const defaultAsset = `/covers/default-${effectiveKind}.svg`;
+  // Stage 3: Designed Default Cover (theme-aware SVG with no letter-on-gradient)
+  const isDocLight =
+    typeof document !== "undefined" &&
+    document.documentElement.classList.contains("light");
+  const defaultAsset = isDocLight
+    ? `/covers/light/default-${effectiveKind}.svg`
+    : `/covers/default-${effectiveKind}.svg`;
 
   return (
     <div
       aria-label={alt || "InIsai Music"}
-      className={`relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-900 ${aspectClass} ${className} ${
+      className={`relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-900 ${aspectClass} ${className} ${
         effectiveKind === "artist" ? "rounded-full" : ""
       }`}
     >

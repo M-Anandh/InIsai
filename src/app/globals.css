@@ -47,6 +47,11 @@ html.light {
   --text-2: #3F3A4D;
   --text-3: #5E586D;
   --text-disabled: #8B8599;
+
+  --on-surface: #16131F;
+  --on-surface-muted: #3F3A4D;
+  --on-surface-subtle: #5E586D;
+
   --accent: #6D4AFF;
   --accent-hot: #E0285F;
   --accent-warm: #D96A12;
@@ -57,8 +62,6 @@ html.light {
   --surface-muted: #E8E3DB;
   --card: #FBFAF8;
   --card-hover: #FFFFFF;
-  --border: rgba(28, 24, 38, 0.12);
-  --border-strong: rgba(28, 24, 38, 0.22);
   --glass: rgba(251, 250, 248, 0.94);
   --glass-solid: #FBFAF8;
   --glass-border: rgba(28, 24, 38, 0.12);
@@ -72,6 +75,100 @@ html.light {
   --text-secondary: #3F3A4D;
   --text-muted: #5E586D;
   --shadow-card: 0 4px 20px -2px rgba(28, 24, 38, 0.08), 0 2px 6px -1px rgba(28, 24, 38, 0.04);
+
+  /* High contrast accent text tokens for light mode (>= 4.5:1 on light surfaces) */
+  --accent-text: #5B3DF5;
+  --accent-hot-text: #C21F55;
+  --accent-warm-text: #A8520A;
+  --accent-cyan-text: #0A6E86;
+  --accent-green-text: #0B7A4B;
+}
+
+/* Surface Dark Scope (Hero banners, profile dark cards, FullScreenPlayer) */
+.surface-dark,
+[data-surface="dark"],
+#fullscreen-player-root {
+  --bg-page: #0B0A10 !important;
+  --bg-surface: #13111B !important;
+  --bg-raised: #1C1928 !important;
+  --on-surface: #FFFFFF !important;
+  --on-surface-muted: rgba(255, 255, 255, 0.82) !important;
+  --on-surface-subtle: rgba(255, 255, 255, 0.70) !important;
+  --foreground: #FFFFFF !important;
+  color: #FFFFFF !important;
+  color-scheme: dark;
+}
+
+.surface-dark h1,
+.surface-dark h2,
+.surface-dark h3,
+.surface-dark h4,
+#fullscreen-player-root h1,
+#fullscreen-player-root h2,
+#fullscreen-player-root h3,
+#fullscreen-player-root h4 {
+  color: #FFFFFF !important;
+}
+
+/* Dedicated Isolation for FullScreenPlayer across ALL themes */
+#fullscreen-player-root {
+  background-color: #0B0A10 !important;
+}
+
+#fullscreen-player-root h1,
+#fullscreen-player-root h2,
+#fullscreen-player-root h3,
+#fullscreen-player-root h4 {
+  color: #FFFFFF !important;
+}
+
+#fullscreen-player-root p,
+#fullscreen-player-root span,
+#fullscreen-player-root button {
+  color: inherit;
+}
+
+#fullscreen-player-root .bg-white\/5,
+#fullscreen-player-root .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #FFFFFF !important;
+}
+
+#fullscreen-player-root .text-white {
+  color: #FFFFFF !important;
+}
+
+/* Scrim for text over artwork */
+.scrim {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 65%, transparent 100%);
+  color: #FFFFFF;
+}
+
+/* Semantic utility classes */
+.text-on-surface {
+  color: var(--on-surface);
+}
+.text-on-surface-muted {
+  color: var(--on-surface-muted);
+}
+.text-on-surface-subtle {
+  color: var(--on-surface-subtle);
+}
+.text-accent-token {
+  color: var(--accent-text);
+}
+.text-accent-hot-token {
+  color: var(--accent-hot-text);
+}
+.text-accent-warm-token {
+  color: var(--accent-warm-text);
+}
+.text-accent-cyan-token {
+  color: var(--accent-cyan-text);
+}
+.text-accent-green-token {
+  color: var(--accent-green-text);
 }
 
 html {
@@ -169,10 +266,10 @@ h1, h2, h3, .font-display {
   }
 }
 
-/* High-Contrast Light Theme Overrides (WCAG AAA >= 7:1 for text-1, >= 4.5:1 for text-2) */
+/* High-Contrast Light Theme Overrides (WCAG AAA >= 7:1 for on-surface, >= 4.5:1 for on-surface-muted) */
 html.light body {
   background-color: var(--bg-page) !important;
-  color: var(--text-1) !important;
+  color: var(--on-surface) !important;
 }
 
 html.light .glass-panel {
@@ -181,46 +278,59 @@ html.light .glass-panel {
 }
 
 html.light aside {
-  background-color: #FBFAF8 !important;
-  border-color: rgba(28, 24, 38, 0.12) !important;
+  background-color: var(--bg-surface) !important;
+  border-color: var(--border) !important;
 }
 
 html.light header {
   background-color: rgba(251, 250, 248, 0.95) !important;
-  border-color: rgba(28, 24, 38, 0.12) !important;
+  border-color: var(--border) !important;
 }
 
 html.light input[type="text"],
 html.light input[type="search"] {
-  color: #16131F !important;
+  color: var(--on-surface) !important;
 }
 
 html.light input::placeholder {
-  color: #5E586D !important;
+  color: var(--on-surface-subtle) !important;
   opacity: 0.9 !important;
 }
 
-/* Ensure text on light surfaces is crisp & high contrast */
-html.light h1,
-html.light h2,
-html.light h3,
-html.light h4,
-html.light .text-slate-900,
-html.light .dark\:text-white {
-  color: #16131F !important;
+/* Ensure text on light surfaces is crisp & high contrast without leaking into .surface-dark */
+html.light h1:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light h2:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light h3:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light h4:not(.surface-dark *):not(#fullscreen-player-root *) {
+  color: var(--on-surface);
 }
 
-html.light p.text-slate-600,
-html.light p.text-slate-500,
-html.light span.text-slate-500,
-html.light .text-slate-600,
-html.light .text-slate-500,
-html.light .dark\:text-inisai-muted {
-  color: #3F3A4D !important;
+html.light p.text-slate-600:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light p.text-slate-500:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light span.text-slate-500:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .text-slate-600:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .text-slate-500:not(.surface-dark *):not(#fullscreen-player-root *) {
+  color: var(--on-surface-muted);
 }
 
-html.light .text-slate-400 {
-  color: #5E586D !important;
+html.light .text-slate-400:not(.surface-dark *):not(#fullscreen-player-root *) {
+  color: var(--on-surface-subtle);
+}
+
+/* Light mode card surface styling outside of dark scopes */
+html.light .bg-white\/5:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .bg-white\/\[0\.02\]:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .bg-white\/\[0\.03\]:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .bg-white\/\[0\.04\]:not(.surface-dark *):not(#fullscreen-player-root *) {
+  background-color: var(--bg-surface);
+  border-color: var(--border);
+}
+
+html.light .border-slate-200:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .border-white\/5:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .border-white\/10:not(.surface-dark *):not(#fullscreen-player-root *),
+html.light .border-white\/15:not(.surface-dark *):not(#fullscreen-player-root *) {
+  border-color: var(--border);
 }
 
 /* Preserve bright crisp white text strictly inside colored brand buttons and dark artwork scrims */
@@ -228,51 +338,17 @@ html.light button.bg-inisai-accent,
 html.light a.bg-inisai-accent,
 html.light .bg-inisai-accent,
 html.light .bg-black,
-html.light .bg-black\/40,
-html.light .bg-black\/45,
 html.light .bg-black\/60,
 html.light .bg-black\/70,
-html.light .bg-black\/75,
 html.light .bg-black\/80,
-html.light .bg-black\/90,
-html.light [class*="bg-gradient-to-t from-black"],
-html.light [class*="bg-gradient-to-b from-black"],
-html.light [class*="bg-gradient-to-tr from-"],
-html.light [class*="bg-gradient-to-r from-"] {
+html.light .scrim {
   color: #FFFFFF !important;
 }
 
 html.light button.bg-inisai-accent *,
 html.light a.bg-inisai-accent *,
-html.light .bg-black *,
-html.light [class*="bg-gradient-to-t from-black"] * {
+html.light .scrim * {
   color: #FFFFFF !important;
-}
-
-/* Neutral card and surface backgrounds in light theme */
-html.light .bg-white\/80,
-html.light .bg-white\/90,
-html.light .bg-white\/95 {
-  background-color: #FFFFFF !important;
-}
-
-html.light .bg-white\/5,
-html.light .bg-white\/\[0\.02\],
-html.light .bg-white\/\[0\.03\],
-html.light .bg-white\/\[0\.04\] {
-  background-color: #FBFAF8 !important;
-  border-color: rgba(28, 24, 38, 0.12) !important;
-}
-
-html.light .bg-slate-100 {
-  background-color: #E8E3DB !important;
-}
-
-html.light .border-slate-200,
-html.light .border-white\/5,
-html.light .border-white\/10,
-html.light .border-white\/15 {
-  border-color: rgba(28, 24, 38, 0.12) !important;
 }
 
 /* Horizontal Carousel Edge Mask */
