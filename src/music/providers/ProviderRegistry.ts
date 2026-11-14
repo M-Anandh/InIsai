@@ -126,51 +126,63 @@ export class ProviderRegistry {
 
   /**
    * Cross-provider match lookup: find matching direct-audio track (Saavn or Local) for a YT track
-   * or an alternative playable version when a video embed fails.
+   * or an alternative playable version with 4 parallel queries and fuzzy scoring.
    */
   public async findAudioMatch(track: Track, targetProvider: SourceProviderId = "saavn"): Promise<Track | null> {
-    const provider = this.providers.get(targetProvider);
-    if (!provider || !this.isEnabled(targetProvider)) return null;
-
-    const cleanTitle = track.title
-      .replace(/\(official.*?\)|\[official.*?\]|\(audio\)|\(video\)|\(lyrics.*?\)/gi, "")
-      .trim();
-    const primaryArtist = (track.artist || "").split(/,|&|\//)[0]?.trim() || "";
-    const query = `${cleanTitle} ${primaryArtist}`.trim();
+    if (targetProvider === "local") {
+      const localP = this.providers.get("local");
+      if (localP) {
+        const found = await localP.search(`${track.title} ${track.artist}`, { limit: 3 });
+        if (found.length > 0 && found[0].streamUrl) return found[0];
+      }
+    }
 
     try {
-      const candidates = await provider.search(query, { limit: 10 });
-      const targetSig = normalizeTrackSignature(track.title, track.artist);
-      const normCleanTitle = normalizeTrackSignature(cleanTitle, "");
-      const normArtist = normalizeTrackSignature("", primaryArtist);
+      let finalChoice: any = null;
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams({
+          title: track.title,
+          artists: track.artist,
+          duration: String(track.duration || 0),
+          trackKey: track.id,
+        });
+        if (track.album) params.set("film", track.album);
+        const res = await fetch(`/api/audio/match?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          finalChoice = data.finalChoice;
+        }
+      } else {
+        const { matchAudioSource } = await import("@/lib/audio/matcher");
+        const result = await matchAudioSource({
+          title: track.title,
+          artists: track.artist,
+          film: track.album,
+          duration: track.duration,
+          trackKey: track.id,
+        });
+        finalChoice = result.finalChoice;
+      }
 
-      // Strict confident match: normalized signature match AND duration within +-3s
-      const exact = candidates.find((c) => {
-        const sigMatch = normalizeTrackSignature(c.title, c.artist) === targetSig;
-        const durOk = !track.duration || !c.duration || Math.abs(track.duration - c.duration) <= 3;
-        return Boolean(c.streamUrl) && sigMatch && durOk;
-      });
-      if (exact) return exact;
+      if (finalChoice && finalChoice.streamUrl) {
+        return {
+          id: finalChoice.id,
+          title: finalChoice.title,
+          artist: finalChoice.artists,
+          album: finalChoice.album,
+          duration: finalChoice.duration || track.duration,
+          artworkUrl: finalChoice.artworkUrl || track.artworkUrl,
+          streamUrl: finalChoice.streamUrl,
+          sourceType: "public_api",
+          sourceId: finalChoice.id.replace("saavn-", ""),
+          providerId: "saavn",
+          bitrate: "320 kbps AAC Audio",
+          isPlayable: true,
+        };
+      }
+    } catch {}
 
-      // Secondary confident match: normalized title matches & primary artist matches & duration +-3s
-      const confident = candidates.find((c) => {
-        if (!c.streamUrl) return false;
-        const candTitle = normalizeTrackSignature(c.title, "");
-        const candArtist = normalizeTrackSignature("", c.artist);
-        const titleMatches =
-          candTitle === normCleanTitle ||
-          (normCleanTitle.length >= 4 && candTitle.includes(normCleanTitle));
-        const artistMatches =
-          !normArtist ||
-          candArtist.includes(normArtist) ||
-          normArtist.includes(candArtist.split(" ")[0] || "");
-        const durOk = !track.duration || !c.duration || Math.abs(track.duration - c.duration) <= 3;
-        return titleMatches && artistMatches && durOk;
-      });
-      return confident || null;
-    } catch {
-      return null;
-    }
+    return null;
   }
 
   public async checkAllHealth(): Promise<Record<SourceProviderId, ProviderHealth>> {

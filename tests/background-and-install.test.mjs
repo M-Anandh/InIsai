@@ -84,11 +84,12 @@ test("Player store tracks userPaused and pre-resolves next stream ~20s before en
   assert.match(content, /preferAudioFallback:\s*true/);
 });
 
-test("ProviderRegistry enforces +-3s duration tolerance for confident background audio matching", () => {
-  const regPath = path.join(ROOT, "src", "music", "providers", "ProviderRegistry.ts");
-  const content = fs.readFileSync(regPath, "utf8");
+test("Matcher enforces adaptive duration tolerance curve for confident background audio matching", () => {
+  const matcherPath = path.join(ROOT, "src", "lib", "audio", "matcher.ts");
+  const content = fs.readFileSync(matcherPath, "utf8");
 
-  assert.match(content, /Math\.abs\(track\.duration - c\.duration\) <= 3/);
+  assert.match(content, /Math\.abs\(targetDuration - candDuration\)/);
+  assert.match(content, /durDiff <= 5/);
 });
 
 test("SWUpdateNotifier skips auto-reload on initial SW claim (hadController guard)", () => {

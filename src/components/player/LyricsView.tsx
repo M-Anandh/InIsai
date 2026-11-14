@@ -25,9 +25,36 @@ export const LyricsView: React.FC = () => {
   const [offsetSec, setOffsetSec] = useState<number>(0);
   const [showTranslit, setShowTranslit] = useState(false);
   const [smoothTime, setSmoothTime] = useState(storeTime);
+  const [isUserScrolled, setIsUserScrolled] = useState(false);
+  const userScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const activeLineRef = useRef<HTMLButtonElement | null>(null);
+
+  const handleUserScroll = () => {
+    setIsUserScrolled(true);
+    if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current);
+    userScrollTimeoutRef.current = setTimeout(() => {
+      setIsUserScrolled(false);
+    }, 4000);
+  };
+
+  const resumeSync = () => {
+    setIsUserScrolled(false);
+    if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current);
+    const container = scrollContainerRef.current;
+    const activeEl = activeLineRef.current;
+    if (container && activeEl) {
+      const top = activeEl.offsetTop - container.clientHeight / 2 + activeEl.clientHeight / 2;
+      container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (userScrollTimeoutRef.current) clearTimeout(userScrollTimeoutRef.current);
+    };
+  }, []);
 
   // Smooth rAF clock interpolation (enhances 10Hz YT IFrame polling & <audio> timeupdate)
   useEffect(() => {
@@ -88,15 +115,16 @@ export const LyricsView: React.FC = () => {
     return getActiveLyricsIndex(parsedLyrics, smoothTime, offsetSec);
   }, [parsedLyrics, smoothTime, offsetSec]);
 
-  // Eased auto-scroll to active line
+  // Eased smooth container scroll to active line without fighting user
   useEffect(() => {
-    if (activeLineRef.current && scrollContainerRef.current) {
-      activeLineRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+    if (isUserScrolled) return;
+    const container = scrollContainerRef.current;
+    const activeEl = activeLineRef.current;
+    if (container && activeEl) {
+      const top = activeEl.offsetTop - container.clientHeight / 2 + activeEl.clientHeight / 2;
+      container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
     }
-  }, [activeIndex]);
+  }, [activeIndex, isUserScrolled]);
 
   if (!currentTrack) {
     return (
@@ -172,9 +200,9 @@ export const LyricsView: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-full max-w-2xl mx-auto px-3 sm:px-6 py-2 w-full">
+    <div className="flex flex-col h-full max-w-2xl mx-auto px-3 sm:px-6 py-1 w-full relative">
       {/* Top Toolbar: Back + Tamil Transliteration + Offset Nudge */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-white/10 text-xs">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-1 border-b border-white/10 text-xs bg-[#0B0A10]/60 backdrop-blur-md pt-1">
         <button
           onClick={() => setActiveDrawerTab("nowPlaying")}
           className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium cursor-pointer"
@@ -221,10 +249,25 @@ export const LyricsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Apple-Style Synchronized Scrolling Lyrics Viewport */}
+      {/* Floating Sync Button when user has scrolled manually */}
+      {isUserScrolled && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-30 animate-in fade-in zoom-in-95 duration-200">
+          <button
+            onClick={resumeSync}
+            className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-inisai-accent text-white text-xs font-semibold shadow-xl border border-white/20 cursor-pointer"
+          >
+            <span>• Auto Sync</span>
+          </button>
+        </div>
+      )}
+
+      {/* Apple-Style Synchronized Scrolling Lyrics Viewport with stable non-shifting typography */}
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto py-16 space-y-5 scrollbar-none scroll-smooth"
+        onScroll={handleUserScroll}
+        onTouchStart={handleUserScroll}
+        onWheel={handleUserScroll}
+        className="flex-1 overflow-y-auto py-12 space-y-4 scrollbar-none select-none overscroll-contain"
       >
         {parsedLyrics.map((line, idx) => {
           const isActive = idx === activeIndex;
@@ -253,12 +296,12 @@ export const LyricsView: React.FC = () => {
               key={`${line.time}-${idx}`}
               ref={isActive ? activeLineRef : null}
               onClick={() => seek(Math.max(0, line.time - offsetSec))}
-              className={`block w-full text-left px-3 py-1.5 rounded-2xl transition-all duration-300 font-tamil cursor-pointer ${
+              className={`block w-full text-left px-3 py-2 rounded-2xl transition-colors duration-200 font-tamil cursor-pointer min-h-[40px] text-xl sm:text-2xl ${
                 isActive
-                  ? "text-2xl sm:text-3xl font-extrabold text-white scale-[1.02] origin-left drop-shadow-[0_2px_12px_rgba(255,255,255,0.2)]"
+                  ? "font-extrabold text-white drop-shadow-[0_2px_12px_rgba(255,255,255,0.25)]"
                   : isPast
-                  ? "text-lg sm:text-xl font-bold text-white/35 blur-[0.4px] hover:blur-none hover:text-white/80"
-                  : "text-lg sm:text-xl font-bold text-white/45 blur-[0.5px] hover:blur-none hover:text-white/85"
+                  ? "font-semibold text-white/35 hover:text-white/80"
+                  : "font-semibold text-white/45 hover:text-white/85"
               }`}
             >
               {isActive && words.length > 0 ? (
@@ -268,8 +311,8 @@ export const LyricsView: React.FC = () => {
                     return (
                       <span
                         key={wIdx}
-                        className={`transition-all duration-150 ${
-                          isWordSung ? "text-white scale-[1.01]" : "text-white/45"
+                        className={`transition-colors duration-150 ${
+                          isWordSung ? "text-white" : "text-white/45"
                         }`}
                       >
                         {word.text}

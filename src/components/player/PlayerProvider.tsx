@@ -104,7 +104,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (document.hidden) {
         // App backgrounded / page hidden
-        if (state.engineId === "youtube" && state.isPlaying) {
+        if (state.engineId === "youtube" && state.isPlaying && state.settings.showForegroundOnlyTracks) {
           state.setYoutubeBackgroundWarning({
             visible: true,
             message:
@@ -167,7 +167,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {youtubeBackgroundWarning && youtubeBackgroundWarning.visible && (
         <div
           role="alert"
-          className="fixed top-16 left-1/2 -translate-x-1/2 z-[75] w-[92vw] max-w-md p-3.5 rounded-2xl bg-slate-900/95 dark:bg-[#1C1928]/95 border border-amber-500/35 text-white shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-3 duration-200"
+          className="fixed bottom-24 sm:top-16 left-1/2 -translate-x-1/2 z-[75] w-[92vw] max-w-md p-3.5 rounded-2xl bg-slate-900/95 dark:bg-[#1C1928]/95 border border-amber-500/35 text-white shadow-2xl backdrop-blur-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-3 sm:slide-in-from-top-3 duration-200"
           data-testid="yt-background-warning"
         >
           <div className="flex items-start space-x-2.5 min-w-0 flex-1">

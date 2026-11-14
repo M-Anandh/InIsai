@@ -15,6 +15,7 @@ import { WaveVisualizer } from "./WaveVisualizer";
 import { LyricsView } from "./LyricsView";
 import { QueueView } from "./QueueView";
 import { EqualizerDrawer } from "./EqualizerDrawer";
+import { WrongVersionModal } from "./WrongVersionModal";
 import {
   ChevronDown,
   MoreHorizontal,
@@ -32,8 +33,8 @@ import {
   Mic2,
   Sliders,
   Moon,
-  Video,
   Music,
+  Music2,
   Activity,
   FolderPlus,
   Share2,
@@ -85,16 +86,15 @@ export const FullScreenPlayer: React.FC = () => {
     secondary: "#FF3D77",
     glow: "rgba(122, 92, 255, 0.35)",
   });
-  const [mediaMode, setMediaMode] = useState<"audio" | "video">("audio");
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [sleepSheetOpen, setSleepSheetOpen] = useState(false);
+  const [wrongVersionOpen, setWrongVersionOpen] = useState(false);
   const [movieAlbumId, setMovieAlbumId] = useState<string | null>(null);
   const [hoverTime, setHoverTime] = useState<number | null>(null);
   const [hoverXPercent, setHoverXPercent] = useState<number>(0);
   const [seekFeedback, setSeekFeedback] = useState<{ text: string; side: "left" | "right" } | null>(null);
   const lastTapRef = useRef<{ time: number; x: number }>({ time: 0, x: 0 });
 
-  const videoSlotRef = useRef<HTMLDivElement | null>(null);
   const swipeStartY = useRef<number | null>(null);
 
   const triggerHaptic = () => {
@@ -179,12 +179,6 @@ export const FullScreenPlayer: React.FC = () => {
     };
   }, [isFullScreenOpen]);
 
-  // Reset video mode if active track has no YT videoId
-  useEffect(() => {
-    if (engineId !== "youtube") {
-      setMediaMode("audio");
-    }
-  }, [engineId, currentTrack?.id]);
 
   // Resolve film / album ID for "Movie songs" overflow menu item
   useEffect(() => {
@@ -225,36 +219,6 @@ export const FullScreenPlayer: React.FC = () => {
       cancelled = true;
     };
   }, [currentTrack?.id, currentTrack?.albumId, currentTrack?.album, currentTrack?.artist, currentTrack?.title]);
-
-  // Sync single persistent YT IFrame bounding box cleanly
-  useEffect(() => {
-    const syncRect = () => {
-      if (
-        isFullScreenOpen &&
-        activeDrawerTab === "nowPlaying" &&
-        mediaMode === "video" &&
-        engineId === "youtube" &&
-        videoSlotRef.current
-      ) {
-        const rect = videoSlotRef.current.getBoundingClientRect();
-        engineCoordinator.setYouTubeViewportRect({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height,
-        });
-      } else {
-        engineCoordinator.setYouTubeViewportRect(null);
-      }
-    };
-
-    syncRect();
-    window.addEventListener("resize", syncRect);
-    return () => {
-      window.removeEventListener("resize", syncRect);
-      engineCoordinator.setYouTubeViewportRect(null);
-    };
-  }, [isFullScreenOpen, mediaMode, engineId, activeDrawerTab]);
 
   // Global keyboard shortcuts (Space, ArrowLeft/Right, M, L, Escape)
   useEffect(() => {
@@ -352,7 +316,10 @@ export const FullScreenPlayer: React.FC = () => {
       </div>
 
       {/* Top Header: ChevronDown Left, Centered Label, Overflow Menu Right */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 flex-shrink-0">
+      <div
+        className="flex items-center justify-between px-4 sm:px-6 h-14 flex-shrink-0"
+        style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 8px)" }}
+      >
         <button
           onClick={() => setFullScreenOpen(false)}
           aria-label="Collapse Player"
@@ -363,7 +330,13 @@ export const FullScreenPlayer: React.FC = () => {
 
         <div className="text-center min-w-0 px-2">
           <p className="text-[11px] font-bold uppercase tracking-widest text-white/60">
-            Now Playing
+            {activeDrawerTab === "lyrics"
+              ? "Lyrics"
+              : activeDrawerTab === "queue"
+              ? "Queue"
+              : activeDrawerTab === "equalizer"
+              ? "Equalizer"
+              : "Now Playing"}
           </p>
           {playbackContext?.title && (
             <p className="text-xs font-medium text-white/90 truncate max-w-[180px] sm:max-w-xs">
@@ -440,6 +413,19 @@ export const FullScreenPlayer: React.FC = () => {
                 )}
               </button>
 
+              <button
+                type="button"
+                onClick={() => {
+                  setWrongVersionOpen(true);
+                  setOverflowOpen(false);
+                }}
+                data-testid="menu-wrong-version"
+                className="w-full flex items-center space-x-2 px-3 py-2.5 rounded-xl hover:bg-white/10 cursor-pointer"
+              >
+                <Music2 className="w-4 h-4 text-amber-400" />
+                <span>Wrong version?</span>
+              </button>
+
               {movieAlbumId && (
                 <button
                   type="button"
@@ -489,33 +475,8 @@ export const FullScreenPlayer: React.FC = () => {
 
         {activeDrawerTab === "nowPlaying" && (
           <div className="flex flex-col items-center justify-between w-full max-w-md mx-auto flex-1 min-h-0 py-1">
-            {/* Middle Visual Area: Song/Video Switcher + Artwork/Video (flexes and shrinks to fit remaining space) */}
-            <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center my-auto py-1 space-y-2">
-              {/* Optional Song / Video Switcher when YT engine active */}
-              {currentTrack.youtubeVideoId && engineId === "youtube" && (
-                <div className="flex items-center space-x-1 p-1 rounded-full bg-white/10 border border-white/10 backdrop-blur-md flex-shrink-0">
-                  <button
-                    onClick={() => setMediaMode("audio")}
-                    className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                      mediaMode === "audio" ? "bg-white text-black shadow" : "text-white/70 hover:text-white"
-                    }`}
-                  >
-                    <Music className="w-3.5 h-3.5" />
-                    <span>Song</span>
-                  </button>
-                  <button
-                    onClick={() => setMediaMode("video")}
-                    className={`flex items-center space-x-1.5 px-3.5 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                      mediaMode === "video" ? "bg-rose-600 text-white shadow" : "text-white/70 hover:text-white"
-                    }`}
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>Video</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Visual Centerpiece: Video Viewport OR Dynamic Parallax Artwork with Ambient Glow & Double-Tap Seek */}
+            {/* Middle Visual Area: Dynamic Artwork with Ambient Glow & Double-Tap Seek */}
+            <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center my-auto py-1">
               <div className="relative w-full flex items-center justify-center my-auto py-1">
                 {/* Ambient Light Aurora Glow (Behind Artwork) */}
                 <div
@@ -535,53 +496,43 @@ export const FullScreenPlayer: React.FC = () => {
                   }}
                 />
 
-                {mediaMode === "video" && currentTrack.youtubeVideoId && engineId === "youtube" ? (
-                  <div
-                    ref={videoSlotRef}
-                    onClick={togglePlay}
-                    className="w-full aspect-video max-h-[min(26vh,220px)] rounded-3xl overflow-hidden shadow-2xl border border-white/15 bg-black flex items-center justify-center relative z-10 cursor-pointer"
-                  >
-                    <span className="text-xs text-white/40 font-mono">Syncing YouTube Video...</span>
-                  </div>
-                ) : (
-                  <div
-                    onClick={handleArtworkClick}
-                    className={`relative z-10 w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 max-w-[72vw] max-h-[min(30vh,260px)] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
-                      isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
-                    }`}
-                    style={{
-                      boxShadow: isPlaying
-                        ? `0 24px 60px -10px ${palette.glow}`
-                        : "0 16px 40px -12px rgba(0,0,0,0.65)",
-                    }}
-                    title="Double tap left/right to seek ±10s"
-                  >
-                    <CoverImage
-                      src={currentTrack.artworkUrl}
-                      alt={currentTrack.title}
-                      youtubeVideoId={currentTrack.youtubeVideoId}
-                      type="track"
-                      aspect="square"
-                    />
+                <div
+                  onClick={handleArtworkClick}
+                  className={`relative z-10 w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 max-w-[72vw] max-h-[min(30vh,260px)] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
+                    isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
+                  }`}
+                  style={{
+                    boxShadow: isPlaying
+                      ? `0 24px 60px -10px ${palette.glow}`
+                      : "0 16px 40px -12px rgba(0,0,0,0.65)",
+                  }}
+                  title="Double tap left/right to seek ±10s"
+                >
+                  <CoverImage
+                    src={currentTrack.artworkUrl}
+                    alt={currentTrack.title}
+                    youtubeVideoId={currentTrack.youtubeVideoId}
+                    type="track"
+                    aspect="square"
+                  />
 
-                    {/* Double-Tap Gesture Feedback Ripple */}
-                    {seekFeedback && (
-                      <div
-                        className={`absolute inset-y-0 ${
-                          seekFeedback.side === "left"
-                            ? "left-0 w-1/2 rounded-l-3xl bg-black/50"
-                            : "right-0 w-1/2 rounded-r-3xl bg-black/50"
-                        } flex items-center justify-center pointer-events-none transition-opacity animate-in fade-in duration-200`}
-                      >
-                        <div className="flex items-center space-x-1.5 text-white font-bold text-xs bg-black/70 px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
-                          <span>{seekFeedback.side === "left" ? "<<" : ""}</span>
-                          <span>{seekFeedback.text}</span>
-                          <span>{seekFeedback.side === "right" ? ">>" : ""}</span>
-                        </div>
+                  {/* Double-Tap Gesture Feedback Ripple */}
+                  {seekFeedback && (
+                    <div
+                      className={`absolute inset-y-0 ${
+                        seekFeedback.side === "left"
+                          ? "left-0 w-1/2 rounded-l-3xl bg-black/50"
+                          : "right-0 w-1/2 rounded-r-3xl bg-black/50"
+                      } flex items-center justify-center pointer-events-none transition-opacity animate-in fade-in duration-200`}
+                    >
+                      <div className="flex items-center space-x-1.5 text-white font-bold text-xs bg-black/70 px-3 py-1.5 rounded-full border border-white/20 shadow-lg">
+                        <span>{seekFeedback.side === "left" ? "<<" : ""}</span>
+                        <span>{seekFeedback.text}</span>
+                        <span>{seekFeedback.side === "right" ? ">>" : ""}</span>
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Stats for Nerds Telemetry Card */}
@@ -889,6 +840,14 @@ export const FullScreenPlayer: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+      {/* Wrong Version Choice Modal */}
+      {currentTrack && (
+        <WrongVersionModal
+          track={currentTrack}
+          isOpen={wrongVersionOpen}
+          onClose={() => setWrongVersionOpen(false)}
+        />
       )}
     </div>
   );

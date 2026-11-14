@@ -74,9 +74,20 @@ function SearchContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const suggestAbortRef = useRef<AbortController | null>(null);
   const searchAbortRef = useRef<AbortController | null>(null);
   const { currentTrack, isPlaying, playTrack, togglePlay } = usePlayerStore();
+
+  useEffect(() => {
+    const dismissSuggestions = () => setShowSuggestions(false);
+    window.addEventListener("scroll", dismissSuggestions, { passive: true });
+    window.addEventListener("popstate", dismissSuggestions);
+    return () => {
+      window.removeEventListener("scroll", dismissSuggestions);
+      window.removeEventListener("popstate", dismissSuggestions);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -222,6 +233,7 @@ function SearchContent() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      (e.target as HTMLElement)?.blur();
       setShowSuggestions(false);
       if (query.trim()) {
         saveRecentSearch(query);
@@ -266,7 +278,7 @@ function SearchContent() {
   const showAlbums = (activeFilter === "All" || activeFilter === "Albums") && albums.length > 0;
   const showArtists = (activeFilter === "All" || activeFilter === "Artists") && artists.length > 0;
   const showPlaylists = (activeFilter === "All" || activeFilter === "Playlists") && playlists.length > 0;
-  const showVideos = activeFilter === "All" && videos.length > 0;
+  const showVideos = false;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
@@ -275,10 +287,14 @@ function SearchContent() {
         <div className="relative flex items-center bg-white dark:bg-white/[0.05] border border-slate-200 dark:border-white/10 rounded-2xl p-2.5 sm:p-3.5 focus-within:border-inisai-accent focus-within:ring-2 focus-within:ring-inisai-accent/20 transition-all shadow-sm">
           <Search className="w-5 h-5 text-inisai-accent ml-2 flex-shrink-0" />
           <input
+            id="search-input"
+            ref={inputRef}
             type="text"
             value={query}
-            onFocus={() => setShowSuggestions(true)}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
+            onFocus={() => {
+              if (query.trim().length >= 2) setShowSuggestions(true);
+            }}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             onChange={(e) => {
               setQuery(e.target.value);
               setShowSuggestions(true);
@@ -305,9 +321,9 @@ function SearchContent() {
           )}
         </div>
 
-        {/* Instant Suggestions Dropdown (< 300ms) */}
+        {/* Instant Suggestions Dropdown (< 300ms) with Max-Height and Overlay Protection */}
         {showSuggestions && query.trim().length >= 2 && suggestions.length > 0 && (
-          <div className="absolute left-0 right-0 mt-2 rounded-2xl bg-white dark:bg-[#1C1928] border border-slate-200 dark:border-white/15 shadow-2xl overflow-hidden py-1.5">
+          <div className="absolute left-0 right-0 mt-2 rounded-2xl bg-white dark:bg-[#1C1928] border border-slate-200 dark:border-white/15 shadow-2xl overflow-y-auto max-h-[min(35vh,260px)] py-1.5 z-40">
             {suggestions.map((sug) => (
               <button
                 key={sug}
@@ -316,6 +332,8 @@ function SearchContent() {
                   setQuery(sug);
                   setShowSuggestions(false);
                   saveRecentSearch(sug);
+                  performSearch(sug);
+                  inputRef.current?.blur();
                 }}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-left text-xs sm:text-sm text-slate-700 dark:text-white/90 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
@@ -624,25 +642,7 @@ function SearchContent() {
             </section>
           )}
 
-          {/* Videos & Live Versions */}
-          {showVideos && (
-            <section className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-inisai-muted flex items-center space-x-2">
-                <Video className="w-4 h-4 text-rose-500" />
-                <span>Videos & Live Versions</span>
-              </h3>
-              <div className="space-y-2">
-                {videos.map((v, idx) => (
-                  <TrackRow
-                    key={`${v.id}-vid-${idx}`}
-                    track={v}
-                    playlistContext={videos}
-                    context={searchContext}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
+
         </div>
       ) : (
         /* Rich Empty State: Recent + Trending */

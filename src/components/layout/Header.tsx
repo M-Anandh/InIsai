@@ -14,8 +14,6 @@ export const Header: React.FC = () => {
   const { user, isAuthenticated, signOut } = useAuthStore();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [mobileSearchInput, setMobileSearchInput] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -32,12 +30,10 @@ export const Header: React.FC = () => {
     return "Good Evening";
   }, [mounted]);
 
-  const handleMobileSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = mobileSearchInput.trim();
-    setMobileSearchOpen(false);
-    if (q) {
-      router.push(`/search?q=${encodeURIComponent(q)}`);
+  const handleSearchClick = () => {
+    if (typeof window !== "undefined" && window.location.pathname === "/search") {
+      const input = document.getElementById("search-input") as HTMLInputElement | null;
+      input?.focus();
     } else {
       router.push("/search");
     }
@@ -51,31 +47,7 @@ export const Header: React.FC = () => {
           : "border-slate-200/70 dark:border-white/[0.06]"
       }`}
     >
-      {mobileSearchOpen ? (
-        /* Expandable Mobile Full-Width Search Input Bar */
-        <form onSubmit={handleMobileSearchSubmit} className="flex items-center gap-2 w-full md:hidden min-h-[44px]">
-          <div className="flex-1 flex items-center bg-slate-100 dark:bg-white/10 rounded-full px-3.5 py-2 border border-inisai-accent/40">
-            <Search className="w-4 h-4 text-inisai-accent mr-2 flex-shrink-0" />
-            <input
-              type="text"
-              value={mobileSearchInput}
-              onChange={(e) => setMobileSearchInput(e.target.value)}
-              placeholder="Search songs, artists..."
-              autoFocus
-              className="w-full bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 outline-none"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setMobileSearchOpen(false)}
-            aria-label="Close search bar"
-            className="w-11 h-11 rounded-full flex items-center justify-center bg-slate-200/70 dark:bg-white/10 text-slate-700 dark:text-white cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </form>
-      ) : (
-        <div className="flex items-center justify-between gap-2 min-h-[44px]">
+      <div className="flex items-center justify-between gap-2 min-h-[44px]">
           {/* Left: Compact Logo on mobile, Greeting on desktop */}
           <div className="flex items-center space-x-3 min-w-0">
             <Link href="/" className="md:hidden">
@@ -103,11 +75,11 @@ export const Header: React.FC = () => {
 
           {/* Right Actions: Single line on 360px mobile */}
           <div className="flex items-center space-x-1.5 sm:space-x-2.5 flex-shrink-0">
-            {/* Mobile Expandable Search Trigger (>=44px touch target) */}
+            {/* Mobile Search Navigation Trigger (>=44px touch target) */}
             <button
-              onClick={() => setMobileSearchOpen(true)}
+              onClick={handleSearchClick}
               aria-label="Open Search"
-              className="md:hidden w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-white/80 cursor-pointer"
+              className="md:hidden w-11 h-11 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 flex items-center justify-center text-slate-700 dark:text-white/80 cursor-pointer"
             >
               <Search className="w-4 h-4" />
             </button>
@@ -156,7 +128,6 @@ export const Header: React.FC = () => {
             )}
           </div>
         </div>
-      )}
     </header>
   );
 };

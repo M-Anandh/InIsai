@@ -174,7 +174,7 @@ const defaultSettings: PlayerSettings = {
   preferAudioFallback: true,
   autoplayRelated: true,
   statsForNerd: false,
-  videoMode: false,
+  showForegroundOnlyTracks: false,
 };
 
 let sleepTimerInterval: ReturnType<typeof setInterval> | null = null;
@@ -255,10 +255,9 @@ export const usePlayerStore = create<PlayerState>()(
         let trackToPlay = { ...track };
         const { settings } = get();
 
-        // Route Song mode via direct <audio> when a confident match exists & background-friendly playback is enabled (and not explicitly in video mode)
+        // Route via direct <audio> when a confident match exists & background-friendly playback is enabled
         if (
           settings.preferAudioFallback &&
-          !settings.videoMode &&
           (trackToPlay.sourceType === "youtube" || trackToPlay.sourceType === "ytmusic" || !trackToPlay.streamUrl)
         ) {
           const cached = preResolvedStreams.get(trackToPlay.id);
@@ -303,6 +302,22 @@ export const usePlayerStore = create<PlayerState>()(
         // Gapless prebuffer next track if AudioElementEngine
         if (index + 1 < updatedQueue.length) {
           engineCoordinator.prebufferNextTrack(updatedQueue[index + 1]);
+        }
+
+        // Prefetch next 3 tracks in background for instant playback
+        for (let offset = 1; offset <= 3; offset++) {
+          const nextTarget = updatedQueue[index + offset];
+          if (nextTarget && !nextTarget.streamUrl && !preResolvedStreams.has(nextTarget.id)) {
+            providerRegistry.findAudioMatch(nextTarget, "saavn").then((matched) => {
+              if (matched?.streamUrl) {
+                preResolvedStreams.set(nextTarget.id, {
+                  track: { ...nextTarget, streamUrl: matched.streamUrl },
+                  url: matched.streamUrl,
+                  expiresAt: Date.now() + STREAM_CACHE_TTL_MS,
+                });
+              }
+            }).catch(() => {});
+          }
         }
 
         // Update listening history (deduplicated) & record taste signal
@@ -474,7 +489,7 @@ export const usePlayerStore = create<PlayerState>()(
         set({ restoredPosition: undefined });
 
         let trackToPlay = { ...track };
-        const wantsAudio = settings.preferAudioFallback && !settings.videoMode;
+        const wantsAudio = settings.preferAudioFallback;
 
         // Re-resolve if missing, expired, or direct audio preferred
         if (
@@ -616,7 +631,7 @@ export const usePlayerStore = create<PlayerState>()(
           repeat: repeatMode,
           shuffle: isShuffle,
           engineId,
-          mode: settings.videoMode ? "video" : "song",
+          mode: "song",
           savedAt: Date.now(),
           wasPlaying: isPlaying,
         };
@@ -648,7 +663,7 @@ export const usePlayerStore = create<PlayerState>()(
           repeat: repeatMode,
           shuffle: isShuffle,
           engineId,
-          mode: settings.videoMode ? "video" : "song",
+          mode: "song",
           savedAt: Date.now(),
           wasPlaying: isPlaying,
         };
@@ -683,7 +698,7 @@ export const usePlayerStore = create<PlayerState>()(
           return;
         }
 
-        if (!settings.preferAudioFallback || settings.videoMode) return;
+        if (!settings.preferAudioFallback) return;
         preResolvingIds.add(candidate.id);
         providerRegistry
           .findAudioMatch(candidate, "saavn")

@@ -227,6 +227,26 @@ export default function SettingsPage() {
             </button>
           </div>
 
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/5">
+            <div>
+              <p className="font-semibold text-slate-900 dark:text-white">Show foreground-only songs</p>
+              <p className="text-slate-500 dark:text-inisai-muted">
+                Show songs that only play while the app is open (stops when screen locks)
+              </p>
+            </div>
+            <button
+              onClick={() => setPreference("showForegroundOnlyTracks", !settings.showForegroundOnlyTracks)}
+              data-testid="toggle-foreground-only"
+              className={`px-3 py-1.5 rounded-full font-bold transition-all cursor-pointer ${
+                settings.showForegroundOnlyTracks
+                  ? "bg-amber-500 text-black"
+                  : "bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-white/60"
+              }`}
+            >
+              {settings.showForegroundOnlyTracks ? "Shown" : "Hidden"}
+            </button>
+          </div>
+
           {currentTrack && engineId === "youtube" && (
             <div
               className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"

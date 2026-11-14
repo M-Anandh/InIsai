@@ -166,7 +166,7 @@ export interface PlayerSettings {
   preferAudioFallback?: boolean; // Resolve matching background audio when available
   autoplayRelated?: boolean; // Smart radio continuation when queue finishes
   statsForNerd?: boolean; // Technical telemetry overlay
-  videoMode?: boolean; // Optional toggle in Now Playing when YT track active
+  showForegroundOnlyTracks?: boolean; // Show songs that only play while the app is open (default false: OFF)
   waveStyle?: "auto" | "bars" | "ribbons" | "mountain" | "radial" | "particles";
   waveIntensity?: "low" | "medium" | "high";
   detailedWavesExtraData?: boolean; // Analyze tune profiles over cellular (default false: Wi-Fi only)
