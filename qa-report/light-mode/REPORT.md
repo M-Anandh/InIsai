@@ -68,3 +68,4 @@ In response to production visual contrast regressions in Light Mode across mobil
 | **Player Theme Isolation** | Unaltered dark experience in both modes | FullScreenPlayer & Queue remain dark with pure white text | 5 / 5 |
 | **Visual Elegance & Tints** | No muddy gradients | Soft cream surfaces with pastel tints | 5 / 5 |
 | **Information Hierarchy & State** | Accurate theme labels | Profile & Settings accurately reflect active state | 5 / 5 |
+

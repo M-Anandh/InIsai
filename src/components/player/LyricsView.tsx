@@ -202,7 +202,7 @@ export const LyricsView: React.FC = () => {
   return (
     <div className="flex flex-col h-full max-w-2xl mx-auto px-3 sm:px-6 py-1 w-full relative">
       {/* Top Toolbar: Back + Tamil Transliteration + Offset Nudge */}
-      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-1 border-b border-white/10 text-xs bg-[#0B0A10]/60 backdrop-blur-md pt-1">
+      <div className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-2 pb-2 mb-1 text-xs pt-1 bg-transparent">
         <button
           onClick={() => setActiveDrawerTab("nowPlaying")}
           className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-medium cursor-pointer"
