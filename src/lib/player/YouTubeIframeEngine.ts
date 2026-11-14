@@ -26,6 +26,7 @@ export class YouTubeIframeEngine implements PlaybackEngine {
   private pendingVideoId: string | null = null;
   private pendingTrack: Track | null = null;
   private pendingSettings: PlayerSettings | null = null;
+  private pendingStartPosition = 0;
   private currentTrack: Track | null = null;
   private pollInterval: ReturnType<typeof setInterval> | null = null;
   private isPlayingState = false;
@@ -157,8 +158,10 @@ export class YouTubeIframeEngine implements PlaybackEngine {
             }
             if (this.pendingVideoId) {
               const vid = this.pendingVideoId;
+              const startSec = this.pendingStartPosition || 0;
               this.pendingVideoId = null;
-              this.player.loadVideoById(vid);
+              this.pendingStartPosition = 0;
+              this.player.loadVideoById({ videoId: vid, startSeconds: startSec });
             }
             resolve();
           },
@@ -257,7 +260,12 @@ export class YouTubeIframeEngine implements PlaybackEngine {
     } catch {}
   }
 
-  public async playTrack(track: Track, _streamUrl?: string, settings?: PlayerSettings): Promise<void> {
+  public async playTrack(
+    track: Track,
+    _streamUrl?: string,
+    settings?: PlayerSettings,
+    startPosition?: number
+  ): Promise<void> {
     const videoId = track.youtubeVideoId || track.sourceId;
     this.currentTrack = track;
     this.playbackStartMs = Date.now();
@@ -268,9 +276,11 @@ export class YouTubeIframeEngine implements PlaybackEngine {
       return;
     }
 
+    const startSec = startPosition && startPosition > 0 ? startPosition : 0;
+
     if (this.onStateChange) {
       this.onStateChange({
-        currentTime: 0,
+        currentTime: startSec,
         duration: track.duration || 0,
         buffered: 0,
         isPlaying: false,
@@ -283,10 +293,11 @@ export class YouTubeIframeEngine implements PlaybackEngine {
     if (!this.player || !this.isPlayerReady) {
       this.pendingVideoId = videoId;
       this.pendingTrack = track;
+      this.pendingStartPosition = startSec;
       await this.ensurePlayer(videoId);
     } else {
       if (settings) this.applySettings(settings);
-      this.player.loadVideoById({ videoId, startSeconds: 0 });
+      this.player.loadVideoById({ videoId, startSeconds: startSec });
     }
   }
 

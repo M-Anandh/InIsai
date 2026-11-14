@@ -417,10 +417,19 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       togglePlay: () => {
-        const { isPlaying } = get();
+        const { isPlaying, currentTrack, currentTime } = get();
         if (isPlaying) {
           get().pause();
         } else {
+          // If the audio element is simply paused mid-song, resume immediately without reloading stream
+          const activeEngine = engineCoordinator.getActiveEngineId();
+          if (activeEngine === "audio" && currentTrack && currentTime > 0) {
+            if (engineCoordinator.isAudioElementPaused()) {
+              engineCoordinator.play();
+              set({ isPlaying: true, userPaused: false });
+              return;
+            }
+          }
           void get().ensureReadyAndPlay();
         }
       },
@@ -432,6 +441,15 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       resume: () => {
+        const { currentTrack, currentTime } = get();
+        const activeEngine = engineCoordinator.getActiveEngineId();
+        if (activeEngine === "audio" && currentTrack && currentTime > 0) {
+          if (engineCoordinator.isAudioElementPaused()) {
+            engineCoordinator.play();
+            set({ isPlaying: true, userPaused: false });
+            return;
+          }
+        }
         void get().ensureReadyAndPlay();
       },
 
@@ -510,7 +528,11 @@ export const usePlayerStore = create<PlayerState>()(
         set({ currentTrack: trackToPlay });
 
         try {
-          const engineUsed = await engineCoordinator.playTrack(trackToPlay, settings);
+          const engineUsed = await engineCoordinator.playTrack(
+            trackToPlay,
+            settings,
+            seekTarget > 0 ? seekTarget : undefined
+          );
           set({
             engineId: engineUsed,
             engineCapabilities: { ...engineCoordinator.getCapabilities() },

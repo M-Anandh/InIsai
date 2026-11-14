@@ -500,7 +500,7 @@ export const FullScreenPlayer: React.FC = () => {
 
                 <div
                   onClick={handleArtworkClick}
-                  className={`relative z-10 w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 max-w-[72vw] max-h-[min(30vh,260px)] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none ${
+                  className={`relative z-10 w-[min(72vw,220px,30vh)] h-[min(72vw,220px,30vh)] sm:w-[min(72vw,280px,36vh)] sm:h-[min(72vw,280px,36vh)] md:w-[min(72vw,360px,44vh)] md:h-[min(72vw,360px,44vh)] aspect-square rounded-3xl overflow-hidden border border-white/15 transition-all duration-700 cursor-pointer select-none flex-shrink-0 ${
                     isPlaying ? "scale-100" : "scale-[0.94] opacity-90"
                   }`}
                   style={{

@@ -79,7 +79,11 @@ export class EngineCoordinator {
     }
   }
 
-  public async playTrack(track: Track, settings?: PlayerSettings): Promise<EngineId> {
+  public async playTrack(
+    track: Track,
+    settings?: PlayerSettings,
+    startPosition?: number
+  ): Promise<EngineId> {
     let targetEngine: PlaybackEngine = audioElementEngine;
     let resolvedUrl = track.streamUrl;
 
@@ -110,7 +114,13 @@ export class EngineCoordinator {
     }
 
     this.updateMediaSessionMetadata(track);
-    await targetEngine.playTrack(track, resolvedUrl, settings);
+    if (targetEngine === (audioElementEngine as unknown)) {
+      await audioElementEngine.playTrack(track, resolvedUrl, settings, startPosition);
+    } else if (targetEngine === (youtubeIframeEngine as unknown)) {
+      await youtubeIframeEngine.playTrack(track, resolvedUrl, settings, startPosition);
+    } else {
+      await targetEngine.playTrack(track, resolvedUrl, settings);
+    }
     return targetEngine.id;
   }
 

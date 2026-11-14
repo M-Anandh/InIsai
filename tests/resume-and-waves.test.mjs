@@ -172,3 +172,48 @@ test("Background warning is formatted plainly with switch-to-audio action and sh
   assert.match(provider, /state\.engineId === ["']youtube["']/, "Warning must check engineId === youtube");
   assert.match(store, /switchToAudioVersion/, "Must provide switchToAudioVersion action");
 });
+
+test("FullScreenPlayer artwork maintains guaranteed 1:1 square ratio across mobile and desktop", () => {
+  const playerPath = path.join(ROOT, "src", "components", "player", "FullScreenPlayer.tsx");
+  const playerContent = fs.readFileSync(playerPath, "utf8");
+
+  // Must use matched min() dimensions and aspect-square with flex-shrink-0
+  assert.match(
+    playerContent,
+    /w-\[min\(72vw,\s*220px,\s*30vh\)\]\s*h-\[min\(72vw,\s*220px,\s*30vh\)\]/,
+    "Mobile artwork width and height must match min() expression"
+  );
+  assert.match(
+    playerContent,
+    /md:w-\[min\(72vw,\s*360px,\s*44vh\)\]\s*md:h-\[min\(72vw,\s*360px,\s*44vh\)\]/,
+    "Desktop artwork width and height must match min() expression"
+  );
+  assert.match(playerContent, /aspect-square/, "Artwork container must declare aspect-square");
+  assert.match(playerContent, /flex-shrink-0/, "Artwork container must declare flex-shrink-0 to prevent distortion");
+});
+
+test("Resume playback preserves position and routes startPosition through audio engines", () => {
+  const storePath = path.join(ROOT, "src", "stores", "player-store.ts");
+  const audioPath = path.join(ROOT, "src", "lib", "player", "AudioElementEngine.ts");
+  const ytPath = path.join(ROOT, "src", "lib", "player", "YouTubeIframeEngine.ts");
+  const coordinatorPath = path.join(ROOT, "src", "lib", "player", "EngineCoordinator.ts");
+
+  const store = fs.readFileSync(storePath, "utf8");
+  const audio = fs.readFileSync(audioPath, "utf8");
+  const yt = fs.readFileSync(ytPath, "utf8");
+  const coordinator = fs.readFileSync(coordinatorPath, "utf8");
+
+  // Player store instant resume when paused
+  assert.match(store, /isAudioElementPaused\(\)\s*[\s\S]*?engineCoordinator\.play\(\)/, "togglePlay must resume paused audio without reloading");
+
+  // EngineCoordinator passes startPosition
+  assert.match(coordinator, /startPosition\?: number/, "EngineCoordinator must accept startPosition");
+  assert.match(coordinator, /audioElementEngine\.playTrack\([\s\S]*?startPosition\)/, "EngineCoordinator must forward startPosition to audio engine");
+
+  // AudioElementEngine pending seek position & deferred seek on metadata
+  assert.match(audio, /pendingSeekPosition/, "AudioElementEngine must track pendingSeekPosition");
+  assert.match(audio, /applyPendingSeek/, "AudioElementEngine must apply pending seek when metadata is ready");
+
+  // YouTubeIframeEngine startSeconds
+  assert.match(yt, /startSeconds:\s*startSec/, "YouTubeIframeEngine must pass startSeconds to loadVideoById");
+});
