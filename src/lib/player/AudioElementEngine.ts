@@ -46,7 +46,6 @@ export class AudioElementEngine implements PlaybackEngine {
   private targetVolume = 0.85;
   private isMutedState = false;
   private playbackStartMs = 0;
-  private pendingSeekPosition: number | null = null;
 
   private constructor() {
     if (typeof window !== "undefined") {
@@ -127,13 +126,6 @@ export class AudioElementEngine implements PlaybackEngine {
 
     el.addEventListener("durationchange", () => {
       if (el !== this.audioEl) return;
-      this.applyPendingSeek(el);
-      this.emitState(false);
-    });
-
-    el.addEventListener("loadedmetadata", () => {
-      if (el !== this.audioEl) return;
-      this.applyPendingSeek(el);
       this.emitState(false);
     });
 
@@ -159,7 +151,6 @@ export class AudioElementEngine implements PlaybackEngine {
 
     el.addEventListener("canplay", () => {
       if (el !== this.audioEl) return;
-      this.applyPendingSeek(el);
       this.emitState(false);
     });
 
@@ -336,33 +327,13 @@ export class AudioElementEngine implements PlaybackEngine {
     return el.play();
   }
 
-  private applyPendingSeek(el: HTMLAudioElement) {
-    if (this.pendingSeekPosition === null || this.pendingSeekPosition <= 0) return;
-    const rawDur = el.duration;
-    const dur = !isNaN(rawDur) && rawDur > 0 ? rawDur : (this.currentTrack?.duration || 0);
-    const target = dur > 0 ? Math.max(0, Math.min(this.pendingSeekPosition, Math.max(0, dur - 0.5))) : this.pendingSeekPosition;
-    try {
-      el.currentTime = target;
-      this.pendingSeekPosition = null;
-    } catch {}
-  }
-
-  public async playTrack(
-    track: Track,
-    streamUrl?: string,
-    settings?: PlayerSettings,
-    startPosition?: number
-  ): Promise<void> {
+  public async playTrack(track: Track, streamUrl?: string, settings?: PlayerSettings): Promise<void> {
     const el = this.getOrCreateAudio();
     if (!el) return;
 
     this.currentTrack = track;
     this.playbackStartMs = Date.now();
     const targetUrl = streamUrl || track.streamUrl;
-
-    if (startPosition !== undefined && startPosition > 0) {
-      this.pendingSeekPosition = startPosition;
-    }
 
     if (!targetUrl) {
       this.emitState(false, "Stream URL unavailable for direct audio engine.");
@@ -392,22 +363,26 @@ export class AudioElementEngine implements PlaybackEngine {
       el.load();
     }
 
-    if (this.pendingSeekPosition !== null && this.pendingSeekPosition > 0 && el.readyState >= 1) {
-      this.applyPendingSeek(el);
-    }
-
     el.volume = this.isMutedState ? 0 : this.targetVolume;
     this.emitState(true);
 
     try {
       await el.play();
-      if (this.pendingSeekPosition !== null && this.pendingSeekPosition > 0) {
-        this.applyPendingSeek(el);
-      }
     } catch (err) {
       console.warn("AudioElementEngine autoplay/play interruption:", err);
       this.emitState(false);
     }
+  }
+
+  public isCurrentlyLoadedAndPaused(trackId?: string): boolean {
+    if (!this.audioEl || !this.audioEl.src) return false;
+    if (trackId && this.currentTrack?.id !== trackId) return false;
+    return (
+      this.audioEl.paused &&
+      this.audioEl.readyState >= 2 &&
+      !isNaN(this.audioEl.duration) &&
+      this.audioEl.duration > 0
+    );
   }
 
   public play() {
@@ -415,9 +390,6 @@ export class AudioElementEngine implements PlaybackEngine {
     if (!el) return;
     if (!isMobileOrIOS() && this.audioCtx?.state === "suspended") {
       this.audioCtx.resume().catch(() => {});
-    }
-    if (this.pendingSeekPosition !== null && this.pendingSeekPosition > 0 && el.readyState >= 1) {
-      this.applyPendingSeek(el);
     }
     el.play().catch((err) => {
       console.warn("AudioElementEngine resume error:", err);
@@ -438,14 +410,9 @@ export class AudioElementEngine implements PlaybackEngine {
     const rawDur = this.audioEl.duration;
     const dur = !isNaN(rawDur) && rawDur > 0 ? rawDur : (this.currentTrack?.duration || 0);
     const target = dur > 0 ? Math.max(0, Math.min(seconds, Math.max(0, dur - 0.5))) : Math.max(0, seconds);
-    if (this.audioEl.readyState >= 1) {
-      try {
-        this.audioEl.currentTime = target;
-        this.pendingSeekPosition = null;
-      } catch {}
-    } else {
-      this.pendingSeekPosition = target;
-    }
+    try {
+      this.audioEl.currentTime = target;
+    } catch {}
     this.emitState(false);
   }
 

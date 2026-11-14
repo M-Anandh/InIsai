@@ -161,7 +161,11 @@ export class YouTubeIframeEngine implements PlaybackEngine {
               const startSec = this.pendingStartPosition || 0;
               this.pendingVideoId = null;
               this.pendingStartPosition = 0;
-              this.player.loadVideoById({ videoId: vid, startSeconds: startSec });
+              if (startSec > 0) {
+                this.player.loadVideoById({ videoId: vid, startSeconds: startSec });
+              } else {
+                this.player.loadVideoById(vid);
+              }
             }
             resolve();
           },
@@ -297,7 +301,11 @@ export class YouTubeIframeEngine implements PlaybackEngine {
       await this.ensurePlayer(videoId);
     } else {
       if (settings) this.applySettings(settings);
-      this.player.loadVideoById({ videoId, startSeconds: startSec });
+      if (startSec > 0) {
+        this.player.loadVideoById({ videoId, startSeconds: startSec });
+      } else {
+        this.player.loadVideoById(videoId);
+      }
     }
   }
 

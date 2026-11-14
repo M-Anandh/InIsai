@@ -115,11 +115,17 @@ export class EngineCoordinator {
 
     this.updateMediaSessionMetadata(track);
     if (targetEngine === (audioElementEngine as unknown)) {
-      await audioElementEngine.playTrack(track, resolvedUrl, settings, startPosition);
+      await audioElementEngine.playTrack(track, resolvedUrl, settings);
+      if (startPosition && startPosition > 0) {
+        audioElementEngine.seek(startPosition);
+      }
     } else if (targetEngine === (youtubeIframeEngine as unknown)) {
       await youtubeIframeEngine.playTrack(track, resolvedUrl, settings, startPosition);
     } else {
       await targetEngine.playTrack(track, resolvedUrl, settings);
+      if (startPosition && startPosition > 0) {
+        targetEngine.seek(startPosition);
+      }
     }
     return targetEngine.id;
   }
@@ -134,6 +140,10 @@ export class EngineCoordinator {
 
   public isAudioElementPaused(): boolean {
     return audioElementEngine.isPaused();
+  }
+
+  public isAudioElementCurrentlyLoadedAndPaused(trackId?: string): boolean {
+    return audioElementEngine.isCurrentlyLoadedAndPaused(trackId);
   }
 
   public async playImmediateAudio(

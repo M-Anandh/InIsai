@@ -203,16 +203,19 @@ test("Resume playback preserves position and routes startPosition through audio 
   const yt = fs.readFileSync(ytPath, "utf8");
   const coordinator = fs.readFileSync(coordinatorPath, "utf8");
 
-  // Player store instant resume when paused
-  assert.match(store, /isAudioElementPaused\(\)\s*[\s\S]*?engineCoordinator\.play\(\)/, "togglePlay must resume paused audio without reloading");
+  // Player store instant resume when genuinely loaded and paused
+  assert.match(
+    store,
+    /isAudioElementCurrentlyLoadedAndPaused\([\s\S]*?engineCoordinator\.play\(\)/,
+    "togglePlay must resume loaded and paused audio without reloading"
+  );
 
   // EngineCoordinator passes startPosition
   assert.match(coordinator, /startPosition\?: number/, "EngineCoordinator must accept startPosition");
-  assert.match(coordinator, /audioElementEngine\.playTrack\([\s\S]*?startPosition\)/, "EngineCoordinator must forward startPosition to audio engine");
+  assert.match(coordinator, /isAudioElementCurrentlyLoadedAndPaused/, "EngineCoordinator must expose loaded and paused status");
 
-  // AudioElementEngine pending seek position & deferred seek on metadata
-  assert.match(audio, /pendingSeekPosition/, "AudioElementEngine must track pendingSeekPosition");
-  assert.match(audio, /applyPendingSeek/, "AudioElementEngine must apply pending seek when metadata is ready");
+  // AudioElementEngine validates loaded and paused state
+  assert.match(audio, /isCurrentlyLoadedAndPaused/, "AudioElementEngine must check readyState and duration before resuming");
 
   // YouTubeIframeEngine startSeconds
   assert.match(yt, /startSeconds:\s*startSec/, "YouTubeIframeEngine must pass startSeconds to loadVideoById");

@@ -289,6 +289,7 @@ export const usePlayerStore = create<PlayerState>()(
           isLoading: true,
           error: null,
           restoredPosition: undefined,
+          currentTime: 0,
         });
 
         const engineUsed = await engineCoordinator.playTrack(trackToPlay, settings);
@@ -417,18 +418,20 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       togglePlay: () => {
-        const { isPlaying, currentTrack, currentTime } = get();
+        const { isPlaying, currentTrack } = get();
         if (isPlaying) {
           get().pause();
         } else {
-          // If the audio element is simply paused mid-song, resume immediately without reloading stream
+          // If the audio element is genuinely loaded in DOM and paused mid-song, resume immediately without reloading stream
           const activeEngine = engineCoordinator.getActiveEngineId();
-          if (activeEngine === "audio" && currentTrack && currentTime > 0) {
-            if (engineCoordinator.isAudioElementPaused()) {
-              engineCoordinator.play();
-              set({ isPlaying: true, userPaused: false });
-              return;
-            }
+          if (
+            activeEngine === "audio" &&
+            currentTrack &&
+            engineCoordinator.isAudioElementCurrentlyLoadedAndPaused(currentTrack.id)
+          ) {
+            engineCoordinator.play();
+            set({ isPlaying: true, userPaused: false });
+            return;
           }
           void get().ensureReadyAndPlay();
         }
@@ -441,14 +444,16 @@ export const usePlayerStore = create<PlayerState>()(
       },
 
       resume: () => {
-        const { currentTrack, currentTime } = get();
+        const { currentTrack } = get();
         const activeEngine = engineCoordinator.getActiveEngineId();
-        if (activeEngine === "audio" && currentTrack && currentTime > 0) {
-          if (engineCoordinator.isAudioElementPaused()) {
-            engineCoordinator.play();
-            set({ isPlaying: true, userPaused: false });
-            return;
-          }
+        if (
+          activeEngine === "audio" &&
+          currentTrack &&
+          engineCoordinator.isAudioElementCurrentlyLoadedAndPaused(currentTrack.id)
+        ) {
+          engineCoordinator.play();
+          set({ isPlaying: true, userPaused: false });
+          return;
         }
         void get().ensureReadyAndPlay();
       },
@@ -501,10 +506,14 @@ export const usePlayerStore = create<PlayerState>()(
             ? targetPosition
             : restoredPosition !== undefined
             ? restoredPosition
-            : get().currentTime;
+            : 0;
 
         // Clear restoredPosition once applied so subsequent playback isn't hijacked
         set({ restoredPosition: undefined });
+
+        if (seekTarget <= 0) {
+          set({ currentTime: 0 });
+        }
 
         let trackToPlay = { ...track };
         const wantsAudio = settings.preferAudioFallback;
